@@ -1,0 +1,65 @@
+@* Inputs and indicators: calendar, time, radio, text area, button group, spinner. *@
+<div class="space-y-8" data-testid="inputs-demo">
+    <header>
+        <h2 class="text-xl font-black text-slate-900 dark:text-white">Inputs and pickers</h2>
+        <p class="text-sm text-slate-700 dark:text-slate-300 mt-1">Keyboard-first, high-contrast ready, right-to-left safe.</p>
+    </header>
+
+    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <section aria-labelledby="t-cal" class="space-y-2">
+            <h3 id="t-cal" class="text-sm font-bold text-slate-900 dark:text-white">Calendar</h3>
+            <TwCalendar @bind-Value="_date" Min="_min" Max="_max" />
+            <p class="text-xs text-slate-700 dark:text-slate-300">Selected: <span data-testid="date-out">@(_date?.ToString("yyyy-MM-dd") ?? "none")</span> (this month only, from the 5th)</p>
+        </section>
+
+        <section aria-labelledby="t-time" class="space-y-3">
+            <h3 id="t-time" class="text-sm font-bold text-slate-900 dark:text-white">Time</h3>
+            <TwTimePicker Label="Appointment" @bind-Value="_time" MinuteStep="15" />
+            <p class="text-xs text-slate-700 dark:text-slate-300">24-hour value: <span data-testid="time-out">@(_time?.ToString("HH:mm") ?? "none")</span></p>
+            <TwTimePicker Label="Shift start (24h)" Use24Hour="true" MinuteStep="30" @bind-Value="_shift" />
+        </section>
+
+        <section aria-labelledby="t-radio" class="space-y-3">
+            <h3 id="t-radio" class="text-sm font-bold text-slate-900 dark:text-white">Radio group</h3>
+            <TwRadioGroup TValue="string" Legend="Plan" Items="_plans" @bind-Value="_plan" />
+            <p class="text-xs text-slate-700 dark:text-slate-300">Plan: <span data-testid="plan-out">@(_plan ?? "none")</span></p>
+        </section>
+
+        <section aria-labelledby="t-text" class="space-y-3 xl:col-span-2">
+            <h3 id="t-text" class="text-sm font-bold text-slate-900 dark:text-white">Text area</h3>
+            <TwTextArea Label="Notes for the reviewer" Hint="Keep it short." MaxLength="120" AutoGrow="true" @bind-Value="_notes"
+                        Error="@(_notes?.Contains("TODO") == true ? "Replace the TODO before sending." : null)" />
+        </section>
+
+        <section aria-labelledby="t-btn" class="space-y-3">
+            <h3 id="t-btn" class="text-sm font-bold text-slate-900 dark:text-white">Button group and spinner</h3>
+            <TwButtonGroup Label="Range">
+                @foreach (var r in new[] { "Day", "Week", "Month" })
+                {
+                    var current = r;
+                    <button type="button" @onclick="() => _range = current" aria-pressed="@(_range == current ? "true" : "false")"
+                            class="px-4 min-h-[40px] text-sm font-semibold border border-slate-300 dark:border-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 @(_range == current ? "bg-brand-700 text-white border-brand-700" : "bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800")">@r</button>
+                }
+            </TwButtonGroup>
+            <p class="text-xs text-slate-700 dark:text-slate-300">Range: <span data-testid="range-out">@_range</span></p>
+            <TwSpinner Label="Syncing" ShowLabel="true" />
+        </section>
+    </div>
+</div>
+
+@code {
+    private static readonly DateOnly First = new(DateTime.Today.Year, DateTime.Today.Month, 1);
+
+    private DateOnly? _date;
+    private readonly DateOnly _min = First.AddDays(4);
+    private readonly DateOnly _max = First.AddMonths(1).AddDays(-1);
+    private TimeOnly? _time, _shift = new TimeOnly(9, 0);
+    private string? _plan = "pro", _notes = "", _range = "Week";
+
+    private readonly IReadOnlyList<TwRadioGroup<string>.Option> _plans = new[]
+    {
+        new TwRadioGroup<string>.Option("free", "Free", "Up to 3 agents"),
+        new TwRadioGroup<string>.Option("pro", "Pro", "Unlimited agents and audit export"),
+        new TwRadioGroup<string>.Option("ent", "Enterprise", "Contact sales", Disabled: true),
+    };
+}

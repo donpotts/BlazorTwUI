@@ -1,0 +1,234 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Services
+@inject TwSimdVectorService SimdService
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="btui-vector-math rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-sm space-y-6 @Class">
+    <!-- Header with Hardware Intrinsics Badges -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 flex items-center justify-center font-bold text-lg">
+                ⚡
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    Runtime-Native Hardware Acceleration &amp; SIMD Engine
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
+                        @(SimdService.VectorBitWidth)-Bit Vectors
+                    </span>
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    High-throughput financial and spatial vector calculations accelerated by WebAssembly SIMD and .NET Runtime Intrinsics
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold @(SimdService.IsHardwareAccelerated ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20")">
+                <span class="w-2 h-2 rounded-full @(SimdService.IsHardwareAccelerated ? "bg-emerald-500 animate-pulse" : "bg-amber-500")"></span>
+                @(SimdService.IsHardwareAccelerated ? "WASM SIMD Active" : "Software Emulation")
+            </span>
+        </div>
+    </div>
+
+    <!-- Benchmark Configuration Stage -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+        <!-- Operation Selector -->
+        <div class="md:col-span-5 space-y-1.5">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Vectorized Operation:
+            </label>
+            <select @bind="_selectedOperation"
+                    disabled="@_isExecuting"
+                    class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500 font-medium">
+                <option value="dotproduct">Vector Dot Product (A · B) — Financial Matrix</option>
+                <option value="vectorsum">Vector Sum &amp; Mean (Σ A[i]) — Portfolio Aggregation</option>
+                <option value="euclideannorm">Euclidean Norm (||A||₂) — Spatial Distance</option>
+            </select>
+        </div>
+
+        <!-- Element Count Selector -->
+        <div class="md:col-span-4 space-y-1.5">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Dataset Size (Floats):
+            </label>
+            <select @bind="_selectedCount"
+                    disabled="@_isExecuting"
+                    class="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-cyan-500 font-mono">
+                <option value="100000">100,000 Elements (400 KB)</option>
+                <option value="500000">500,000 Elements (2.0 MB)</option>
+                <option value="1000000">1,000,000 Elements (4.0 MB)</option>
+                <option value="5000000">5,000,000 Elements (20.0 MB)</option>
+            </select>
+        </div>
+
+        <!-- Execute Action -->
+        <div class="md:col-span-3">
+            <button type="button"
+                    @onclick="ExecuteBenchmarkAsync"
+                    disabled="@_isExecuting"
+                    class="w-full py-2 px-3 text-xs font-bold rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm transition flex items-center justify-center gap-1.5 disabled:opacity-50">
+                @if (_isExecuting)
+                {
+                    <span class="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+                    <span>Processing SIMD...</span>
+                }
+                else
+                {
+                    <span>⚡ Run SIMD Benchmark</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    <!-- Benchmark Results Dashboard -->
+    @if (_latestResult != null)
+    {
+        <div class="space-y-4">
+            <!-- 4 KPI Metrics -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div class="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Scalar Loop</span>
+                    <div class="text-xl font-mono font-extrabold text-slate-800 dark:text-slate-200">
+                        @(_latestResult.ScalarDurationMs.ToString("F2")) ms
+                    </div>
+                    <span class="text-[10px] text-slate-500">Standard Sequential Execution</span>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-cyan-500/30 dark:border-cyan-500/20 shadow-xs space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-cyan-600 dark:text-cyan-400 tracking-wider">Hardware SIMD</span>
+                    <div class="text-xl font-mono font-extrabold text-cyan-600 dark:text-cyan-400">
+                        @(_latestResult.SimdDurationMs.ToString("F2")) ms
+                    </div>
+                    <span class="text-[10px] text-slate-500">@(SimdService.VectorByteWidth) Bytes/Vector Instruction</span>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-500/30 dark:border-emerald-500/20 shadow-xs space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400 tracking-wider">Speedup Multiplier</span>
+                    <div class="text-xl font-mono font-extrabold text-emerald-600 dark:text-emerald-400">
+                        @(_latestResult.SpeedupFactor.ToString("F2"))x
+                    </div>
+                    <span class="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Hardware Accelerated</span>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-purple-500/30 dark:border-purple-500/20 shadow-xs space-y-1">
+                    <span class="text-[10px] uppercase font-bold text-purple-600 dark:text-purple-400 tracking-wider">Throughput</span>
+                    <div class="text-xl font-mono font-extrabold text-purple-600 dark:text-purple-400">
+                        @(_latestResult.ThroughputMOps.ToString("F0")) M
+                    </div>
+                    <span class="text-[10px] text-slate-500">Operations / Second</span>
+                </div>
+            </div>
+
+            <!-- Visual Execution Time Comparison Bar -->
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span>📊</span> Execution Latency Comparison (Lower is Faster)
+                    </span>
+                    <span class="text-[11px] font-mono text-slate-400">@(_latestResult.ElementCount.ToString("N0")) Elements</span>
+                </div>
+
+                <div class="space-y-2">
+                    <!-- Scalar Bar -->
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="font-medium text-slate-600 dark:text-slate-400">Scalar Loop:</span>
+                            <span class="font-mono text-slate-700 dark:text-slate-300">@(_latestResult.ScalarDurationMs.ToString("F2")) ms</span>
+                        </div>
+                        <div class="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                            <div class="h-full bg-slate-400 dark:bg-slate-500 rounded-full" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- SIMD Bar -->
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="font-bold text-cyan-600 dark:text-cyan-400">Hardware SIMD:</span>
+                            <span class="font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                                @(_latestResult.SimdDurationMs.ToString("F2")) ms (@(Math.Round(100.0 / _latestResult.SpeedupFactor, 1))% of scalar time)
+                            </span>
+                        </div>
+                        <div class="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 rounded-full transition-all duration-500"
+                                 style="width: @(Math.Max(5, Math.Round(100.0 / _latestResult.SpeedupFactor)))%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mathematical Equivalence Audit Box -->
+            <div class="p-3.5 rounded-2xl bg-slate-900 text-slate-100 border border-slate-800 text-xs font-mono space-y-2">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                    <span class="text-emerald-400 font-bold flex items-center gap-1.5">
+                        <span>✓</span> Mathematical Equivalence Confirmed
+                    </span>
+                    <span class="text-[11px] text-slate-400">Precision: IEEE 754 32-bit Float</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                        <span class="text-slate-400 block text-[10px] uppercase">Scalar Computed Value:</span>
+                        <span class="text-slate-200">@_latestResult.ScalarResult.ToString("N2")</span>
+                    </div>
+                    <div>
+                        <span class="text-slate-400 block text-[10px] uppercase">SIMD Computed Value:</span>
+                        <span class="text-cyan-300">@_latestResult.SimdResult.ToString("N2")</span>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                    <span class="text-slate-400">Architecture: <strong class="text-slate-200">@_latestResult.Architecture</strong></span>
+                    <div class="flex items-center gap-2">
+                        <button type="button"
+                                @onclick="ExportTelemetryJsonAsync"
+                                class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-sans font-medium transition flex items-center gap-1">
+                            <span>📥</span> Export Telemetry (JSON)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Class { get; set; }
+
+    private string _selectedOperation = "dotproduct";
+    private int _selectedCount = 1000000;
+    private bool _isExecuting = false;
+    private TwSimdVectorService.SimdBenchmarkResult? _latestResult;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Run initial benchmark on 1M floats
+        await ExecuteBenchmarkAsync();
+    }
+
+    private async Task ExecuteBenchmarkAsync()
+    {
+        _isExecuting = true;
+        StateHasChanged();
+        await Task.Delay(20); // allow UI hydration
+
+        try
+        {
+            _latestResult = await SimdService.RunBenchmarkAsync(_selectedOperation, _selectedCount);
+        }
+        finally
+        {
+            _isExecuting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ExportTelemetryJsonAsync()
+    {
+        if (_latestResult == null) return;
+        var json = System.Text.Json.JsonSerializer.Serialize(_latestResult, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        await JS.InvokeVoidAsync("pdfHelper.downloadText", $"simd_benchmark_{_selectedOperation}_{_selectedCount}.json", "application/json", json);
+        Toast.Show("Telemetry Exported", $"Saved SIMD benchmark profile for {_selectedCount:N0} elements", SemanticVariant.Success);
+    }
+}

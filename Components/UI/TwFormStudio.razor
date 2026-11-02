@@ -1,0 +1,305 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@using System.Text.Json
+@inject FormCatalogService FormCatalog
+@inject IJSRuntime JS
+
+<div class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-8">
+    @* Studio Header *@
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 mb-2">
+                <span>⚡</span> 2026 Web Dev 100-Form Standard Library
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                Enterprise Form Studio & Code Generator
+            </h2>
+            <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl">
+                Explore, test, and instantly export production-ready C# Blazor code for all 100 top industry forms across 10 functional domains.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
+                <div class="text-2xl font-black text-blue-600 dark:text-blue-400">100</div>
+                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Forms</div>
+            </div>
+            <div class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center shadow-sm">
+                <div class="text-2xl font-black text-emerald-600 dark:text-emerald-400">10</div>
+                <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Categories</div>
+            </div>
+        </div>
+    </div>
+
+    @* Filters: Search & Category Pills *@
+    <div class="space-y-4">
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    🔍
+                </span>
+                <input type="text"
+                       @bind="_searchTerm"
+                       @bind:event="oninput"
+                       placeholder="Search all 100 forms (e.g., login, invoice, kpi, gdpr, refund, checkout)..."
+                       class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            </div>
+
+            <div class="shrink-0 flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 px-1">
+                Showing <strong class="text-slate-900 dark:text-white">@FilteredForms.Count</strong> of 100 forms
+            </div>
+        </div>
+
+        @* Category Pills *@
+        <div class="flex flex-wrap gap-2 pt-1">
+            <button type="button"
+                    @onclick='() => _selectedCategory = "All"'
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all @(_selectedCategory == "All" ? "bg-blue-600 text-white shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700")">
+                All Domains (100)
+            </button>
+            @foreach (var cat in FormCatalog.GetCategories())
+            {
+                var isCatActive = _selectedCategory == cat;
+                <button type="button"
+                        @onclick="() => _selectedCategory = cat"
+                        class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all @(isCatActive ? "bg-blue-600 text-white shadow-sm" : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700")">
+                    @cat
+                </button>
+            }
+        </div>
+    </div>
+
+    @* Studio Layout: Forms Grid / Selector & Form Runner *@
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        @* Form Selection List (5 cols) *@
+        <div class="lg:col-span-4 space-y-2 max-h-[720px] overflow-y-auto pr-2 custom-scrollbar">
+            @if (FilteredForms.Count == 0)
+            {
+                <div class="p-6 text-center text-sm text-slate-400 bg-white dark:bg-slate-900 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+                    No forms found matching "@_searchTerm".
+                </div>
+            }
+            @foreach (var form in FilteredForms)
+            {
+                var isSelected = _selectedSchema?.Id == form.Id;
+                <button type="button"
+                        @onclick="() => SelectForm(form)"
+                        class="w-full text-left p-3.5 rounded-xl border transition-all flex items-start gap-3 @(isSelected ? "bg-blue-50 dark:bg-blue-950/40 border-blue-500 shadow-sm ring-1 ring-blue-500/30" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700")">
+                    <span class="text-2xl p-1 rounded-lg bg-slate-100 dark:bg-slate-800 shrink-0">@form.Icon</span>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-sm font-bold text-slate-900 dark:text-white truncate">@form.Title</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 shrink-0">
+                                @form.Fields.Count flds
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 mt-0.5">@form.Description</p>
+                        <div class="text-[11px] text-blue-600 dark:text-blue-400 font-medium mt-1">@form.Category</div>
+                    </div>
+                </button>
+            }
+        </div>
+
+        @* Live Dynamic Form Runner & Code Inspector (8 cols) *@
+        <div class="lg:col-span-8 space-y-6">
+            @if (_selectedSchema != null)
+            {
+                @* Live Dynamic Form Engine *@
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div class="px-6 py-4 bg-slate-100/60 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Live Reactive Form Engine
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button type="button" @onclick="ValidateForm"
+                                    class="px-3 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm">
+                                Run Validate()
+                            </button>
+                            <button type="button" @onclick="ResetForm"
+                                    class="px-3 py-1 text-xs font-semibold rounded-lg bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-sm">
+                                Run Reset()
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="p-6">
+                        <TwFormEngine @ref="_formEngineRef"
+                                      Schema="_selectedSchema"
+                                      OnSubmit="HandleStudioSubmit"
+                                      ShowCardWrapper="false" />
+                    </div>
+                </div>
+
+                @* Inspector Tabs: Live Output vs C# Blazor Code vs Schema JSON *@
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div class="flex border-b border-slate-200 dark:border-slate-800 px-4 pt-3 gap-2">
+                        <button type="button"
+                                @onclick='() => _activeInspectorTab = "code"'
+                                class="px-4 py-2 text-xs font-bold rounded-t-lg transition-all @(_activeInspectorTab == "code" ? "border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+                            📄 C# Blazor Component Snippet
+                        </button>
+                        <button type="button"
+                                @onclick='() => _activeInspectorTab = "output"'
+                                class="px-4 py-2 text-xs font-bold rounded-t-lg transition-all @(_activeInspectorTab == "output" ? "border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+                            ⚡ Live Form State & JSON
+                        </button>
+                        <button type="button"
+                                @onclick='() => _activeInspectorTab = "schema"'
+                                class="px-4 py-2 text-xs font-bold rounded-t-lg transition-all @(_activeInspectorTab == "schema" ? "border-b-2 border-blue-600 text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+                            📋 Form Schema Object
+                        </button>
+                    </div>
+
+                    <div class="p-4 sm:p-5">
+                        @if (_activeInspectorTab == "code")
+                        {
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-xs text-slate-500">
+                                    <span>Ready-to-use C# Razor markup for this form:</span>
+                                    <button type="button" @onclick="CopyGeneratedCode"
+                                            class="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs shadow-sm">
+                                        Copy C# Code
+                                    </button>
+                                </div>
+                                <pre class="p-4 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto leading-relaxed border border-slate-800">@GenerateRazorCode(_selectedSchema)</pre>
+                            </div>
+                        }
+                        else if (_activeInspectorTab == "output")
+                        {
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between text-xs text-slate-500">
+                                    <span>Real-time values extracted via <code>GetValues()</code>:</span>
+                                    <span class="text-emerald-500 font-mono">Status: Connected</span>
+                                </div>
+                                <pre class="p-4 rounded-xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto leading-relaxed border border-slate-800">@GetLiveValuesJson()</pre>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="space-y-3">
+                                <div class="text-xs text-slate-500">Complete JSON specification for <code>@_selectedSchema.Id</code>:</div>
+                                <pre class="p-4 rounded-xl bg-slate-900 text-blue-300 font-mono text-xs overflow-x-auto leading-relaxed border border-slate-800">@JsonSerializer.Serialize(_selectedSchema, new JsonSerializerOptions { WriteIndented = true })</pre>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _searchTerm = "";
+    private string _selectedCategory = "All";
+    private FormSchema? _selectedSchema;
+    private TwFormEngine? _formEngineRef;
+    private string _activeInspectorTab = "code";
+    private FormSubmissionResult? _lastResult;
+
+    protected override void OnInitialized()
+    {
+        _selectedSchema = FormCatalog.GetFormById("login") ?? FormCatalog.GetAllForms().FirstOrDefault();
+    }
+
+    private List<FormSchema> FilteredForms
+    {
+        get
+        {
+            var forms = FormCatalog.GetAllForms().ToList();
+            if (_selectedCategory != "All")
+            {
+                forms = forms.Where(f => f.Category == _selectedCategory).ToList();
+            }
+            if (!string.IsNullOrWhiteSpace(_searchTerm))
+            {
+                forms = forms.Where(f =>
+                    f.Title.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    f.Description.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    f.Category.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    f.Id.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)
+                ).ToList();
+            }
+            return forms;
+        }
+    }
+
+    private void SelectForm(FormSchema schema)
+    {
+        _selectedSchema = schema;
+        _lastResult = null;
+    }
+
+    private void HandleStudioSubmit(FormSubmissionResult result)
+    {
+        _lastResult = result;
+    }
+
+    private void ValidateForm()
+    {
+        _formEngineRef?.Validate();
+    }
+
+    private void ResetForm()
+    {
+        _formEngineRef?.Reset();
+        _lastResult = null;
+    }
+
+    private string GetLiveValuesJson()
+    {
+        if (_formEngineRef != null)
+        {
+            var vals = _formEngineRef.GetValues();
+            return JsonSerializer.Serialize(vals, new JsonSerializerOptions { WriteIndented = true });
+        }
+        return "{\n  // Form not initialized\n}";
+    }
+
+    private string GenerateRazorCode(FormSchema schema)
+    {
+        return $@"@* Blazor Tailwind Form Component for {schema.Title} *@
+@using BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject FormCatalogService FormCatalog
+
+<TwFormEngine @ref=""_formRef""
+              Schema=""@_schema""
+              OnSubmit=""HandleSubmit"" />
+
+@code {{
+    private TwFormEngine? _formRef;
+    private FormSchema? _schema;
+
+    protected override void OnInitialized()
+    {{
+        // Load schema by id from DI catalog
+        _schema = FormCatalog.GetFormById(""{schema.Id}"");
+    }}
+
+    private async Task HandleSubmit(FormSubmissionResult result)
+    {{
+        // Access typed values:
+        // var email = result.Values[""email""]?.ToString();
+        await Task.CompletedTask;
+    }}
+}}";
+    }
+
+    private async Task CopyGeneratedCode()
+    {
+        if (_selectedSchema != null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", GenerateRazorCode(_selectedSchema));
+            }
+            catch (Exception)
+            {
+                // Clipboard fallback
+            }
+        }
+    }
+}

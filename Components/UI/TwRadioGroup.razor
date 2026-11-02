@@ -1,0 +1,50 @@
+@typeparam TValue
+@* Native radio group with label, per-option descriptions and error text. Arrow keys move the selection (native radio behaviour). *@
+<fieldset class="@Class" disabled="@Disabled" data-testid="radio-group" aria-invalid="@(string.IsNullOrEmpty(Error) ? null : "true")" aria-describedby="@(string.IsNullOrEmpty(Error) ? null : _name + "-err")">
+    @if (!string.IsNullOrEmpty(Legend))
+    {
+        <legend class="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-2">@Legend</legend>
+    }
+    <div class="flex @(Horizontal ? "flex-row flex-wrap gap-4" : "flex-col gap-2")">
+        @foreach (var item in Items)
+        {
+            var on = EqualityComparer<TValue>.Default.Equals(item.Value, Value);
+            <label class="flex items-start gap-3 cursor-pointer rounded-xl border px-3 py-2 min-h-[44px] focus-within:ring-2 focus-within:ring-brand-500 @(on ? "border-brand-600 bg-brand-50 dark:bg-brand-500/10" : "border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-800") @(item.Disabled ? "opacity-50 cursor-not-allowed" : "")"
+                   data-testid="radio-option">
+                <input type="radio" name="@_name" checked="@on" disabled="@item.Disabled" @onchange="() => SelectAsync(item.Value)" class="mt-1 text-brand-600 focus:ring-brand-500" />
+                <span>
+                    <span class="block text-sm font-semibold text-slate-900 dark:text-slate-100">@item.Label</span>
+                    @if (!string.IsNullOrEmpty(item.Description))
+                    {
+                        <span class="block text-xs text-slate-700 dark:text-slate-300">@item.Description</span>
+                    }
+                </span>
+            </label>
+        }
+    </div>
+    @if (!string.IsNullOrEmpty(Error))
+    {
+        <p id="@($"{_name}-err")" class="mt-1 text-xs font-semibold text-red-700 dark:text-red-300" role="alert" data-testid="radio-error">@Error</p>
+    }
+</fieldset>
+
+@code {
+    public sealed record Option(TValue Value, string Label, string? Description = null, bool Disabled = false);
+
+    private readonly string _name = "rg-" + Guid.NewGuid().ToString("N")[..6];
+
+    [Parameter, EditorRequired] public IReadOnlyList<Option> Items { get; set; } = Array.Empty<Option>();
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue> ValueChanged { get; set; }
+    [Parameter] public string? Legend { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public bool Horizontal { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private async Task SelectAsync(TValue value)
+    {
+        Value = value;
+        await ValueChanged.InvokeAsync(value);
+    }
+}

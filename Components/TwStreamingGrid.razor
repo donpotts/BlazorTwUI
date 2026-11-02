@@ -1,0 +1,309 @@
+@namespace BlazorTwUI.Components
+@using System.Collections.Generic
+@using System.Threading
+@using System.Threading.Tasks
+@using System.Linq
+@using BlazorTwUI.Models
+
+<div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden flex flex-col @Class">
+    <!-- Header Toolbar & Metrics -->
+    <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-sm">
+                <svg class="w-5 h-5 @(IsStreaming ? "animate-spin" : "")" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">@Title</h3>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider @StatusBadgeClass">
+                        <span class="w-1.5 h-1.5 rounded-full @StatusDotClass"></span>
+                        @StatusText
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Telemetry Gauges -->
+        <div class="flex items-center gap-4 text-xs font-mono">
+            <div class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 flex items-center gap-1.5">
+                <span class="text-slate-400">Rows:</span>
+                <span class="font-bold text-slate-900 dark:text-white">@TotalItemsCount.ToString("N0")</span>
+            </div>
+            <div class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 flex items-center gap-1.5">
+                <span class="text-slate-400">Speed:</span>
+                <span class="font-bold text-cyan-600 dark:text-cyan-400">@ItemsPerSecond.ToString("F1") items/s</span>
+            </div>
+            <div class="hidden sm:flex px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700/60 items-center gap-1.5">
+                <span class="text-slate-400">Buffer:</span>
+                <span class="font-bold text-emerald-600 dark:text-emerald-400">~@((TotalItemsCount * 0.12).ToString("F1")) KB</span>
+            </div>
+        </div>
+
+        <!-- Streaming Controls -->
+        <div class="flex items-center gap-2">
+            @if (IsStreaming)
+            {
+                <button type="button" @onclick="PauseStreaming" class="px-3 py-1.5 rounded-xl border border-amber-500/30 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Pause</span>
+                </button>
+            }
+            else
+            {
+                <button type="button" @onclick="ResumeStreaming" class="px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-xs font-bold transition flex items-center gap-1.5 shadow-xs">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    <span>Resume</span>
+                </button>
+            }
+            <button type="button" @onclick="ClearBuffer" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 text-xs font-semibold transition shadow-xs">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter & View Controls -->
+    <div class="px-4 py-2.5 bg-slate-50/40 dark:bg-slate-900/40 border-b border-slate-200/60 dark:border-slate-800/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="relative flex-1 min-w-[200px] max-w-xs">
+            <svg class="w-4 h-4 absolute left-3 top-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input type="text" @bind="_searchFilter" @bind:event="oninput" placeholder="Filter by symbol, service, status..." class="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500 text-xs" />
+        </div>
+        <div class="flex items-center gap-2">
+            <label class="text-slate-500 dark:text-slate-400 font-medium">Throttle:</label>
+            <select @bind="_throttleMs" class="px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none text-xs">
+                <option value="20">Ultra Fast (20ms)</option>
+                <option value="50">Fast (50ms)</option>
+                <option value="150">Normal (150ms)</option>
+                <option value="500">Paced (500ms)</option>
+            </select>
+            <button type="button" @onclick="() => _isCardView = !_isCardView" class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                @(_isCardView ? "📋 Table View" : "🗂️ Card View")
+            </button>
+        </div>
+    </div>
+
+    <!-- Data Viewport: High Density Table or Mobile Cards -->
+    <div class="relative overflow-y-auto max-h-[460px] divide-y divide-slate-100 dark:divide-slate-800">
+        @if (!_isCardView)
+        {
+            <table class="w-full text-left text-xs whitespace-nowrap">
+                <thead class="sticky top-0 z-10 bg-slate-100/95 dark:bg-slate-800/95 backdrop-blur-xs text-slate-600 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700 select-none">
+                    <tr>
+                        <th class="py-2.5 px-3">Timestamp</th>
+                        <th class="py-2.5 px-3">Symbol</th>
+                        <th class="py-2.5 px-3">Service</th>
+                        <th class="py-2.5 px-3 text-right">Price ($)</th>
+                        <th class="py-2.5 px-3 text-right">Volume</th>
+                        <th class="py-2.5 px-3 text-right">Latency</th>
+                        <th class="py-2.5 px-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/50">
+                    @if (FilteredItems.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="py-12 text-center text-slate-400 dark:text-slate-500">
+                                @(IsStreaming ? "Waiting for initial records from stream..." : "No items match current filter.")
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in FilteredItems)
+                        {
+                            <tr class="transition-colors duration-500 @(item.IsNewArrival ? "bg-cyan-50/80 dark:bg-cyan-950/40" : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40")">
+                                <td class="py-2 px-3 font-mono text-[11px] text-slate-500 dark:text-slate-400">@item.Timestamp.ToString("HH:mm:ss.fff")</td>
+                                <td class="py-2 px-3 font-bold text-slate-900 dark:text-white">
+                                    <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">@item.Symbol</span>
+                                </td>
+                                <td class="py-2 px-3 text-slate-700 dark:text-slate-300">@item.Service</td>
+                                <td class="py-2 px-3 text-right font-mono font-semibold text-slate-900 dark:text-slate-100">@item.Price.ToString("F2")</td>
+                                <td class="py-2 px-3 text-right font-mono text-slate-600 dark:text-slate-400">@item.Volume.ToString("N0")</td>
+                                <td class="py-2 px-3 text-right font-mono">
+                                    <span class="@(item.LatencyMs < 2.0 ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-amber-600 dark:text-amber-400")">@item.LatencyMs.ToString("F1")ms</span>
+                                </td>
+                                <td class="py-2 px-3">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold @GetStatusBadge(item.Status)">
+                                        @item.Status
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                @foreach (var item in FilteredItems.Take(30))
+                {
+                    <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 transition-all @(item.IsNewArrival ? "ring-2 ring-cyan-500/50 shadow-md" : "")">
+                        <div class="flex items-center justify-between text-xs mb-1.5">
+                            <span class="font-bold text-sm text-slate-900 dark:text-white">@item.Symbol</span>
+                            <span class="text-[10px] font-mono text-slate-400">@item.Timestamp.ToString("HH:mm:ss.fff")</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs mb-1">
+                            <span class="text-slate-500">Price:</span>
+                            <span class="font-mono font-bold text-slate-900 dark:text-white">$@item.Price.ToString("F2")</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs mb-1">
+                            <span class="text-slate-500">Volume:</span>
+                            <span class="font-mono text-slate-700 dark:text-slate-300">@item.Volume.ToString("N0")</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-200/50 dark:border-slate-800/50">
+                            <span class="text-slate-500">Latency: @item.LatencyMs.ToString("F1")ms</span>
+                            <span class="px-1.5 py-0.5 rounded text-[10px] font-bold @GetStatusBadge(item.Status)">@item.Status</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "High-Throughput Streaming Engine (IAsyncEnumerable)";
+    [Parameter] public string Subtitle { get; set; } = "Real-time telemetry pipeline consuming asynchronous server streams with sub-millisecond virtual DOM updates";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public int MaxBufferCapacity { get; set; } = 5000;
+
+    private readonly List<StreamingTelemetryItem> _items = new();
+    private string _searchFilter = "";
+    private int _throttleMs = 50;
+    private bool _isCardView = false;
+    private bool _isStreaming = false;
+    private CancellationTokenSource? _streamCts;
+    private DateTime _streamStartTime = DateTime.UtcNow;
+    private int _streamedSinceLastTick = 0;
+    private double _itemsPerSecond = 0;
+
+    public bool IsStreaming => _isStreaming;
+    public int TotalItemsCount => _items.Count;
+    public double ItemsPerSecond => _itemsPerSecond;
+
+    private string StatusText => _isStreaming ? "Streaming Active" : (_items.Count > 0 ? "Stream Paused" : "Stream Idle");
+
+    private string StatusBadgeClass => _isStreaming
+        ? "bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800"
+        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700";
+
+    private string StatusDotClass => _isStreaming ? "bg-cyan-500 animate-ping" : "bg-slate-400";
+
+    private List<StreamingTelemetryItem> FilteredItems
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchFilter))
+                return _items;
+
+            var q = _searchFilter.Trim().ToLowerInvariant();
+            return _items.Where(x => 
+                x.Symbol.ToLowerInvariant().Contains(q) ||
+                x.Service.ToLowerInvariant().Contains(q) ||
+                x.Status.ToLowerInvariant().Contains(q)
+            ).ToList();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        // Start streaming demo by default
+        StartStreamingLoop();
+    }
+
+    private void StartStreamingLoop()
+    {
+        if (_isStreaming) return;
+
+        _isStreaming = true;
+        _streamCts = new CancellationTokenSource();
+        _streamStartTime = DateTime.UtcNow;
+        _streamedSinceLastTick = 0;
+
+        _ = Task.Run(async () =>
+        {
+            var token = _streamCts.Token;
+            var random = new Random();
+            var symbols = new[] { "MSFT", "NVDA", "AAPL", "GOOGL", "AMZN", "META", "TSLA", "DOTNET10" };
+            var services = new[] { "OrderRouter", "RiskEngine", "MatchingCore", "ClearingHouse", "MarketData" };
+            var statuses = new[] { "Executed", "Executed", "Executed", "Routing", "Settled" };
+
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(_throttleMs, token);
+
+                var newItem = new StreamingTelemetryItem
+                {
+                    Timestamp = DateTime.UtcNow,
+                    Symbol = symbols[random.Next(symbols.Length)],
+                    Service = services[random.Next(services.Length)],
+                    Price = Math.Round(100.0 + random.NextDouble() * 850.0, 2),
+                    Volume = random.Next(10, 500) * 10,
+                    LatencyMs = Math.Round(0.4 + random.NextDouble() * 3.2, 2),
+                    Status = statuses[random.Next(statuses.Length)],
+                    IsNewArrival = true
+                };
+
+                await InvokeAsync(() =>
+                {
+                    // Clear previous new arrival highlight
+                    if (_items.Count > 0)
+                    {
+                        _items[0].IsNewArrival = false;
+                    }
+
+                    _items.Insert(0, newItem);
+                    if (_items.Count > MaxBufferCapacity)
+                    {
+                        _items.RemoveAt(_items.Count - 1);
+                    }
+
+                    _streamedSinceLastTick++;
+                    var elapsedSec = (DateTime.UtcNow - _streamStartTime).TotalSeconds;
+                    if (elapsedSec > 0.5)
+                    {
+                        _itemsPerSecond = _streamedSinceLastTick / elapsedSec;
+                    }
+
+                    StateHasChanged();
+                });
+            }
+        });
+    }
+
+    public void PauseStreaming()
+    {
+        _isStreaming = false;
+        _streamCts?.Cancel();
+    }
+
+    public void ResumeStreaming()
+    {
+        StartStreamingLoop();
+    }
+
+    public void ClearBuffer()
+    {
+        _items.Clear();
+        _streamStartTime = DateTime.UtcNow;
+        _streamedSinceLastTick = 0;
+        _itemsPerSecond = 0;
+    }
+
+    private string GetStatusBadge(string status) => status switch
+    {
+        "Executed" => "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800",
+        "Routing" => "bg-cyan-50 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800",
+        "Settled" => "bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800",
+        _ => "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+    };
+
+    public void Dispose()
+    {
+        _streamCts?.Cancel();
+        _streamCts?.Dispose();
+    }
+}

@@ -1,0 +1,193 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden max-w-3xl mx-auto @CustomClass">
+    <!-- Header -->
+    <div class="p-6 sm:p-7 bg-slate-50 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <span class="p-3 rounded-2xl bg-amber-500/10 text-amber-500 border border-amber-500/20 text-xl">
+                🍪
+            </span>
+            <div>
+                <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                    @Title
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        GDPR & CCPA Compliant
+                    </span>
+                </h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">@Description</p>
+            </div>
+        </div>
+
+        <button type="button" @onclick="() => _showDetails = !_showDetails"
+                class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 hover:bg-slate-50 text-slate-700 dark:text-slate-300 text-xs font-bold transition whitespace-nowrap">
+            @(_showDetails ? "Hide Details ▲" : "Customize ▼")
+        </button>
+    </div>
+
+    <!-- Category Preferences (Detailed Accordion) -->
+    <div class="p-6 sm:p-7 space-y-4">
+        <!-- Strictly Necessary -->
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-slate-900 dark:text-white">Strictly Necessary Cookies</span>
+                    <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 uppercase">Always Active</span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Essential for cryptographic session authentication, CSRF tokens, and security load-balancing. Cannot be disabled.
+                </p>
+            </div>
+            <div class="pt-0.5">
+                <input type="checkbox" checked disabled
+                       class="rounded border-slate-300 text-brand-600 opacity-60 cursor-not-allowed h-5 w-5" />
+            </div>
+        </div>
+
+        @if (_showDetails)
+        {
+            <!-- Functional -->
+            <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">Functional & Preference Cookies</span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400">Recommended</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Preserves theme preferences (Dark / Light mode), sidebar collapse states, and table column width filters.
+                    </p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer pt-0.5">
+                    <input type="checkbox" @bind="_preferences.Functional" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+                </label>
+            </div>
+
+            <!-- Analytics & Telemetry -->
+            <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">Performance & Telemetry Cookies</span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">Opt-in</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Collects aggregated WebAssembly frame times, render latency, and unhandled exception traces to improve runtime throughput.
+                    </p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer pt-0.5">
+                    <input type="checkbox" @bind="_preferences.Analytics" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+                </label>
+            </div>
+
+            <!-- Marketing -->
+            <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-start justify-between gap-4">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white">Targeted Marketing & Release Announcements</span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400">Optional</span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Permits notifications regarding major framework upgrades, security patches, and enterprise roadmap invitations.
+                    </p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer pt-0.5">
+                    <input type="checkbox" @bind="_preferences.Marketing" class="sr-only peer">
+                    <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+                </label>
+            </div>
+        }
+
+        <!-- Status Confirmation -->
+        @if (!string.IsNullOrEmpty(_statusMessage))
+        {
+            <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center gap-2">
+                <span>✅</span>
+                <span>@_statusMessage</span>
+            </div>
+        }
+    </div>
+
+    <!-- Action Bar -->
+    <div class="p-6 sm:p-7 bg-slate-50 dark:bg-slate-950/40 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <a href="#privacy" class="text-xs text-slate-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 underline">
+            Read our complete Privacy & Cookie Policy
+        </a>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+            <button type="button" @onclick="RejectNonEssential"
+                    class="w-1/3 sm:w-auto px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-850 hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold transition">
+                Reject All Non-Essential
+            </button>
+            @if (_showDetails)
+            {
+                <button type="button" @onclick="SaveCustomPreferences"
+                        class="w-1/3 sm:w-auto px-4 py-2.5 rounded-xl border border-brand-500 bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 text-xs font-bold transition hover:bg-brand-100">
+                    Save Selected
+                </button>
+            }
+            <button type="button" @onclick="AcceptAll"
+                    class="w-1/3 sm:w-auto px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition shadow-lg shadow-brand-500/25">
+                Accept All Cookies
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    public class CookiePreferencesModel
+    {
+        public bool StrictlyNecessary { get; set; } = true;
+        public bool Functional { get; set; } = true;
+        public bool Analytics { get; set; } = false;
+        public bool Marketing { get; set; } = false;
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    }
+
+    [Parameter] public string Title { get; set; } = "Enterprise Cookie & Privacy Settings";
+    [Parameter] public string Description { get; set; } = "We use minimal first-party cookies to secure user sessions, maintain UI state, and measure performance latency. We never sell your personal data.";
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<CookiePreferencesModel> OnSaved { get; set; }
+
+    private CookiePreferencesModel _preferences = new();
+    private bool _showDetails = false;
+    private string? _statusMessage;
+
+    private async Task AcceptAll()
+    {
+        _preferences.Functional = true;
+        _preferences.Analytics = true;
+        _preferences.Marketing = true;
+        _preferences.Timestamp = DateTime.UtcNow;
+        _statusMessage = "All cookie categories accepted. Your preferences have been stored.";
+
+        if (OnSaved.HasDelegate)
+        {
+            await OnSaved.InvokeAsync(_preferences);
+        }
+    }
+
+    private async Task RejectNonEssential()
+    {
+        _preferences.Functional = false;
+        _preferences.Analytics = false;
+        _preferences.Marketing = false;
+        _preferences.Timestamp = DateTime.UtcNow;
+        _statusMessage = "Non-essential cookies disabled. Only strictly necessary security cookies are active.";
+
+        if (OnSaved.HasDelegate)
+        {
+            await OnSaved.InvokeAsync(_preferences);
+        }
+    }
+
+    private async Task SaveCustomPreferences()
+    {
+        _preferences.Timestamp = DateTime.UtcNow;
+        _statusMessage = "Custom cookie preferences saved successfully.";
+
+        if (OnSaved.HasDelegate)
+        {
+            await OnSaved.InvokeAsync(_preferences);
+        }
+    }
+}

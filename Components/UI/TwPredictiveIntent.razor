@@ -1,0 +1,225 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="relative w-full rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 shadow-2xl backdrop-blur-xl p-6 transition-all duration-500 @Class" @attributes="AdditionalAttributes">
+    @* State Machine Header *@
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-800 pb-4">
+        <div class="space-y-1">
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider @StateBadgeColor">
+                    State: @_currentState.ToString()
+                </span>
+                <h3 class="text-sm font-extrabold text-slate-900 dark:text-white uppercase tracking-wider">
+                    2027 Anticipatory Intent Engine
+                </h3>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">
+                Transforms dynamically based on user gaze, biometric attunement, and anticipated workflow actions.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs">
+            @if (_currentState != IntentState.Anticipating)
+            {
+                <button type="button"
+                        @onclick="ResetIntentEngine"
+                        class="px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold transition-colors">
+                    Reset Machine
+                </button>
+            }
+            <span class="font-mono text-[11px] text-brand-600 dark:text-brand-400 font-bold">
+                Confidence: @_intentConfidence%
+            </span>
+        </div>
+    </div>
+
+    @* STATE 1: ANTICIPATING (Gaze & Probabilistic Forecast) *@
+    @if (_currentState == IntentState.Anticipating)
+    {
+        <div class="py-4 space-y-4 transition-all duration-300">
+            <div class="flex items-center justify-between text-xs">
+                <span class="text-slate-600 dark:text-slate-300 font-medium">Simulated Gaze Focal Point:</span>
+                <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">@_simulatedGazeTarget</span>
+            </div>
+
+            @* Probability Spectrum Pills *@
+            <div class="space-y-2">
+                <div class="text-[11px] uppercase tracking-wider font-semibold text-slate-400">Anticipated Next Actions</div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                    <button type="button"
+                            @onclick='() => SelectIntent("Deploy Telemetry Ingress", 94)'
+                            class="p-3 rounded-2xl border text-left transition-all duration-200 @(_selectedIntentName == "Deploy Telemetry Ingress" ? "border-brand-500 bg-brand-50/50 dark:bg-brand-950/40 ring-1 ring-brand-500" : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50")">
+                        <div class="flex justify-between items-center text-xs font-bold text-slate-900 dark:text-white">
+                            <span>Ingress Pipeline</span>
+                            <span class="text-brand-600 dark:text-brand-400 font-mono">94%</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Ready for cluster scaling</div>
+                    </button>
+
+                    <button type="button"
+                            @onclick='() => SelectIntent("Verify ML-KEM Vault", 88)'
+                            class="p-3 rounded-2xl border text-left transition-all duration-200 @(_selectedIntentName == "Verify ML-KEM Vault" ? "border-purple-500 bg-purple-50/50 dark:bg-purple-950/40 ring-1 ring-purple-500" : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50")">
+                        <div class="flex justify-between items-center text-xs font-bold text-slate-900 dark:text-white">
+                            <span>Quantum Vault</span>
+                            <span class="text-purple-600 dark:text-purple-400 font-mono">88%</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Post-quantum key exchange</div>
+                    </button>
+
+                    <button type="button"
+                            @onclick='() => SelectIntent("Authorize IAM ClusterRole", 79)'
+                            class="p-3 rounded-2xl border text-left transition-all duration-200 @(_selectedIntentName == "Authorize IAM ClusterRole" ? "border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/40 ring-1 ring-emerald-500" : "border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50")">
+                        <div class="flex justify-between items-center text-xs font-bold text-slate-900 dark:text-white">
+                            <span>IAM ClusterRole</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-mono">79%</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">Sync RBAC manifest</div>
+                    </button>
+                </div>
+            </div>
+
+            @* Advance to Biometric Attunement Trigger *@
+            <div class="pt-2 flex justify-end">
+                <button type="button"
+                        @onclick="AdvanceToBiometrics"
+                        class="px-4 py-2 rounded-2xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-brand-500/20 inline-flex items-center gap-2 transition-all">
+                    <span>Attune to Intent: @_selectedIntentName</span>
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    }
+    @* STATE 2: BIOMETRIC ATTUNEMENT (Tactile Palm / Thumb Resonance) *@
+    else if (_currentState == IntentState.BiometricAttunement)
+    {
+        <div class="py-5 flex flex-col items-center justify-center text-center space-y-4 transition-all duration-300">
+            <div class="space-y-1">
+                <h4 class="text-sm font-extrabold text-slate-900 dark:text-white">
+                    Touch &amp; Hold Biometric Sensor
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm">
+                    Organic pulse frequency attunement confirms operator intent without intrusive password prompts.
+                </p>
+            </div>
+
+            @* Interactive Tactile Biometric Pad *@
+            <div class="relative cursor-pointer group"
+                 @onclick="SimulateBiometricPulse">
+                <div class="w-24 h-24 rounded-full border-2 border-brand-500/40 bg-brand-500/10 flex items-center justify-center transition-all duration-300 group-hover:scale-105 group-hover:border-brand-500 group-hover:bg-brand-500/20 shadow-xl shadow-brand-500/10">
+                    <svg class="w-10 h-10 text-brand-600 dark:text-brand-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 004 11m0 0a8.003 8.003 0 0015.357 2m1.571-.995a9.006 9.006 0 010 1.99" />
+                    </svg>
+                </div>
+                @if (_biometricProgress > 0)
+                {
+                    <div class="absolute -inset-2 rounded-full border border-emerald-500 animate-ping opacity-60 pointer-events-none"></div>
+                }
+            </div>
+
+            @* Pulse Progress Meter *@
+            <div class="w-full max-w-xs space-y-1.5">
+                <div class="flex justify-between text-[11px] font-mono text-slate-500">
+                    <span>Resonance Lock</span>
+                    <span class="font-bold text-brand-600 dark:text-brand-400">@_biometricProgress%</span>
+                </div>
+                <div class="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-brand-500 to-emerald-500 rounded-full transition-all duration-300" style="width: @_biometricProgress%"></div>
+                </div>
+            </div>
+
+            <div class="text-[11px] text-slate-400">
+                Tap the sensor above to simulate heartbeat pulse alignment.
+            </div>
+        </div>
+    }
+    @* STATE 3: SYNTHESIZED ACTION (The UI Transformed) *@
+    else if (_currentState == IntentState.SynthesizedAction)
+    {
+        <div class="py-4 space-y-4 transition-all duration-300">
+            <div class="p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-500/30 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl shrink-0">
+                        ⚡
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-200">
+                            Action Synthesized: @_selectedIntentName
+                        </h4>
+                        <p class="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                            Zero-Click Execution: Intent predicted, biometrically validated, and dispatched to native WASM runtime.
+                        </p>
+                    </div>
+                </div>
+                <span class="px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold bg-emerald-500 text-white shadow-xs">
+                    EXECUTED
+                </span>
+            </div>
+
+            @* Output Cryptographic Voucher *@
+            <div class="p-3.5 rounded-2xl bg-slate-900 text-slate-200 font-mono text-xs space-y-1.5">
+                <div class="text-[10px] text-slate-400 uppercase font-semibold">Decrypted Holographic Payload</div>
+                <div class="text-emerald-400">GRANT_TARGET: @_selectedIntentName</div>
+                <div class="text-slate-300 text-[11px]">DISPATCH_TOKEN: @("INTENT-SYNTH-" + Guid.NewGuid().ToString("N")[..16].ToUpperInvariant())</div>
+                <div class="text-slate-500 text-[10px]">TIMESTAMP: @DateTime.UtcNow.ToString("o") • LATENCY: 0.42ms (NativeAOT)</div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    public enum IntentState
+    {
+        Anticipating,
+        BiometricAttunement,
+        SynthesizedAction
+    }
+
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter(CaptureUnmatchedValues = true)] public IDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private IntentState _currentState = IntentState.Anticipating;
+    private string _simulatedGazeTarget = "TwSankeyChart [Hot Cache → Memory]";
+    private string _selectedIntentName = "Deploy Telemetry Ingress";
+    private int _intentConfidence = 94;
+    private int _biometricProgress = 0;
+
+    private string StateBadgeColor => _currentState switch
+    {
+        IntentState.Anticipating => "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20",
+        IntentState.BiometricAttunement => "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20",
+        IntentState.SynthesizedAction => "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20",
+        _ => "bg-slate-500/10 text-slate-600"
+    };
+
+    private void SelectIntent(string name, int confidence)
+    {
+        _selectedIntentName = name;
+        _intentConfidence = confidence;
+        _simulatedGazeTarget = $"Component Focus: {name}";
+    }
+
+    private void AdvanceToBiometrics()
+    {
+        _currentState = IntentState.BiometricAttunement;
+        _biometricProgress = 25;
+    }
+
+    private void SimulateBiometricPulse()
+    {
+        _biometricProgress += 38;
+        if (_biometricProgress >= 100)
+        {
+            _biometricProgress = 100;
+            _currentState = IntentState.SynthesizedAction;
+        }
+    }
+
+    private void ResetIntentEngine()
+    {
+        _currentState = IntentState.Anticipating;
+        _biometricProgress = 0;
+        _selectedIntentName = "Deploy Telemetry Ingress";
+        _intentConfidence = 94;
+    }
+}

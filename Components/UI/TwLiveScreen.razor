@@ -1,0 +1,69 @@
+@inject IJSRuntime JS
+@* The agent's screen: a captured frame, where its pointer is, and whether you are driving computer/live-screen; own implementation). While you control it, clicks report page-relative coordinates. *@
+<figure class="rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-slate-950 @Class" data-testid="live-screen" data-controlling="@Controlling.ToString().ToLowerInvariant()">
+    <figcaption class="flex items-center justify-between gap-3 px-3 py-2 bg-slate-900 border-b border-slate-700">
+        <span class="text-xs text-slate-100 truncate" data-testid="screen-url">@Url</span>
+        <span class="flex items-center gap-2">
+            <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded @(Controlling ? "bg-emerald-900 text-emerald-100" : "bg-brand-900 text-brand-100")" data-testid="screen-mode" role="status">
+                @(Controlling ? "You are in control" : "Agent is working")
+            </span>
+            <button type="button" @onclick="ToggleAsync" aria-pressed="@Controlling.ToString().ToLowerInvariant()" data-testid="screen-toggle"
+                    class="px-3 min-h-[32px] rounded-lg bg-slate-100 text-slate-950 text-xs font-bold hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400">
+                @(Controlling ? "Release" : "Take control")
+            </button>
+        </span>
+    </figcaption>
+
+    <div @ref="_surface" class="relative aspect-video bg-slate-800 select-none" @onclick="ClickAsync" data-testid="screen-surface">
+        @if (!string.IsNullOrEmpty(ImageUrl))
+        {
+            <img src="@ImageUrl" alt="@AltText" class="absolute inset-0 w-full h-full object-contain" />
+        }
+        else
+        {
+            <p class="absolute inset-0 flex items-center justify-center text-sm text-slate-200">Waiting for the first frame…</p>
+        }
+        @if (CursorX is { } x && CursorY is { } y)
+        {
+            <span class="absolute w-4 h-4 -ms-2 -mt-2 rounded-full border-2 border-white bg-brand-500/70 shadow transition-all duration-300 motion-reduce:transition-none pointer-events-none"
+                  style="left:@(Pct(x)); top:@(Pct(y));" data-testid="screen-cursor" aria-hidden="true"></span>
+        }
+    </div>
+</figure>
+
+@code {
+    [Parameter] public string? ImageUrl { get; set; }
+    [Parameter] public string AltText { get; set; } = "Current view of the agent's screen";
+    [Parameter] public string? Url { get; set; }
+    /// <summary>Agent pointer position as a 0..1 fraction of the frame.</summary>
+    [Parameter] public double? CursorX { get; set; }
+    [Parameter] public double? CursorY { get; set; }
+    [Parameter] public bool Controlling { get; set; }
+    [Parameter] public EventCallback<bool> ControllingChanged { get; set; }
+    /// <summary>Fires only while you control the screen. Coordinates are 0..1 fractions.</summary>
+    [Parameter] public EventCallback<(double X, double Y)> OnScreenClick { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private Task ToggleAsync() => ControllingChanged.InvokeAsync(!Controlling);
+
+    private ElementReference _surface;
+
+    private async Task ClickAsync(MouseEventArgs e)
+    {
+        if (!Controlling) return;
+        double w = FrameWidth, h = FrameHeight;
+        try
+        {
+            var size = await JS.InvokeAsync<double[]>("twAgentKit.elementSize", _surface);
+            if (size is { Length: 2 } && size[0] > 0 && size[1] > 0) (w, h) = (size[0], size[1]);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        await OnScreenClick.InvokeAsync((Math.Clamp(e.OffsetX / w, 0, 1), Math.Clamp(e.OffsetY / h, 0, 1)));
+    }
+
+    // Fallback frame size when the real element size cannot be measured.
+    [Parameter] public double FrameWidth { get; set; } = 960;
+    [Parameter] public double FrameHeight { get; set; } = 540;
+
+    private static string Pct(double v) => (Math.Clamp(v, 0, 1) * 100).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "%";
+}

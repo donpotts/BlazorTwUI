@@ -1,0 +1,65 @@
+<span class="inline-flex items-center gap-1.5 rounded-full font-medium @SizeClasses @VariantClasses @Class" @attributes="AdditionalAttributes">
+    @if (ShowDot)
+    {
+        <span class="@DotSizeClasses rounded-full @DotClasses"></span>
+    }
+    @ChildContent
+</span>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public SemanticVariant Variant { get; set; } = SemanticVariant.Default;
+    [Parameter] public ComponentSize Size { get; set; } = ComponentSize.Sm;
+    [Parameter] public bool ShowDot { get; set; }
+    [Parameter] public bool Outlined { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string SizeClasses => Size switch
+    {
+        ComponentSize.Xs => "px-2 py-0.5 text-[10px]",
+        ComponentSize.Sm => "px-2.5 py-0.5 text-xs",
+        ComponentSize.Md => "px-3 py-1 text-sm",
+        ComponentSize.Lg => "px-3.5 py-1.5 text-base",
+        _ => "px-2.5 py-0.5 text-xs"
+    };
+
+    private string DotSizeClasses => Size switch
+    {
+        ComponentSize.Xs => "h-1 w-1",
+        ComponentSize.Lg => "h-2 w-2",
+        _ => "h-1.5 w-1.5"
+    };
+
+    private string VariantClasses => Outlined ? OutlinedClasses : FilledClasses;
+
+    private string FilledClasses => Variant switch
+    {
+        SemanticVariant.Primary => "bg-brand-50 text-brand-700 dark:bg-brand-500/15 dark:text-brand-100 ring-1 ring-inset ring-brand-500/30",
+        SemanticVariant.Success => "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 ring-1 ring-inset ring-emerald-500/30",
+        SemanticVariant.Warning => "bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300 ring-1 ring-inset ring-amber-500/30",
+        SemanticVariant.Danger => "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300 ring-1 ring-inset ring-rose-500/30",
+        SemanticVariant.Info => "bg-sky-50 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300 ring-1 ring-inset ring-sky-500/30",
+        _ => "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 ring-1 ring-inset ring-slate-500/20"
+    };
+
+    private string OutlinedClasses => Variant switch
+    {
+        SemanticVariant.Primary => "bg-transparent text-brand-600 dark:text-brand-400 border border-brand-500",
+        SemanticVariant.Success => "bg-transparent text-emerald-600 dark:text-emerald-400 border border-emerald-500",
+        SemanticVariant.Warning => "bg-transparent text-amber-600 dark:text-amber-400 border border-amber-500",
+        SemanticVariant.Danger => "bg-transparent text-rose-600 dark:text-rose-400 border border-rose-500",
+        SemanticVariant.Info => "bg-transparent text-sky-600 dark:text-sky-400 border border-sky-500",
+        _ => "bg-transparent text-slate-600 dark:text-slate-300 border border-slate-400"
+    };
+
+    private string DotClasses => Variant switch
+    {
+        SemanticVariant.Primary => "bg-brand-500",
+        SemanticVariant.Success => "bg-emerald-500",
+        SemanticVariant.Warning => "bg-amber-500",
+        SemanticVariant.Danger => "bg-rose-500",
+        SemanticVariant.Info => "bg-sky-500",
+        _ => "bg-slate-400"
+    };
+}

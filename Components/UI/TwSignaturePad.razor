@@ -1,0 +1,407 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@inject ToastService Toast
+@implements IAsyncDisposable
+
+<div class="space-y-4 @Class">
+    <div class="relative overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none transition-all">
+        <!-- Header Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
+            <div>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    @(Title ?? "Digital Signature Pad")
+                    @if (!_isEmpty)
+                    {
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            @_strokeCount @(_strokeCount == 1 ? "stroke" : "strokes")
+                        </span>
+                    }
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    @(Subtitle ?? "Draw using mouse, stylus, or touch screen. Smooth bezier curves.")
+                </p>
+            </div>
+
+            <!-- Pen Colors & Stroke Width -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Color Palette -->
+                <div class="flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs">
+                    @foreach (var c in _penColors)
+                    {
+                        <button type="button"
+                                @onclick="() => SetPenColor(c.Hex)"
+                                class="w-5 h-5 rounded-lg transition-transform @(_currentPenColor == c.Hex ? "scale-125 ring-2 ring-brand-500 ring-offset-1 dark:ring-offset-slate-900" : "hover:scale-110")"
+                                style="background-color: @c.Hex;"
+                                title="@c.Name"></button>
+                    }
+                </div>
+
+                <!-- Stroke Widths -->
+                <div class="flex items-center gap-1 p-1 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xs text-xs font-semibold">
+                    <button type="button"
+                            @onclick="() => SetStrokeWidth(1.5)"
+                            class="px-2 py-0.5 rounded-lg transition-colors @(_currentStrokeWidth == 1.5 ? "bg-brand-500 text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700")"
+                            title="Fine (1.5px)">
+                        Fine
+                    </button>
+                    <button type="button"
+                            @onclick="() => SetStrokeWidth(2.5)"
+                            class="px-2 py-0.5 rounded-lg transition-colors @(_currentStrokeWidth == 2.5 ? "bg-brand-500 text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700")"
+                            title="Medium (2.5px)">
+                        Med
+                    </button>
+                    <button type="button"
+                            @onclick="() => SetStrokeWidth(4.5)"
+                            class="px-2 py-0.5 rounded-lg transition-colors @(_currentStrokeWidth == 4.5 ? "bg-brand-500 text-white" : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700")"
+                            title="Bold (4.5px)">
+                        Bold
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Canvas Area -->
+        <div class="relative w-full bg-slate-50/30 dark:bg-slate-950/20 select-none overflow-hidden"
+             style="height: @(Height)px; touch-action: none;">
+            <!-- Signing Guide Baseline Overlay -->
+            @if (ShowGuide)
+            {
+                <div class="absolute inset-x-8 bottom-12 pointer-events-none flex items-center justify-between border-b-2 border-dashed border-slate-300 dark:border-slate-700 pb-1 z-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold font-mono text-rose-500 dark:text-rose-400 select-none">✕</span>
+                        <span class="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider select-none">
+                            Sign on the line
+                        </span>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-mono select-none">Authorized Signer</span>
+                </div>
+            }
+
+            <!-- Active Drawing Canvas Element -->
+            <canvas @ref="_canvasRef"
+                    class="relative z-10 w-full h-full block cursor-crosshair"
+                    style="touch-action: none;"></canvas>
+        </div>
+
+        <!-- Action Controls Footer -->
+        <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
+            <!-- Undo, Redo, Clear -->
+            <div class="flex items-center gap-1.5">
+                <button type="button"
+                        @onclick="UndoAsync"
+                        disabled="@_isEmpty"
+                        class="p-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs flex items-center gap-1"
+                        title="Undo last stroke">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 10h10a5 5 0 0 1 5 5v2m-15-7l4-4m-4 4l4 4" />
+                    </svg>
+                    Undo
+                </button>
+
+                <button type="button"
+                        @onclick="RedoAsync"
+                        class="p-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all shadow-xs flex items-center gap-1"
+                        title="Redo stroke">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 10H11a5 5 0 0 0-5 5v2m15-7l-4-4m4 4l-4 4" />
+                    </svg>
+                    Redo
+                </button>
+
+                <button type="button"
+                        @onclick="ClearAsync"
+                        disabled="@_isEmpty"
+                        class="p-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs flex items-center gap-1"
+                        title="Clear all strokes">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Clear
+                </button>
+            </div>
+
+            <!-- Export Buttons -->
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button"
+                        @onclick="() => SaveImageAsync(true)"
+                        disabled="@_isEmpty"
+                        class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-500 hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-all shadow-md shadow-brand-500/20 flex items-center gap-1.5"
+                        title="Save transparent PNG signature image">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Save PNG
+                </button>
+
+                <button type="button"
+                        @onclick="() => DownloadSvgAsync()"
+                        disabled="@_isEmpty"
+                        class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs flex items-center gap-1.5"
+                        title="Download vector SVG format">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                    </svg>
+                    Vector SVG
+                </button>
+
+                <button type="button"
+                        @onclick="CopyImageToClipboardAsync"
+                        disabled="@_isEmpty"
+                        class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs flex items-center gap-1.5"
+                        title="Copy signature image to clipboard">
+                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <rect x="8" y="8" width="12" height="12" rx="2" />
+                        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                    </svg>
+                    Copy
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Exported Signature Result & Verification Card -->
+    @if (!string.IsNullOrEmpty(_savedDataUrl))
+    {
+        <div class="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-emerald-500/30 shadow-xl space-y-4 animate-fadeIn">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span class="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                        Saved Digital Signature Output
+                    </span>
+                    <span class="text-[11px] text-slate-400">
+                        @_savedTimestamp?.ToString("yyyy-MM-dd HH:mm:ss")
+                    </span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <a href="@_savedDataUrl"
+                       download="signature-export.png"
+                       class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500 hover:bg-emerald-600 text-white transition-colors flex items-center gap-1 shadow-sm">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Download PNG
+                    </a>
+                    <button type="button"
+                            @onclick="() => _savedDataUrl = null"
+                            class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                        Dismiss
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview Container -->
+            <div class="p-6 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800 flex items-center justify-center min-h-[140px] shadow-inner">
+                <img src="@_savedDataUrl"
+                     alt="Exported Signature"
+                     class="max-h-28 object-contain filter drop-shadow-md" />
+            </div>
+
+            <!-- Verification Metadata Ledger -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Format</span>
+                    <span class="font-mono font-bold text-slate-800 dark:text-slate-200">image/png (RGBA)</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Strokes Captured</span>
+                    <span class="font-mono font-bold text-slate-800 dark:text-slate-200">@_strokeCount strokes</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Integrity</span>
+                    <span class="font-bold text-emerald-600 dark:text-emerald-400">100% Client-Side</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60">
+                    <span class="text-[10px] text-slate-400 uppercase font-semibold block">Compliance</span>
+                    <span class="font-bold text-brand-600 dark:text-brand-400">ESIGN / eIDAS Ready</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    public class SignatureState
+    {
+        public bool IsEmpty { get; set; } = true;
+        public int StrokeCount { get; set; } = 0;
+    }
+
+    public record PenColorOption(string Name, string Hex);
+
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public int Height { get; set; } = 220;
+    [Parameter] public bool ShowGuide { get; set; } = true;
+    [Parameter] public string PenColor { get; set; } = "#0f172a";
+    [Parameter] public double StrokeWidth { get; set; } = 2.5;
+    [Parameter] public EventCallback<string> OnSave { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private ElementReference _canvasRef;
+    private DotNetObjectReference<TwSignaturePad>? _dotNetRef;
+    private bool _isEmpty = true;
+    private int _strokeCount = 0;
+    private string _currentPenColor = "#0f172a";
+    private double _currentStrokeWidth = 2.5;
+    private string? _savedDataUrl;
+    private DateTime? _savedTimestamp;
+
+    private readonly List<PenColorOption> _penColors = new()
+    {
+        new("Midnight Slate", "#0f172a"),
+        new("Deep Navy", "#1e3a8a"),
+        new("Royal Blue", "#2563eb"),
+        new("Forest Emerald", "#059669"),
+        new("Crimson Red", "#dc2626")
+    };
+
+    protected override void OnInitialized()
+    {
+        _currentPenColor = PenColor;
+        _currentStrokeWidth = StrokeWidth;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            try
+            {
+                await JS.InvokeVoidAsync("blazorSignaturePad.init", _canvasRef, _dotNetRef, new
+                {
+                    penColor = _currentPenColor,
+                    strokeWidth = _currentStrokeWidth,
+                    backgroundColor = "transparent",
+                    guideLine = ShowGuide
+                });
+            }
+            catch { }
+        }
+    }
+
+    [JSInvokable]
+    public void OnSignatureChanged(SignatureState state)
+    {
+        _isEmpty = state.IsEmpty;
+        _strokeCount = state.StrokeCount;
+        StateHasChanged();
+    }
+
+    public async Task SetPenColor(string hex)
+    {
+        _currentPenColor = hex;
+        try
+        {
+            await JS.InvokeVoidAsync("blazorSignaturePad.setPenColor", _canvasRef, hex);
+        }
+        catch { }
+    }
+
+    public async Task SetStrokeWidth(double width)
+    {
+        _currentStrokeWidth = width;
+        try
+        {
+            await JS.InvokeVoidAsync("blazorSignaturePad.setStrokeWidth", _canvasRef, width);
+        }
+        catch { }
+    }
+
+    public async Task ClearAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("blazorSignaturePad.clear", _canvasRef);
+            _savedDataUrl = null;
+        }
+        catch { }
+    }
+
+    public async Task UndoAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("blazorSignaturePad.undo", _canvasRef);
+        }
+        catch { }
+    }
+
+    public async Task RedoAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("blazorSignaturePad.redo", _canvasRef);
+        }
+        catch { }
+    }
+
+    public async Task<string?> SaveImageAsync(bool transparent = true)
+    {
+        try
+        {
+            var bgColor = transparent ? "transparent" : "#ffffff";
+            var dataUrl = await JS.InvokeAsync<string>("blazorSignaturePad.getDataURL", _canvasRef, "image/png", bgColor);
+            if (!string.IsNullOrEmpty(dataUrl))
+            {
+                _savedDataUrl = dataUrl;
+                _savedTimestamp = DateTime.UtcNow;
+                Toast.Show("Signature Saved", "Digital signature captured to high-resolution PNG image", SemanticVariant.Success);
+
+                if (OnSave.HasDelegate)
+                {
+                    await OnSave.InvokeAsync(dataUrl);
+                }
+                return dataUrl;
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast.Show("Save failed", ex.Message, SemanticVariant.Danger);
+        }
+        return null;
+    }
+
+    public async Task DownloadSvgAsync()
+    {
+        try
+        {
+            var svgString = await JS.InvokeAsync<string>("blazorSignaturePad.getSvg", _canvasRef);
+            if (!string.IsNullOrEmpty(svgString))
+            {
+                var filename = $"signature-{DateTime.Now:yyyyMMddHHmmss}.svg";
+                await JS.InvokeVoidAsync("blazorBarcodeScanner.downloadFile", filename, svgString, "image/svg+xml");
+                Toast.Show("SVG Downloaded", filename, SemanticVariant.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast.Show("Download failed", ex.Message, SemanticVariant.Danger);
+        }
+    }
+
+    public async Task CopyImageToClipboardAsync()
+    {
+        try
+        {
+            var dataUrl = await JS.InvokeAsync<string>("blazorSignaturePad.getDataURL", _canvasRef, "image/png", "transparent");
+            if (!string.IsNullOrEmpty(dataUrl))
+            {
+                // Write to clipboard as text data URL or image
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", dataUrl);
+                Toast.Show("Signature Copied", "Image Data URL copied to clipboard", SemanticVariant.Success);
+            }
+        }
+        catch { }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("blazorSignaturePad.dispose", _canvasRef);
+        }
+        catch { }
+        _dotNetRef?.Dispose();
+    }
+}

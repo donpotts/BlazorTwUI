@@ -1,0 +1,101 @@
+@using BlazorTwUI.Services
+@* The data grid with every optional feature switched on, over order data. *@
+<div class="space-y-4" data-testid="grid-demo">
+    <header>
+        <h2 class="text-xl font-black text-slate-900 dark:text-white">Data Grid</h2>
+        <p class="text-sm text-slate-700 dark:text-slate-300 mt-1 max-w-3xl">
+            Click a header to sort (Shift adds a second sort), group by a column, hide columns, edit a row inline, expand a row for detail, export CSV,
+            and reload the page: your layout is remembered.
+        </p>
+    </header>
+
+    <TwDataGrid TItem="Order" Items="_orders" Label="Orders" Selectable="true" AllowGrouping="true" AllowColumnChooser="true" AllowExport="true"
+                StateKey="orders-demo" ExportFileName="orders.csv" PageSize="8" PageSizeOptions="@(new[] { 8, 16, 50 })" MaxHeight="30rem" StickyHeader="true"
+                RowClassSelector="RowClass" RowSaved="OnSaved" SearchPlaceholder="Search orders...">
+        <Columns>
+            <TwDataGridColumn TItem="Order" Title="Order" Frozen="true" Width="110px" Property="o => o.Id" Hideable="false" />
+            <TwDataGridColumn TItem="Order" Title="Customer" MinWidth="180px" Property="o => o.Customer" Editable="true" EditValue="SetCustomer" Validate="RequireText" />
+            <TwDataGridColumn TItem="Order" Title="Region" Property="o => o.Region" />
+            <TwDataGridColumn TItem="Order" Title="Category" Property="o => o.Category" />
+            <TwDataGridColumn TItem="Order" Title="Amount" Align="right" MinWidth="150px" Property="o => o.Amount" Summary="GridSummary.Sum" SummaryFormat="C0" Editable="true" InputType="number"
+                              EditValue="SetAmount" Validate="PositiveNumber">
+                <CellTemplate>@context.Amount.ToString("C0")</CellTemplate>
+            </TwDataGridColumn>
+            <TwDataGridColumn TItem="Order" Title="Qty" Align="right" Property="o => o.Qty" Summary="GridSummary.Sum" />
+            <TwDataGridColumn TItem="Order" Title="Status" Property="o => o.Status" CellClassSelector="StatusClass" />
+        </Columns>
+        <DetailTemplate Context="o">
+            <p class="text-sm text-slate-900 dark:text-slate-100" data-testid="detail-text">
+                Order <strong>@o.Id</strong> for @o.Customer was placed on @o.Placed.ToString("d MMM yyyy") through @o.Region. Items: @o.Qty × @o.Category.ToLowerInvariant().
+            </p>
+        </DetailTemplate>
+    </TwDataGrid>
+
+    <p class="text-xs text-slate-700 dark:text-slate-300" role="status">Last saved: <span data-testid="grid-saved">@_saved</span></p>
+</div>
+
+@code {
+    public sealed class Order
+    {
+        public string Id { get; init; } = "";
+        public string Customer { get; set; } = "";
+        public string Region { get; init; } = "";
+        public string Category { get; init; } = "";
+        public decimal Amount { get; set; }
+        public int Qty { get; init; }
+        public string Status { get; init; } = "";
+        public DateTime Placed { get; init; }
+    }
+
+    private string _saved = "nothing yet";
+
+    private readonly List<Order> _orders = Build();
+
+    private static List<Order> Build()
+    {
+        var customers = new[] { "Acme Corp", "Globex", "Initech", "Umbrella", "Hooli", "Stark Industries", "Wayne Enterprises", "Wonka" };
+        var regions = new[] { "North", "South", "East", "West" };
+        var categories = new[] { "Hardware", "Software", "Services", "Support" };
+        var statuses = new[] { "Paid", "Pending", "Late", "Paid", "Shipped" };
+        var rng = new Random(7);
+        var list = new List<Order>();
+        for (var i = 1; i <= 24; i++)
+        {
+            list.Add(new Order
+            {
+                Id = "SO-" + (1000 + i),
+                Customer = customers[rng.Next(customers.Length)],
+                Region = regions[rng.Next(regions.Length)],
+                Category = categories[rng.Next(categories.Length)],
+                Amount = rng.Next(4, 90) * 100m,
+                Qty = rng.Next(1, 12),
+                Status = statuses[rng.Next(statuses.Length)],
+                Placed = new DateTime(2026, 1, 1).AddDays(rng.Next(0, 280))
+            });
+        }
+        // A customer name that would run as a formula if opened in a spreadsheet; the CSV export neutralises it.
+        list.Add(new Order { Id = "SO-1025", Customer = "=HYPERLINK(\"http://example.invalid\",\"Click\")", Region = "North", Category = "Services", Amount = 1200m, Qty = 1, Status = "Pending", Placed = new DateTime(2026, 10, 1) });
+        return list;
+    }
+
+    private static string? StatusClass(Order o) => o.Status switch
+    {
+        "Paid" => "text-emerald-800 dark:text-emerald-300 font-semibold",
+        "Late" => "text-red-800 dark:text-red-300 font-bold",
+        "Pending" => "text-amber-800 dark:text-amber-300 font-semibold",
+        _ => null
+    };
+
+    private static string? RowClass(Order o) => o.Status == "Late" ? "bg-red-50 dark:bg-red-950/20" : null;
+
+    private static string? RequireText(string v) => string.IsNullOrWhiteSpace(v) ? "Customer is required" : null;
+
+    private static string? PositiveNumber(string v) =>
+        decimal.TryParse(v, System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out var d) && d > 0 ? null : "Enter an amount greater than 0";
+
+    private static void SetCustomer(Order o, string v) => o.Customer = v.Trim();
+
+    private static void SetAmount(Order o, string v) => o.Amount = decimal.Parse(v, System.Globalization.CultureInfo.InvariantCulture);
+
+    private void OnSaved(Order o) => _saved = o.Id + " (" + o.Customer + ", " + o.Amount.ToString("C0") + ")";
+}

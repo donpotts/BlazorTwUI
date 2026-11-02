@@ -1,0 +1,584 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using System.Text.Json
+
+<div class="@GetRootClass()">
+    @if (Schema != null)
+    {
+        @if (ShowHeader)
+        {
+            <div class="flex items-start justify-between gap-4 mb-6 pb-5 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900/50 flex items-center justify-center text-2xl shadow-inner shrink-0">
+                        @Schema.Icon
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white">@Schema.Title</h3>
+                            <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                @Schema.Category
+                            </span>
+                        </div>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">@Schema.Description</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" @onclick="Reset"
+                            class="px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                        Reset
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (_isSubmitted && !string.IsNullOrEmpty(_submissionMessage))
+        {
+            <div class="mb-6 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-start gap-3">
+                <span class="text-xl">✅</span>
+                <div class="flex-1">
+                    <div class="text-sm font-semibold text-emerald-900 dark:text-emerald-300">Success!</div>
+                    <div class="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">@_submissionMessage</div>
+                    <div class="text-[11px] text-emerald-600/80 dark:text-emerald-500/80 mt-1 font-mono">
+                        Submitted at @_lastSubmittedAt?.ToString("yyyy-MM-dd HH:mm:ss UTC")
+                    </div>
+                </div>
+                <button type="button" @onclick="() => _isSubmitted = false" class="text-emerald-500 hover:text-emerald-700 text-xs">Dismiss</button>
+            </div>
+        }
+
+        <form @onsubmit="HandleFormSubmit" @onsubmit:preventDefault class="space-y-6">
+            <div class="grid grid-cols-1 @(Schema.Columns >= 2 ? "md:grid-cols-2" : "") gap-5">
+                @foreach (var field in Schema.Fields)
+                {
+                    var isFullSpan = field.ColumnSpan == "col-span-2" || field.ColumnSpan == "col-span-full" || field.Type == FormFieldType.Textarea;
+                    <div class="@(isFullSpan && Schema.Columns >= 2 ? "md:col-span-2" : "col-span-1") space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                                @field.Label
+                                @if (field.Required)
+                                {
+                                    <span class="text-rose-500 ml-0.5">*</span>
+                                }
+                            </label>
+                            @if (!string.IsNullOrEmpty(field.HelperText))
+                            {
+                                <span class="text-[11px] text-slate-400 dark:text-slate-500">@field.HelperText</span>
+                            }
+                        </div>
+
+                        @* Field Renderers *@
+                        @switch (field.Type)
+                        {
+                            case FormFieldType.Text:
+                            case FormFieldType.Email:
+                            case FormFieldType.Password:
+                                var inputType = field.Type == FormFieldType.Email ? "email" : (field.Type == FormFieldType.Password ? "password" : "text");
+                                <div class="relative rounded-lg shadow-sm">
+                                    @if (!string.IsNullOrEmpty(field.Prefix))
+                                    {
+                                        <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                            <span class="text-slate-400 sm:text-sm">@field.Prefix</span>
+                                        </div>
+                                    }
+                                    <input type="@inputType"
+                                           value="@GetFieldValue(field.Name)"
+                                           @onchange="(e) => OnFieldChanged(field.Name, e.Value)"
+                                           placeholder="@field.Placeholder"
+                                           disabled="@ReadOnly"
+                                           class="@GetInputCssClass(field.Name, !string.IsNullOrEmpty(field.Prefix), !string.IsNullOrEmpty(field.Suffix))" />
+                                    @if (!string.IsNullOrEmpty(field.Suffix))
+                                    {
+                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                                            <span class="text-slate-400 sm:text-sm">@field.Suffix</span>
+                                        </div>
+                                    }
+                                </div>
+                                break;
+
+                            case FormFieldType.Number:
+                            case FormFieldType.Currency:
+                                <div class="relative rounded-lg shadow-sm">
+                                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                                        <span class="text-slate-400 sm:text-sm">@(field.Type == FormFieldType.Currency ? "$" : (field.Prefix ?? "#"))</span>
+                                    </div>
+                                    <input type="number"
+                                           value="@GetFieldValue(field.Name)"
+                                           @onchange="(e) => OnFieldChanged(field.Name, e.Value)"
+                                           min="@field.Min"
+                                           max="@field.Max"
+                                           step="@(field.Step ?? (field.Type == FormFieldType.Currency ? 0.01 : 1))"
+                                           placeholder="@field.Placeholder"
+                                           disabled="@ReadOnly"
+                                           class="@GetInputCssClass(field.Name, true, false)" />
+                                </div>
+                                break;
+
+                            case FormFieldType.Textarea:
+                                <textarea rows="3"
+                                          value="@GetFieldValue(field.Name)"
+                                          @onchange="(e) => OnFieldChanged(field.Name, e.Value)"
+                                          placeholder="@field.Placeholder"
+                                          disabled="@ReadOnly"
+                                          class="@GetInputCssClass(field.Name, false, false)"></textarea>
+                                break;
+
+                            case FormFieldType.Select:
+                                <select value="@GetFieldValue(field.Name)"
+                                        @onchange="(e) => OnFieldChanged(field.Name, e.Value)"
+                                        disabled="@ReadOnly"
+                                        class="@GetInputCssClass(field.Name, false, false)">
+                                    <option value="">-- Choose an option --</option>
+                                    @if (field.Options != null)
+                                    {
+                                        @foreach (var opt in field.Options)
+                                        {
+                                            <option value="@opt">@opt</option>
+                                        }
+                                    }
+                                </select>
+                                break;
+
+                            case FormFieldType.Radio:
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                                    @if (field.Options != null)
+                                    {
+                                        @foreach (var opt in field.Options)
+                                        {
+                                            var isSelected = Equals(GetFieldValue(field.Name)?.ToString(), opt);
+                                            <label class="flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all @(isSelected ? "border-blue-500 bg-blue-50/50 dark:bg-blue-950/30 text-blue-950 dark:text-blue-200" : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50")">
+                                                <input type="radio"
+                                                       name="@($"radio_{field.Name}")"
+                                                       checked="@isSelected"
+                                                       @onchange="() => OnFieldChanged(field.Name, opt)"
+                                                       class="w-4 h-4 text-blue-600 focus:ring-blue-500" />
+                                                <span class="text-sm">@opt</span>
+                                            </label>
+                                        }
+                                    }
+                                </div>
+                                break;
+
+                            case FormFieldType.Checkbox:
+                                var isChecked = ConvertToBool(GetFieldValue(field.Name));
+                                <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100/50 dark:hover:bg-slate-800/50 cursor-pointer">
+                                    <input type="checkbox"
+                                           checked="@isChecked"
+                                           @onchange="(e) => OnFieldChanged(field.Name, e.Value)"
+                                           class="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-slate-300 dark:border-slate-700" />
+                                    <span class="text-sm font-medium text-slate-800 dark:text-slate-200">
+                                        @(field.Placeholder ?? field.Label)
+                                    </span>
+                                </label>
+                                break;
+
+                            case FormFieldType.Toggle:
+                                var isToggled = ConvertToBool(GetFieldValue(field.Name));
+                                <div class="flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                                    <span class="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                        @(field.Placeholder ?? "Enabled")
+                                    </span>
+                                    <button type="button"
+                                            @onclick="() => OnFieldChanged(field.Name, !isToggled)"
+                                            class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 @(isToggled ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-700")"
+                                            role="switch"
+                                            aria-checked="@isToggled">
+                                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out @(isToggled ? "translate-x-5" : "translate-x-0")"></span>
+                                    </button>
+                                </div>
+                                break;
+
+                            case FormFieldType.Slider:
+                                var sliderVal = ConvertToDouble(GetFieldValue(field.Name), field.Min ?? 0);
+                                <div class="space-y-2 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                                        <span>Min: @field.Min</span>
+                                        <span class="font-bold text-blue-600 dark:text-blue-400 text-sm">@sliderVal</span>
+                                        <span>Max: @field.Max</span>
+                                    </div>
+                                    <input type="range"
+                                           min="@(field.Min ?? 0)"
+                                           max="@(field.Max ?? 100)"
+                                           step="@(field.Step ?? 1)"
+                                           value="@sliderVal"
+                                           @onchange="(e) => OnFieldChanged(field.Name, e.Value)"
+                                           class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+                                </div>
+                                break;
+
+                            case FormFieldType.Rating:
+                                var rating = ConvertToInt(GetFieldValue(field.Name), 0);
+                                <div class="flex items-center gap-1.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                                    @for (int r = 1; r <= 5; r++)
+                                    {
+                                        var starIndex = r;
+                                        <button type="button"
+                                                @onclick="() => OnFieldChanged(field.Name, starIndex)"
+                                                class="text-2xl transition-transform hover:scale-125 focus:outline-none p-1">
+                                            @(starIndex <= rating ? "⭐" : "☆")
+                                        </button>
+                                    }
+                                    <span class="text-xs font-semibold text-slate-500 ml-3">(@rating / 5)</span>
+                                </div>
+                                break;
+
+                            case FormFieldType.Date:
+                                <input type="date"
+                                       value="@GetFieldValue(field.Name)"
+                                       @onchange="(e) => OnFieldChanged(field.Name, e.Value)"
+                                       disabled="@ReadOnly"
+                                       class="@GetInputCssClass(field.Name, false, false)" />
+                                break;
+
+                            case FormFieldType.Time:
+                                <input type="time"
+                                       value="@GetFieldValue(field.Name)"
+                                       @onchange="(e) => OnFieldChanged(field.Name, e.Value)"
+                                       disabled="@ReadOnly"
+                                       class="@GetInputCssClass(field.Name, false, false)" />
+                                break;
+
+                            case FormFieldType.MultiSelect:
+                            case FormFieldType.Tags:
+                                var selectedItems = GetListValue(field.Name);
+                                <div class="space-y-2 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                                    <div class="flex flex-wrap gap-2 min-h-[36px] items-center">
+                                        @if (selectedItems.Count == 0)
+                                        {
+                                            <span class="text-xs text-slate-400 italic">No items selected</span>
+                                        }
+                                        @foreach (var item in selectedItems)
+                                        {
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                                                @item
+                                                <button type="button" @onclick="() => RemoveTag(field.Name, item)" class="hover:text-blue-900 dark:hover:text-white">&times;</button>
+                                            </span>
+                                        }
+                                    </div>
+                                    @if (field.Options != null && field.Options.Count > 0)
+                                    {
+                                        <div class="pt-2 border-t border-slate-200 dark:border-slate-700/60 flex flex-wrap gap-1.5">
+                                            @foreach (var opt in field.Options)
+                                            {
+                                                var isChosen = selectedItems.Contains(opt);
+                                                <button type="button"
+                                                        @onclick="() => ToggleTag(field.Name, opt)"
+                                                        class="text-[11px] px-2 py-0.5 rounded border transition-colors @(isChosen ? "bg-blue-600 text-white border-blue-600" : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-blue-400")">
+                                                    @(isChosen ? "✓ " : "+ ")@opt
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                                break;
+                        }
+
+                        @if (_errors.TryGetValue(field.Name, out var error) && !string.IsNullOrEmpty(error))
+                        {
+                            <p class="text-xs text-rose-500 font-medium flex items-center gap-1">
+                                <span>⚠️</span> @error
+                            </p>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                    <button type="button" @onclick="Reset"
+                            class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        Reset Form
+                    </button>
+                    <button type="button" @onclick="CopyJsonData"
+                            class="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors inline-flex items-center gap-1.5">
+                        <span>📋</span> Export JSON
+                    </button>
+                </div>
+
+                <button type="submit"
+                        disabled="@_isSubmitting"
+                        class="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-2 disabled:opacity-50">
+                    @if (_isSubmitting)
+                    {
+                        <span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                        <span>Validating...</span>
+                    }
+                    else
+                    {
+                        <span>@(Schema.SubmitButtonText ?? "Submit Form")</span>
+                        <span>&rarr;</span>
+                    }
+                </button>
+            </div>
+        </form>
+    }
+    else
+    {
+        <div class="p-8 text-center text-slate-400">
+            <span class="text-3xl mb-2 block">📋</span>
+            <p class="text-sm">No form schema provided.</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public FormSchema? Schema { get; set; }
+    [Parameter] public EventCallback<FormSubmissionResult> OnSubmit { get; set; }
+    [Parameter] public EventCallback<Dictionary<string, object?>> OnChange { get; set; }
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public bool ShowCardWrapper { get; set; } = true;
+    [Parameter] public bool ReadOnly { get; set; } = false;
+    [Parameter] public string Class { get; set; } = "";
+
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private Dictionary<string, object?> _values = new();
+    private Dictionary<string, string> _errors = new();
+    private bool _isSubmitting = false;
+    private bool _isSubmitted = false;
+    private string? _submissionMessage = null;
+    private DateTime? _lastSubmittedAt = null;
+
+    protected override void OnParametersSet()
+    {
+        InitializeDefaults();
+    }
+
+    private void InitializeDefaults()
+    {
+        if (Schema == null) return;
+        foreach (var f in Schema.Fields)
+        {
+            if (!_values.ContainsKey(f.Name) || _values[f.Name] == null)
+            {
+                if (f.Type == FormFieldType.MultiSelect || f.Type == FormFieldType.Tags)
+                {
+                    if (f.DefaultValue is IEnumerable<string> strList)
+                    {
+                        _values[f.Name] = new List<string>(strList);
+                    }
+                    else
+                    {
+                        _values[f.Name] = new List<string>();
+                    }
+                }
+                else
+                {
+                    _values[f.Name] = f.DefaultValue;
+                }
+            }
+        }
+    }
+
+    private object? GetFieldValue(string name)
+    {
+        return _values.TryGetValue(name, out var val) ? val : null;
+    }
+
+    private List<string> GetListValue(string name)
+    {
+        if (_values.TryGetValue(name, out var val) && val is List<string> list)
+        {
+            return list;
+        }
+        var empty = new List<string>();
+        _values[name] = empty;
+        return empty;
+    }
+
+    private void ToggleTag(string name, string item)
+    {
+        var list = GetListValue(name);
+        if (list.Contains(item))
+        {
+            list.Remove(item);
+        }
+        else
+        {
+            list.Add(item);
+        }
+        _values[name] = list;
+        _errors.Remove(name);
+        OnChange.InvokeAsync(_values);
+    }
+
+    private void RemoveTag(string name, string item)
+    {
+        var list = GetListValue(name);
+        list.Remove(item);
+        _values[name] = list;
+        _errors.Remove(name);
+        OnChange.InvokeAsync(_values);
+    }
+
+    private void OnFieldChanged(string name, object? val)
+    {
+        _values[name] = val;
+        _errors.Remove(name);
+        OnChange.InvokeAsync(_values);
+    }
+
+    public bool Validate()
+    {
+        _errors.Clear();
+        if (Schema == null) return true;
+
+        foreach (var field in Schema.Fields)
+        {
+            var val = GetFieldValue(field.Name);
+            var strVal = val?.ToString()?.Trim();
+
+            if (field.Required)
+            {
+                if (val == null || string.IsNullOrWhiteSpace(strVal))
+                {
+                    _errors[field.Name] = $"{field.Label} is required.";
+                    continue;
+                }
+                if (field.Type == FormFieldType.Checkbox && !ConvertToBool(val))
+                {
+                    _errors[field.Name] = $"{field.Label} must be accepted.";
+                    continue;
+                }
+                if ((field.Type == FormFieldType.MultiSelect || field.Type == FormFieldType.Tags) && GetListValue(field.Name).Count == 0)
+                {
+                    _errors[field.Name] = $"Please select at least one option for {field.Label}.";
+                    continue;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(strVal))
+            {
+                if (field.MinLength.HasValue && strVal.Length < field.MinLength.Value)
+                {
+                    _errors[field.Name] = $"{field.Label} must be at least {field.MinLength.Value} characters.";
+                }
+                if (field.MaxLength.HasValue && strVal.Length > field.MaxLength.Value)
+                {
+                    _errors[field.Name] = $"{field.Label} cannot exceed {field.MaxLength.Value} characters.";
+                }
+                if (field.Type == FormFieldType.Email && !strVal.Contains('@'))
+                {
+                    _errors[field.Name] = "Please enter a valid email address.";
+                }
+            }
+        }
+
+        return _errors.Count == 0;
+    }
+
+    public async Task HandleFormSubmit()
+    {
+        _isSubmitting = true;
+        await Task.Delay(200); // UI feedback
+
+        var isValid = Validate();
+        if (isValid)
+        {
+            _isSubmitted = true;
+            _lastSubmittedAt = DateTime.UtcNow;
+            _submissionMessage = $"Successfully validated and processed {Schema?.Title ?? "Form"} ({_values.Count} fields).";
+
+            var result = new FormSubmissionResult
+            {
+                FormId = Schema?.Id ?? "unknown",
+                Values = new Dictionary<string, object?>(_values),
+                SubmittedAt = _lastSubmittedAt.Value,
+                IsValid = true
+            };
+            await OnSubmit.InvokeAsync(result);
+        }
+        _isSubmitting = false;
+    }
+
+    public Dictionary<string, object?> GetValues() => new(_values);
+
+    public void SetValue(string fieldName, object? value)
+    {
+        _values[fieldName] = value;
+        _errors.Remove(fieldName);
+        StateHasChanged();
+    }
+
+    public void SetValues(Dictionary<string, object?> values)
+    {
+        foreach (var kvp in values)
+        {
+            _values[kvp.Key] = kvp.Value;
+        }
+        _errors.Clear();
+        StateHasChanged();
+    }
+
+    public void Reset()
+    {
+        _values.Clear();
+        _errors.Clear();
+        _isSubmitted = false;
+        _submissionMessage = null;
+        InitializeDefaults();
+    }
+
+    public async Task SubmitAsync()
+    {
+        await HandleFormSubmit();
+    }
+
+    private async Task CopyJsonData()
+    {
+        try
+        {
+            var json = JsonSerializer.Serialize(_values, new JsonSerializerOptions { WriteIndented = true });
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            _submissionMessage = "Form data copied to clipboard as JSON!";
+            _isSubmitted = true;
+            _lastSubmittedAt = DateTime.UtcNow;
+        }
+        catch
+        {
+            // fallback
+        }
+    }
+
+    private string GetInputCssClass(string fieldName, bool hasPrefix, bool hasSuffix)
+    {
+        var hasError = _errors.ContainsKey(fieldName);
+        var baseClass = "w-full rounded-xl border bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-slate-100 text-sm shadow-sm transition-all focus:outline-none focus:ring-2 ";
+        var paddingClass = (hasPrefix ? "pl-9 " : "pl-3.5 ") + (hasSuffix ? "pr-9 " : "pr-3.5 ") + "py-2.5 ";
+        var stateClass = hasError
+            ? "border-rose-400 dark:border-rose-600 focus:border-rose-500 focus:ring-rose-500/20 "
+            : "border-slate-200 dark:border-slate-700/80 focus:border-blue-500 focus:ring-blue-500/20 hover:border-slate-300 dark:hover:border-slate-600 ";
+
+        return baseClass + paddingClass + stateClass;
+    }
+
+    private string GetRootClass()
+    {
+        var wrapper = ShowCardWrapper ? "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm" : "";
+        return $"{wrapper} {Class}".Trim();
+    }
+
+    private static bool ConvertToBool(object? val)
+    {
+        if (val == null) return false;
+        if (val is bool b) return b;
+        return bool.TryParse(val.ToString(), out var parsed) && parsed;
+    }
+
+    private static double ConvertToDouble(object? val, double fallback)
+    {
+        if (val == null) return fallback;
+        if (val is double d) return d;
+        if (val is int i) return i;
+        if (val is float f) return f;
+        return double.TryParse(val.ToString(), out var parsed) ? parsed : fallback;
+    }
+
+    private static int ConvertToInt(object? val, int fallback)
+    {
+        if (val == null) return fallback;
+        if (val is int i) return i;
+        if (val is double d) return (int)d;
+        return int.TryParse(val.ToString(), out var parsed) ? parsed : fallback;
+    }
+}

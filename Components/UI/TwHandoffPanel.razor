@@ -1,0 +1,65 @@
+@* The agent is stuck and asks a human to take the wheel help-request-card and handoff-panel; own implementation). Host decides what "take over" does. *@
+<section role="alert" aria-label="Agent needs help" class="rounded-2xl border-2 border-brand-500 bg-brand-50 dark:bg-brand-500/10 p-4 @Class" data-testid="handoff-panel" data-state="@State">
+    @if (Resolved)
+    {
+        <p class="text-sm font-semibold text-emerald-900 dark:text-emerald-200" data-testid="handoff-resolved">You handed the task back. The agent is continuing.</p>
+    }
+    else
+    {
+        <div class="flex items-start gap-3">
+            <TwAgentOrb Name="@AgentName" Status="BlazorTwUI.Models.AgentRunStatus.AwaitingApproval" Size="sm" />
+            <div class="flex-1 min-w-0">
+                <h3 class="text-sm font-black text-slate-900 dark:text-white">@AgentName needs you</h3>
+                <p class="text-sm text-slate-800 dark:text-slate-200 mt-0.5" data-testid="handoff-reason">@Reason</p>
+                @if (!string.IsNullOrEmpty(Where))
+                {
+                    <p class="text-xs text-slate-700 dark:text-slate-300 mt-1">Stuck at <code class="font-mono">@Where</code></p>
+                }
+            </div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2">
+            @if (!_driving)
+            {
+                <button type="button" @onclick="TakeAsync" data-testid="handoff-take"
+                        class="min-h-[40px] px-4 rounded-xl bg-brand-700 text-white text-sm font-bold hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-500">Take the wheel</button>
+                <button type="button" @onclick="DeclineAsync" data-testid="handoff-decline"
+                        class="min-h-[40px] px-4 rounded-xl border border-slate-400 dark:border-slate-500 text-sm font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Stop the task</button>
+            }
+            else
+            {
+                <p class="flex-1 text-sm text-slate-900 dark:text-slate-100" data-testid="handoff-driving">You are in control. Finish what the agent could not, then hand it back.</p>
+                <button type="button" @onclick="HandBackAsync" data-testid="handoff-return"
+                        class="min-h-[40px] px-4 rounded-xl bg-emerald-700 text-white text-sm font-bold hover:bg-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500">Hand back to @AgentName</button>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    private bool _driving;
+
+    [Parameter] public string AgentName { get; set; } = "The agent";
+    [Parameter, EditorRequired] public string Reason { get; set; } = "";
+    [Parameter] public string? Where { get; set; }
+    [Parameter] public bool Resolved { get; set; }
+    [Parameter] public EventCallback OnTakeOver { get; set; }
+    [Parameter] public EventCallback OnHandBack { get; set; }
+    [Parameter] public EventCallback OnDecline { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string State => Resolved ? "resolved" : _driving ? "driving" : "waiting";
+
+    private async Task TakeAsync()
+    {
+        _driving = true;
+        await OnTakeOver.InvokeAsync();
+    }
+
+    private async Task HandBackAsync()
+    {
+        _driving = false;
+        await OnHandBack.InvokeAsync();
+    }
+
+    private Task DeclineAsync() => OnDecline.InvokeAsync();
+}

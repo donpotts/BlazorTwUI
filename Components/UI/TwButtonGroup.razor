@@ -1,0 +1,13 @@
+@* Joins buttons into one visual group (borders collapse, only the ends are rounded). Put TwButton or plain <button> elements inside. *@
+<div role="group" aria-label="@Label" data-testid="button-group"
+     class="@(Vertical ? "inline-flex flex-col" : "inline-flex") isolate rounded-xl shadow-sm [&>*]:rounded-none [&>*:focus-visible]:z-10 @(Vertical ? "[&>*:first-child]:rounded-t-xl [&>*:last-child]:rounded-b-xl [&>*:not(:first-child)]:-mt-px" : "[&>*:first-child]:rounded-s-xl [&>*:last-child]:rounded-e-xl [&>*:not(:first-child)]:-ms-px") @Class">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    /// <summary>Accessible name for the group.</summary>
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool Vertical { get; set; }
+    [Parameter] public string? Class { get; set; }
+}

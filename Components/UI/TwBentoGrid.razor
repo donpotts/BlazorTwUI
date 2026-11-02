@@ -1,0 +1,17 @@
+<div class="grid grid-cols-1 md:grid-cols-2 @ColsClass @GapClass @Class">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public int Cols { get; set; } = 3;
+    [Parameter] public string GapClass { get; set; } = "gap-4 sm:gap-6";
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private string ColsClass => Cols switch
+    {
+        2 => "lg:grid-cols-2",
+        4 => "lg:grid-cols-4",
+        _ => "lg:grid-cols-3"
+    };
+}

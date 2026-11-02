@@ -1,0 +1,150 @@
+@namespace BlazorTwUI.Components.UI
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="w-full space-y-3 @Class">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <div class="flex items-center justify-between">
+            <label class="block text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300">
+                @Label
+                @if (Required)
+                {
+                    <span class="text-rose-500 ml-0.5">*</span>
+                }
+            </label>
+            @if (!string.IsNullOrEmpty(HelperText))
+            {
+                <span class="text-xs text-slate-400">@HelperText</span>
+            }
+        </div>
+    }
+
+    <!-- Dropzone Box -->
+    <div class="relative border-2 border-dashed rounded-2xl p-6 sm:p-8 text-center transition-all duration-200 
+                @(_isDragging ? "border-brand-500 bg-brand-50/50 dark:bg-brand-950/20 scale-[1.01]" : "border-slate-300 dark:border-slate-700 hover:border-brand-400 dark:hover:border-brand-500 bg-slate-50/50 dark:bg-slate-900/50")">
+        
+        <InputFile OnChange="HandleFileSelected" 
+                   multiple="@Multiple" 
+                   accept="@Accept"
+                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                   @ondragenter="() => _isDragging = true"
+                   @ondragleave="() => _isDragging = false" />
+
+        <div class="flex flex-col items-center justify-center pointer-events-none space-y-2">
+            <div class="w-12 h-12 rounded-2xl bg-brand-100 dark:bg-brand-500/20 text-brand-600 dark:text-brand-400 flex items-center justify-center shadow-sm">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+            </div>
+            
+            <div class="text-sm">
+                <span class="font-bold text-brand-600 dark:text-brand-400">Click to upload</span>
+                <span class="text-slate-500 dark:text-slate-400"> or drag and drop</span>
+            </div>
+            
+            <p class="text-xs text-slate-400">
+                @FormatSummary
+            </p>
+        </div>
+    </div>
+
+    <!-- Error message if file size or format invalid -->
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-xs flex items-center justify-between">
+            <span>@_errorMessage</span>
+            <button type="button" @onclick="() => _errorMessage = null" class="text-rose-500 hover:text-rose-700">✕</button>
+        </div>
+    }
+
+    <!-- Uploaded Files Preview List -->
+    @if (_selectedFiles.Count > 0)
+    {
+        <div class="space-y-2 pt-1">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Selected Files (@_selectedFiles.Count)</div>
+            @foreach (var file in _selectedFiles)
+            {
+                <div class="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 shadow-sm transition hover:shadow">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 shrink-0">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <div class="truncate">
+                            <p class="text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">@file.Name</p>
+                            <p class="text-[11px] text-slate-400">@FormatBytes(file.Size)</p>
+                        </div>
+                    </div>
+                    <button type="button" 
+                            @onclick="() => RemoveFile(file)"
+                            class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors focus:outline-none"
+                            title="Remove file">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; } = "Upload Documents or Media";
+    [Parameter] public string? HelperText { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Multiple { get; set; } = true;
+    [Parameter] public string Accept { get; set; } = ".png,.jpg,.jpeg,.svg,.pdf,.zip";
+    [Parameter] public long MaxFileSize { get; set; } = 10 * 1024 * 1024; // 10 MB
+    [Parameter] public EventCallback<IReadOnlyList<IBrowserFile>> FilesChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool _isDragging;
+    private string? _errorMessage;
+    private readonly List<IBrowserFile> _selectedFiles = new();
+
+    private string FormatSummary => $"{Accept.Replace(",", ", ")} up to {FormatBytes(MaxFileSize)}";
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        _isDragging = false;
+        _errorMessage = null;
+
+        var files = Multiple ? e.GetMultipleFiles() : new[] { e.File };
+        foreach (var file in files)
+        {
+            if (file.Size > MaxFileSize)
+            {
+                _errorMessage = $"File '{file.Name}' exceeds the maximum allowed size of {FormatBytes(MaxFileSize)}.";
+                continue;
+            }
+            if (!Multiple)
+            {
+                _selectedFiles.Clear();
+            }
+            _selectedFiles.Add(file);
+        }
+
+        await FilesChanged.InvokeAsync(_selectedFiles);
+    }
+
+    private async Task RemoveFile(IBrowserFile file)
+    {
+        _selectedFiles.Remove(file);
+        await FilesChanged.InvokeAsync(_selectedFiles);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] suffixes = { "B", "KB", "MB", "GB" };
+        int counter = 0;
+        decimal number = bytes;
+        while (Math.Round(number / 1024) >= 1)
+        {
+            number /= 1024;
+            counter++;
+        }
+        return $"{number:n1} {suffixes[counter]}";
+    }
+}

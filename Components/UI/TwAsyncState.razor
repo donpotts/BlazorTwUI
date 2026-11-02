@@ -1,0 +1,117 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using System.Threading
+@typeparam TItem
+@implements IDisposable
+
+<TwUnionBoundary TItem="TItem"
+                 State="_currentState"
+                 OnRetry="RefreshAsync"
+                 Class="@Class">
+    <Loading>
+        @if (Loading != null)
+        {
+            @Loading
+        }
+    </Loading>
+    <Success Context="data">
+        @if (Success != null)
+        {
+            @Success(data)
+        }
+    </Success>
+    <Empty>
+        @if (Empty != null)
+        {
+            @Empty
+        }
+    </Empty>
+    <Failure Context="err">
+        @if (Failure != null)
+        {
+            @Failure(err)
+        }
+    </Failure>
+</TwUnionBoundary>
+
+@code {
+    [Parameter] public Func<CancellationToken, Task<TItem>>? Loader { get; set; }
+    [Parameter] public Func<TItem, bool>? IsEmptyPredicate { get; set; }
+    [Parameter] public bool AutoLoad { get; set; } = true;
+    [Parameter] public string Class { get; set; } = string.Empty;
+
+    [Parameter] public RenderFragment? Loading { get; set; }
+    [Parameter] public RenderFragment<TItem>? Success { get; set; }
+    [Parameter] public RenderFragment? Empty { get; set; }
+    [Parameter] public RenderFragment<UiState<TItem>.Failure>? Failure { get; set; }
+
+    [Parameter] public EventCallback<UiState<TItem>> OnStateChanged { get; set; }
+
+    private UiState<TItem> _currentState = new UiState<TItem>.Loading();
+    private CancellationTokenSource? _cts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AutoLoad && Loader != null)
+        {
+            await RefreshAsync();
+        }
+    }
+
+    public async Task RefreshAsync()
+    {
+        if (Loader == null) return;
+
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = new CancellationTokenSource();
+
+        SetState(new UiState<TItem>.Loading());
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var data = await Loader(_cts.Token);
+            if (!_cts.Token.IsCancellationRequested)
+            {
+                if (IsEmptyPredicate != null && IsEmptyPredicate(data))
+                {
+                    SetState(new UiState<TItem>.Empty());
+                }
+                else
+                {
+                    SetState(new UiState<TItem>.Success(data));
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Gracefully handled cancellation
+        }
+        catch (Exception ex)
+        {
+            if (!_cts.Token.IsCancellationRequested)
+            {
+                SetState(new UiState<TItem>.Failure(ex.Message, ex, ex.GetType().Name));
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void SetState(UiState<TItem> newState)
+    {
+        _currentState = newState;
+        if (OnStateChanged.HasDelegate)
+        {
+            _ = OnStateChanged.InvokeAsync(_currentState);
+        }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _cts = null;
+    }
+}

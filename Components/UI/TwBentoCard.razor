@@ -1,0 +1,104 @@
+@inject IJSRuntime JS
+
+<div @ref="_cardRef"
+     class="group relative rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/70 backdrop-blur-md p-6 sm:p-8 flex flex-col justify-between overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 @ColSpanClass @RowSpanClass @Class">
+    
+    <!-- Spotlight Radial Gradient Hover Layer -->
+    <div class="pointer-events-none absolute -inset-px rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+         style="background: radial-gradient(400px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), @SpotlightColor, transparent 80%);"></div>
+
+    <!-- Background Subtle Dot Matrix Pattern (Optional) -->
+    @if (ShowDotPattern)
+    {
+        <div class="absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] dark:bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-40 dark:opacity-30 pointer-events-none"></div>
+    }
+
+    <!-- Top Content Area -->
+    <div class="relative z-10 space-y-3">
+        <div class="flex items-center justify-between gap-3">
+            @if (Icon != null)
+            {
+                <div class="inline-flex items-center justify-center w-10 h-10 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                    @Icon
+                </div>
+            }
+            @if (Badge != null)
+            {
+                <div class="shrink-0">
+                    @Badge
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Title))
+        {
+            <h3 class="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white">
+                @Title
+            </h3>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                @Description
+            </p>
+        }
+    </div>
+
+    <!-- Center / Interactive Visual Area -->
+    @if (ChildContent != null)
+    {
+        <div class="relative z-10 my-4 grow flex items-center justify-center">
+            @ChildContent
+        </div>
+    }
+
+    <!-- Bottom / Action Area -->
+    @if (Footer != null)
+    {
+        <div class="relative z-10 pt-4 border-t border-slate-100/80 dark:border-slate-800/80 text-xs sm:text-sm">
+            @Footer
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int ColSpan { get; set; } = 1;
+    [Parameter] public int RowSpan { get; set; } = 1;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public RenderFragment? Icon { get; set; }
+    [Parameter] public RenderFragment? Badge { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public bool ShowDotPattern { get; set; } = true;
+    [Parameter] public string SpotlightColor { get; set; } = "rgba(99, 102, 241, 0.12)";
+    [Parameter] public string? Class { get; set; }
+
+    private ElementReference _cardRef;
+
+    private string ColSpanClass => ColSpan switch
+    {
+        2 => "md:col-span-2",
+        3 => "md:col-span-2 lg:col-span-3",
+        _ => "col-span-1"
+    };
+
+    private string RowSpanClass => RowSpan switch
+    {
+        2 => "row-span-2",
+        _ => "row-span-1"
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("blazorTailwind.initSpotlightTracker", _cardRef);
+            }
+            catch { }
+        }
+    }
+}

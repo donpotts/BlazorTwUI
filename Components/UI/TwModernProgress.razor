@@ -1,0 +1,265 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+
+<div class="space-y-2 w-full max-w-full overflow-hidden @CustomClass">
+    @if (Type == ProgressType.RadialRing)
+    {
+        <!-- 1. COOL MODERN RADIAL CIRCLE RING WITH GRADIENT & GLOW -->
+        <div class="flex flex-col items-center justify-center p-3 w-full">
+            <div class="relative flex items-center justify-center shrink-0" style="width: @(PixelSize)px; height: @(PixelSize)px;">
+                <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <defs>
+                        <linearGradient id="@_gradId" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="@GradientStart" />
+                            <stop offset="100%" stop-color="@GradientEnd" />
+                        </linearGradient>
+                        <filter id="@(_gradId + "-glow")" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="0" stdDeviation="3" flood-color="@GradientEnd" flood-opacity="0.4" />
+                        </filter>
+                    </defs>
+                    <!-- Background Track -->
+                    <circle cx="50" cy="50" r="@Radius"
+                            fill="transparent"
+                            stroke="currentColor"
+                            stroke-width="@StrokeWidth"
+                            class="text-slate-100 dark:text-slate-800" />
+                    <!-- Animated Progress Ring -->
+                    <circle cx="50" cy="50" r="@Radius"
+                            fill="transparent"
+                            stroke="url(#@_gradId)"
+                            stroke-width="@StrokeWidth"
+                            stroke-linecap="round"
+                            stroke-dasharray="@Circumference"
+                            stroke-dashoffset="@DashOffset"
+                            filter="url(#@(_gradId + "-glow"))"
+                            class="transition-all duration-700 ease-out" />
+                </svg>
+
+                <!-- Center Content -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
+                    @if (ClampedValue >= 100 && ShowSuccessIcon)
+                    {
+                        <span class="text-emerald-500 font-bold text-lg animate-bounce">✓</span>
+                    }
+                    else
+                    {
+                        <span class="font-extrabold text-slate-900 dark:text-white tracking-tight @CenterTextClass">
+                            @ClampedValue%
+                        </span>
+                        @if (!string.IsNullOrEmpty(Label))
+                        {
+                            <span class="text-[9px] uppercase font-bold tracking-wider text-slate-400 mt-0.5">
+                                @Label
+                            </span>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else if (Type == ProgressType.SpeedometerArc)
+    {
+        <!-- 2. SPEEDOMETER DASHBOARD SEMI-CIRCLE ARC -->
+        <div class="flex flex-col items-center p-3 space-y-1 w-full">
+            <div class="relative flex items-center justify-center shrink-0" style="width: @(PixelSize)px; height: @(PixelSize * 0.62)px; overflow: hidden;">
+                <svg class="w-full h-full" viewBox="0 0 100 65">
+                    <defs>
+                        <linearGradient id="@_gradId" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="@GradientStart" />
+                            <stop offset="100%" stop-color="@GradientEnd" />
+                        </linearGradient>
+                    </defs>
+                    <!-- Background Arc (180 deg) -->
+                    <path d="M 15 55 A 35 35 0 0 1 85 55"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="@(StrokeWidth + 1)"
+                          stroke-linecap="round"
+                          class="text-slate-100 dark:text-slate-800" />
+                    <!-- Progress Arc -->
+                    <path d="M 15 55 A 35 35 0 0 1 85 55"
+                          fill="none"
+                          stroke="url(#@_gradId)"
+                          stroke-width="@(StrokeWidth + 1)"
+                          stroke-linecap="round"
+                          stroke-dasharray="@ArcLength"
+                          stroke-dashoffset="@ArcDashOffset"
+                          class="transition-all duration-700 ease-out" />
+                </svg>
+
+                <div class="absolute bottom-1 flex flex-col items-center text-center">
+                    <span class="font-black text-slate-900 dark:text-white text-lg tracking-tight">
+                        @ClampedValue%
+                    </span>
+                    @if (!string.IsNullOrEmpty(Label))
+                    {
+                        <span class="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">
+                            @Label
+                        </span>
+                    }
+                </div>
+            </div>
+            <div class="w-full max-w-[150px] flex justify-between px-2 text-[10px] font-mono text-slate-400">
+                <span>0%</span>
+                <span>50%</span>
+                <span>100%</span>
+            </div>
+        </div>
+    }
+    else if (Type == ProgressType.SegmentedCapsule)
+    {
+        <!-- 3. MULTI-SEGMENT CAPSULE / STEPPER PROGRESS -->
+        <div class="space-y-1.5 w-full">
+            @if (!string.IsNullOrEmpty(Label))
+            {
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-700 dark:text-slate-300">@Label</span>
+                    <span class="font-mono text-slate-500 font-semibold">@ClampedValue%</span>
+                </div>
+            }
+            <div class="flex items-center gap-1.5 w-full">
+                @for (int i = 0; i < TotalSegments; i++)
+                {
+                    var segIndex = i;
+                    var segThreshold = (double)(segIndex + 1) / TotalSegments * 100.0;
+                    var prevThreshold = (double)segIndex / TotalSegments * 100.0;
+                    var isCompleted = ClampedValue >= segThreshold;
+                    var isCurrent = ClampedValue >= prevThreshold && ClampedValue < segThreshold;
+
+                    <div class="flex-1 h-3 rounded-full overflow-hidden transition-all duration-300 @(isCompleted ? "bg-gradient-to-r from-brand-500 to-indigo-600 shadow-xs" : isCurrent ? "bg-brand-400/80 ring-2 ring-brand-500/30 animate-pulse" : "bg-slate-200 dark:bg-slate-800")">
+                        @if (isCompleted)
+                        {
+                            <div class="h-full bg-white/20 w-full"></div>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-0.5">
+                <span>Phase 1</span>
+                <span>Phase @((int)Math.Ceiling((double)ClampedValue / 100 * TotalSegments)) of @TotalSegments</span>
+                <span>Completed</span>
+            </div>
+        </div>
+    }
+    else if (Type == ProgressType.NeonLiquidGlow)
+    {
+        <!-- 4. NEON LIQUID GLOW WITH SHIMMER PULSE WAVE -->
+        <div class="space-y-1.5 w-full">
+            @if (!string.IsNullOrEmpty(Label))
+            {
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 truncate">
+                        <span class="w-2 h-2 rounded-full animate-ping shrink-0" style="background-color: @GradientEnd;"></span>
+                        <span class="truncate">@Label</span>
+                    </span>
+                    <span class="font-mono font-bold text-brand-600 dark:text-brand-400 shrink-0">@ClampedValue%</span>
+                </div>
+            }
+            <div class="relative w-full h-3.5 rounded-full bg-slate-200 dark:bg-slate-850 p-0.5 overflow-hidden shadow-inner border border-slate-300/40 dark:border-slate-800">
+                <div class="h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden"
+                     style="width: @(ClampedValue)%; background: linear-gradient(90deg, @GradientStart, @GradientEnd); box-shadow: 0 0 12px @GradientEnd;">
+                    <!-- Shimmer Liquid Light Streak -->
+                    <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent animate-[shimmer_2s_infinite]"></div>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Type == ProgressType.ConcentricMultiRing)
+    {
+        <!-- 5. APPLE FITNESS STYLE TRIPLE CONCENTRIC ACTIVITY RINGS -->
+        <div class="flex flex-col items-center gap-3 p-1 justify-center w-full max-w-full overflow-hidden">
+            <div class="relative flex items-center justify-center shrink-0 w-28 h-28">
+                <svg class="w-full h-full -rotate-90" viewBox="0 0 120 120">
+                    <!-- Ring 1 (Outer - Cyan / Brand) -->
+                    <circle cx="60" cy="60" r="48" fill="transparent" stroke="currentColor" stroke-width="7" class="text-slate-100 dark:text-slate-800" />
+                    <circle cx="60" cy="60" r="48" fill="transparent" stroke="#06b6d4" stroke-width="7" stroke-linecap="round"
+                            stroke-dasharray="@(2 * Math.PI * 48)"
+                            stroke-dashoffset="@((1 - (double)ClampedValue / 100) * 2 * Math.PI * 48)"
+                            class="transition-all duration-700" />
+
+                    <!-- Ring 2 (Middle - Emerald) -->
+                    <circle cx="60" cy="60" r="37" fill="transparent" stroke="currentColor" stroke-width="7" class="text-slate-100 dark:text-slate-800" />
+                    <circle cx="60" cy="60" r="37" fill="transparent" stroke="#10b981" stroke-width="7" stroke-linecap="round"
+                            stroke-dasharray="@(2 * Math.PI * 37)"
+                            stroke-dashoffset="@((1 - (double)SecondaryValue / 100) * 2 * Math.PI * 37)"
+                            class="transition-all duration-700" />
+
+                    <!-- Ring 3 (Inner - Purple) -->
+                    <circle cx="60" cy="60" r="26" fill="transparent" stroke="currentColor" stroke-width="7" class="text-slate-100 dark:text-slate-800" />
+                    <circle cx="60" cy="60" r="26" fill="transparent" stroke="#a855f7" stroke-width="7" stroke-linecap="round"
+                            stroke-dasharray="@(2 * Math.PI * 26)"
+                            stroke-dashoffset="@((1 - (double)TertiaryValue / 100) * 2 * Math.PI * 26)"
+                            class="transition-all duration-700" />
+                </svg>
+            </div>
+
+            <!-- Legend Details -->
+            <div class="space-y-1.5 text-xs w-full max-w-[200px]">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="flex items-center gap-1.5 truncate">
+                        <span class="w-2 h-2 rounded-full bg-cyan-500 shrink-0"></span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 truncate text-[11px]">Execution</span>
+                    </span>
+                    <span class="font-mono text-cyan-600 dark:text-cyan-400 font-bold text-xs shrink-0">@ClampedValue%</span>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                    <span class="flex items-center gap-1.5 truncate">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 truncate text-[11px]">Memory</span>
+                    </span>
+                    <span class="font-mono text-emerald-600 dark:text-emerald-400 font-bold text-xs shrink-0">@SecondaryValue%</span>
+                </div>
+                <div class="flex items-center justify-between gap-2">
+                    <span class="flex items-center gap-1.5 truncate">
+                        <span class="w-2 h-2 rounded-full bg-purple-500 shrink-0"></span>
+                        <span class="font-bold text-slate-800 dark:text-slate-200 truncate text-[11px]">SLA Uptime</span>
+                    </span>
+                    <span class="font-mono text-purple-600 dark:text-purple-400 font-bold text-xs shrink-0">@TertiaryValue%</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    public enum ProgressType
+    {
+        RadialRing,
+        SpeedometerArc,
+        SegmentedCapsule,
+        NeonLiquidGlow,
+        ConcentricMultiRing
+    }
+
+    [Parameter] public ProgressType Type { get; set; } = ProgressType.RadialRing;
+    [Parameter] public int Value { get; set; } = 0;
+    [Parameter] public int SecondaryValue { get; set; } = 0;
+    [Parameter] public int TertiaryValue { get; set; } = 0;
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public int PixelSize { get; set; } = 120;
+    [Parameter] public int StrokeWidth { get; set; } = 8;
+    [Parameter] public string GradientStart { get; set; } = "#6366f1"; // Indigo
+    [Parameter] public string GradientEnd { get; set; } = "#a855f7";   // Purple
+    [Parameter] public bool ShowSuccessIcon { get; set; } = true;
+    [Parameter] public int TotalSegments { get; set; } = 4;
+    [Parameter] public string? CustomClass { get; set; }
+
+    private readonly string _gradId = "mp-grad-" + Guid.NewGuid().ToString("N")[..6];
+
+    private int ClampedValue => Math.Max(0, Math.Min(100, Value));
+    private double Radius => 50 - (StrokeWidth / 2.0);
+    private double Circumference => 2 * Math.PI * Radius;
+    private double DashOffset => Circumference - ((double)ClampedValue / 100.0 * Circumference);
+
+    // Speedometer Arc calculation (Half circle arc of radius 35)
+    private double ArcLength => Math.PI * 35;
+    private double ArcDashOffset => ArcLength - ((double)ClampedValue / 100.0 * ArcLength);
+
+    private string CenterTextClass => PixelSize switch
+    {
+        < 90 => "text-xs",
+        < 120 => "text-sm",
+        < 160 => "text-xl",
+        _ => "text-2xl"
+    };
+}

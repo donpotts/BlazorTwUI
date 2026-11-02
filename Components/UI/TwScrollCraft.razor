@@ -1,0 +1,222 @@
+@namespace BlazorTwUI.Components.UI
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 p-4 sm:p-6 @Class">
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+        <div class="flex items-center gap-2.5">
+            <span class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-purple-600 text-white flex items-center justify-center font-bold text-base shadow-md shadow-brand-500/20">
+                📜
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h4 class="text-sm font-black text-slate-900 dark:text-white">@Title</h4>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400/20 text-amber-600 dark:text-amber-300 border border-amber-400/40">
+                        ⚡ POP Stage
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500">ScrollCraft Kinetic Scrubber &amp; Word Balloon POP Callouts</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button"
+                    @onclick="TogglePopCallouts"
+                    class="px-2.5 py-1 rounded-xl text-[11px] font-bold border transition @(_showPopBalloon ? "bg-amber-400 text-slate-950 border-amber-500 shadow-sm" : "bg-slate-200/60 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700")">
+                💬 POP: @(_showPopBalloon ? "ON" : "OFF")
+            </button>
+
+            <button type="button"
+                    @onclick="ToggleAutoPlay"
+                    class="px-2.5 py-1 rounded-xl text-[11px] font-bold border transition flex items-center gap-1 @(_isAutoPlaying ? "bg-brand-600 text-white border-brand-500 shadow-sm" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700")">
+                <span>@(_isAutoPlaying ? "⏸ Pause" : "▶ Auto-Scrub")</span>
+            </button>
+
+            <div class="flex items-center gap-1.5 bg-slate-200/60 dark:bg-slate-800 px-2.5 py-1 rounded-xl text-xs font-mono">
+                <span class="text-[10px] text-slate-500 uppercase">Step:</span>
+                <span class="font-bold text-brand-600 dark:text-brand-400">@(_activeStepIndex + 1) / @Steps.Count</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Scrubber Slider Bar -->
+    <div class="pt-3 pb-1 flex items-center gap-3">
+        <span class="text-[10px] font-mono font-bold uppercase text-slate-400">Scrub Timeline</span>
+        <input type="range"
+               min="0"
+               max="100"
+               value="@_scrubProgress"
+               @oninput="HandleScrubInput"
+               class="flex-1 h-1.5 bg-slate-200 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer accent-brand-500" />
+        <span class="text-[11px] font-mono font-bold text-brand-600 dark:text-brand-400 w-10 text-right">@(_scrubProgress)%</span>
+    </div>
+
+    <!-- Interactive Pinned Scrubber Stage -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-6 pt-3 items-center">
+        <!-- Pinned Graphic / Object Stage (Columns 1-6) -->
+        <div class="md:col-span-6 flex flex-col items-center justify-center p-6 rounded-2xl bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 shadow-lg min-h-[280px] relative overflow-hidden">
+            <!-- Comic Halftone / Radial Grid Backdrop -->
+            <div class="absolute inset-0 opacity-15 pointer-events-none"
+                 style="background-image: radial-gradient(circle, #6366f1 1.5px, transparent 1.5px); background-size: 16px 16px;"></div>
+
+            <!-- Parallax Ambient Glow -->
+            <div class="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-brand-500/20 filter blur-2xl transition-all duration-700 ease-out"
+                 style="transform: scale(@(1.0 + (_activeStepIndex * 0.18))) translate(@(_activeStepIndex * 10)px, @(_activeStepIndex * -6)px);"></div>
+
+            <!-- Floating Word Balloon POP Callout -->
+            @if (_showPopBalloon)
+            {
+                <div class="absolute top-3 right-3 z-20 transition-all duration-300 transform hover:scale-105"
+                     style="transform: rotate(@((_activeStepIndex % 2 == 0) ? "-4deg" : "4deg")) scale(@(0.96 + (_activeStepIndex * 0.03)));">
+                    <div class="relative px-3.5 py-1.5 rounded-2xl bg-amber-300 text-slate-950 font-black text-xs uppercase tracking-wider border-2 border-slate-950 shadow-[3px_3px_0px_#0f172a]">
+                        <span>@GetStepPopCallout(_activeStepIndex)</span>
+                        <div class="absolute -bottom-2 left-5 w-3 h-3 bg-amber-300 border-r-2 border-b-2 border-slate-950 rotate-45"></div>
+                    </div>
+                </div>
+            }
+
+            <!-- Active Object Visual -->
+            <div class="transition-all duration-500 transform text-center space-y-3 z-10"
+                 style="transform: scale(@(0.95 + (_activeStepIndex * 0.05)));">
+                <div class="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-brand-500/20 to-purple-500/20 border-2 border-brand-500/50 text-brand-600 dark:text-brand-400 flex items-center justify-center text-4xl shadow-xl shadow-brand-500/10">
+                    @CurrentStep.Icon
+                </div>
+                <div class="space-y-1">
+                    <span class="inline-block px-2.5 py-0.5 rounded-full bg-brand-500/10 border border-brand-500/30 text-[11px] font-mono font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400">
+                        @CurrentStep.Badge
+                    </span>
+                    <h5 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                        @CurrentStep.Title
+                    </h5>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
+                        @CurrentStep.Description
+                    </p>
+                </div>
+            </div>
+
+            <!-- Step Progress Pills at Bottom of Stage -->
+            <div class="absolute bottom-3 inset-x-6 flex items-center gap-1.5">
+                @for (int i = 0; i < Steps.Count; i++)
+                {
+                    var isDone = i <= _activeStepIndex;
+                    <div class="h-1.5 flex-1 rounded-full transition-all duration-300 @(isDone ? "bg-brand-500" : "bg-slate-200 dark:bg-slate-800")"></div>
+                }
+            </div>
+        </div>
+
+        <!-- Scrollable / Clickable Step Track (Columns 7-12) -->
+        <div class="md:col-span-6 space-y-2.5">
+            @for (int i = 0; i < Steps.Count; i++)
+            {
+                var idx = i;
+                var step = Steps[idx];
+                var isActive = idx == _activeStepIndex;
+
+                <button type="button"
+                        @onclick="() => SetActiveStep(idx)"
+                        class="w-full text-left p-3.5 rounded-2xl border transition-all text-xs focus:outline-none flex items-start gap-3 @(isActive ? "bg-white dark:bg-slate-850 border-brand-500 shadow-md ring-2 ring-brand-500/20 scale-[1.01]" : "bg-slate-100/60 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800/80 hover:border-slate-300 dark:hover:border-slate-700 opacity-75 hover:opacity-100")">
+                    <div class="w-6 h-6 rounded-lg flex items-center justify-center font-bold text-[11px] shrink-0 @(isActive ? "bg-brand-600 text-white shadow-sm shadow-brand-500/40" : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300")">
+                        @(idx + 1)
+                    </div>
+                    <div class="space-y-0.5 flex-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-900 dark:text-white">@step.Title</span>
+                            @if (isActive)
+                            {
+                                <span class="text-[10px] font-mono font-bold text-brand-600 dark:text-brand-400">ACTIVE ●</span>
+                            }
+                        </div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">@step.Description</div>
+                    </div>
+                </button>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Content Scroll Scrubbing";
+    [Parameter] public string? Class { get; set; }
+
+    public record ScrollStep(string Title, string Description, string Icon, string Badge);
+
+    [Parameter]
+    public List<ScrollStep> Steps { get; set; } = new()
+    {
+        new("Pure .NET 10+ WASM Engine", "Runs natively in the browser with sub-millisecond execution and zero server trip latency.", "⚡", "Core Runtime"),
+        new("Dual-Plane Agentic Tool Calling", "Direct client WASM micro-tools coupled with cloud API orchestration and telemetry.", "🤖", "AI Dispatcher"),
+        new("Adaptive Generative UI (AGUI)", "Compiles JSON schemas into reactive Blazor DOM components in real-time.", "🎨", "Schema Engine"),
+        new("Native TAUI Desktop Installers", "Packed into native Windows MSI, macOS Universal DMG, and Linux AppImage packages.", "🖥️", "Desktop Release")
+    };
+
+    private int _activeStepIndex = 0;
+    private int _scrubProgress = 0;
+    private bool _showPopBalloon = true;
+    private bool _isAutoPlaying = false;
+    private System.Threading.Timer? _autoPlayTimer;
+
+    private ScrollStep CurrentStep => Steps[Math.Clamp(_activeStepIndex, 0, Math.Max(0, Steps.Count - 1))];
+
+    private void SetActiveStep(int index)
+    {
+        _activeStepIndex = Math.Clamp(index, 0, Math.Max(0, Steps.Count - 1));
+        _scrubProgress = Steps.Count > 1 ? (int)Math.Round((_activeStepIndex / (double)(Steps.Count - 1)) * 100.0) : 100;
+    }
+
+    private void HandleScrubInput(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var val))
+        {
+            _scrubProgress = Math.Clamp(val, 0, 100);
+            if (Steps.Count > 0)
+            {
+                var idx = (int)Math.Round((_scrubProgress / 100.0) * (Steps.Count - 1));
+                _activeStepIndex = Math.Clamp(idx, 0, Steps.Count - 1);
+            }
+        }
+    }
+
+    private void TogglePopCallouts()
+    {
+        _showPopBalloon = !_showPopBalloon;
+    }
+
+    private void ToggleAutoPlay()
+    {
+        _isAutoPlaying = !_isAutoPlaying;
+        if (_isAutoPlaying)
+        {
+            _autoPlayTimer?.Dispose();
+            _autoPlayTimer = new System.Threading.Timer(_ =>
+            {
+                InvokeAsync(() =>
+                {
+                    if (!_isAutoPlaying || Steps.Count == 0) return;
+                    var next = (_activeStepIndex + 1) % Steps.Count;
+                    SetActiveStep(next);
+                    StateHasChanged();
+                });
+            }, null, 1800, 1800);
+        }
+        else
+        {
+            _autoPlayTimer?.Dispose();
+            _autoPlayTimer = null;
+        }
+    }
+
+    private string GetStepPopCallout(int index) => index switch
+    {
+        0 => "💥 0ms WASM POP!",
+        1 => "⚡ DUAL-PLANE AI!",
+        2 => "🎨 LIVE AGUI DOM!",
+        3 => "🚀 NATIVE TAUI!",
+        _ => "✨ SCROLLCRAFT POP!"
+    };
+
+    public void Dispose()
+    {
+        _autoPlayTimer?.Dispose();
+    }
+}

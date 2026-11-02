@@ -1,0 +1,289 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject TwSoundService Sound
+
+<div class="relative rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden @Class">
+    <TwConfetti @ref="_localConfettiRef" FullScreen="false" Class="absolute inset-0 w-full h-full pointer-events-none z-30" />
+    @if (Schema != null)
+    {
+        <!-- Header Banner with Accent Gradient -->
+        <div class="p-5 sm:p-6 @GetHeaderGradientClass() border-b border-slate-200/50 dark:border-slate-800/80 flex items-start justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-2xl shadow-inner shrink-0 text-white">
+                    @Schema.Icon
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/20 text-white border border-white/20">
+                            @Schema.WidgetType
+                        </span>
+                        @foreach (var tag in Schema.Tags)
+                        {
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/10 text-white/90">
+                                #@tag
+                            </span>
+                        }
+                    </div>
+                    <h3 class="text-xl font-black text-white tracking-tight mt-1">@Schema.Title</h3>
+                    <p class="text-xs text-white/80 mt-0.5">@Schema.Subtitle</p>
+                </div>
+            </div>
+
+            <div class="shrink-0 flex items-center gap-2">
+                <span class="px-2.5 py-1 rounded-xl bg-black/20 text-white font-mono text-xs border border-white/10">
+                    ID: @Schema.Id
+                </span>
+            </div>
+        </div>
+
+        <!-- Inline Real-Time Action Feedback Banner -->
+        @if (!string.IsNullOrEmpty(_lastActionMessage))
+        {
+            <div class="px-6 py-2 bg-emerald-500/10 border-b border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-bold flex items-center justify-between gap-2 animate-zoom-in">
+                <div class="flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>@_lastActionMessage</span>
+                </div>
+                <span class="text-[10px] font-mono text-emerald-600 dark:text-emerald-500">Live State Updated</span>
+            </div>
+        }
+
+        <!-- Body: Metrics & Dynamic Properties -->
+        <div class="p-6 space-y-6">
+            @if (Schema.Metrics.Count > 0)
+            {
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    @foreach (var m in Schema.Metrics)
+                    {
+                        <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 shadow-xs">
+                            <span class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block truncate">@m.Label</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-xl font-black text-slate-900 dark:text-white font-mono">@m.Value</span>
+                                @if (!string.IsNullOrEmpty(m.Delta))
+                                {
+                                    <span class="text-xs font-bold @(m.IsPositive ? "text-emerald-500" : "text-rose-500")">
+                                        @m.Delta
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- Live Trade Confirmation Slip (When trade_buy executed) -->
+            @if (_hasExecutedTrade)
+            {
+                <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 space-y-2 animate-zoom-in">
+                    <div class="flex items-center justify-between text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                        <span class="flex items-center gap-1.5">
+                            <span>✅</span>
+                            <span>EXECUTED MARKET BUY ORDER: 100 SHARES NVDA</span>
+                        </span>
+                        <span class="font-mono text-[10px] text-emerald-600">FILL_ID: #@_tradeId</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 text-xs font-mono text-emerald-900 dark:text-emerald-200">
+                        <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/80">
+                            <span class="text-[10px] text-slate-400 block">Fill Price:</span>
+                            <strong class="text-sm">$142.85</strong>
+                        </div>
+                        <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/80">
+                            <span class="text-[10px] text-slate-400 block">Total Principal:</span>
+                            <strong class="text-sm">$14,285.00</strong>
+                        </div>
+                        <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/80">
+                            <span class="text-[10px] text-slate-400 block">Routing:</span>
+                            <strong class="text-sm text-emerald-500">WASM Direct (0ms)</strong>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Live Order Book Depth Ladder (When depth_chart clicked) -->
+            @if (_showDepthChart)
+            {
+                <div class="p-4 rounded-2xl bg-slate-950 text-slate-100 border border-slate-800 space-y-3 animate-zoom-in font-mono text-xs">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">Live Institutional Depth Matrix</span>
+                        <span class="text-[10px] text-slate-400">Spread: $0.02 (Tight)</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-[11px]">
+                        <div>
+                            <span class="text-emerald-400 font-bold block mb-1">BIDS (Buy Interest)</span>
+                            <div class="space-y-1">
+                                <div class="flex justify-between p-1 bg-emerald-950/40 rounded border border-emerald-900/50"><span>$142.84</span><span class="text-slate-400">12,400 sh</span></div>
+                                <div class="flex justify-between p-1 bg-emerald-950/20 rounded"><span>$142.83</span><span class="text-slate-400">28,150 sh</span></div>
+                                <div class="flex justify-between p-1 bg-emerald-950/10 rounded"><span>$142.80</span><span class="text-slate-400">94,000 sh</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-rose-400 font-bold block mb-1">ASKS (Sell Interest)</span>
+                            <div class="space-y-1">
+                                <div class="flex justify-between p-1 bg-rose-950/40 rounded border border-rose-900/50"><span>$142.86</span><span class="text-slate-400">8,900 sh</span></div>
+                                <div class="flex justify-between p-1 bg-rose-950/20 rounded"><span>$142.87</span><span class="text-slate-400">19,400 sh</span></div>
+                                <div class="flex justify-between p-1 bg-rose-950/10 rounded"><span>$142.90</span><span class="text-slate-400">81,200 sh</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* Dynamic Properties / Key-Value Grid *@
+            @if (Schema.Properties.Count > 0)
+            {
+                <div class="space-y-2">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Synthesized Runtime Properties:</span>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        @foreach (var prop in Schema.Properties)
+                        {
+                            <div class="p-2.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex items-center justify-between">
+                                <span class="font-bold text-slate-600 dark:text-slate-400 capitalize">@prop.Key.Replace("_", " "):</span>
+                                <span class="font-mono text-slate-900 dark:text-white font-medium">@prop.Value</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <!-- Dynamic Actions -->
+            @if (Schema.Actions.Count > 0)
+            {
+                <div class="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-end gap-2">
+                    @foreach (var act in Schema.Actions)
+                    {
+                        <button type="button"
+                                @onclick="() => TriggerAction(act)"
+                                class="px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs flex items-center gap-1.5 @GetActionButtonClass(act.Variant)">
+                            @if (!string.IsNullOrEmpty(act.Icon))
+                            {
+                                <span>@act.Icon</span>
+                            }
+                            <span>@act.Label</span>
+                        </button>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="p-8 text-center text-slate-400">
+            <span class="text-3xl mb-2 block">✨</span>
+            <p class="text-sm">No AGUI schema generated yet. Enter a prompt above to synthesize an interface.</p>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public AguiWidgetSchema? Schema { get; set; }
+    [Parameter] public EventCallback<AguiActionItem> OnActionTriggered { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+
+    private TwConfetti? _localConfettiRef;
+    private string? _lastRenderedSchemaId;
+    private string? _lastActionMessage;
+    private bool _hasExecutedTrade = false;
+    private bool _showDepthChart = false;
+    private string _tradeId = "TX-8912";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Schema?.Id == "agui_celebration" && _lastRenderedSchemaId != "agui_celebration")
+        {
+            _lastRenderedSchemaId = "agui_celebration";
+            if (_localConfettiRef != null)
+            {
+                await _localConfettiRef.FireStyleAsync(TwConfetti.CelebrationStyle.Fireworks, 0.5, 0.4, 160);
+                await Sound.PlayAsync(TwSoundEffect.Fireworks);
+            }
+        }
+        else if (Schema?.Id != "agui_celebration")
+        {
+            _lastRenderedSchemaId = Schema?.Id;
+        }
+    }
+
+    private async Task TriggerAction(AguiActionItem action)
+    {
+        if (Schema == null) return;
+
+        // Perform genuine local mutations on the widget so it actually executes what it says!
+        if (action.Id == "more_confetti" || action.Id.Contains("confetti"))
+        {
+            if (_localConfettiRef != null)
+            {
+                await _localConfettiRef.FireStyleAsync(TwConfetti.CelebrationStyle.Confetti, 0.5, 0.4, 180);
+            }
+            await Sound.PlayAsync(TwSoundEffect.VictoryFanfare);
+            _lastActionMessage = "🎉 Celebration Confetti Particle Burst Activated (60 FPS Canvas Physics)!";
+        }
+        else if (action.Id == "scale_up")
+        {
+            var vcpu = Schema.Metrics.FirstOrDefault(m => m.Label.Contains("vCPU"));
+            if (vcpu != null) vcpu.Value = "46 / 64 Cores";
+
+            var pods = Schema.Metrics.FirstOrDefault(m => m.Label.Contains("Pods"));
+            if (pods != null) pods.Value = "118 Running";
+
+            Schema.Properties["cluster_nodes"] = "8 Worker Nodes (+2 Scaled)";
+            Schema.Properties["auto_scale_status"] = "Auto-Scaled +2 Nodes (Active)";
+            Schema.Properties["last_heartbeat"] = DateTime.UtcNow.ToString("HH:mm:ss UTC");
+            _lastActionMessage = "Auto-Scaled +2 Nodes: Cluster capacity increased to 64 Cores (8 Worker Nodes).";
+            await Sound.PlayAsync(TwSoundEffect.Coins);
+        }
+        else if (action.Id == "drain_nodes")
+        {
+            var vcpu = Schema.Metrics.FirstOrDefault(m => m.Label.Contains("vCPU"));
+            if (vcpu != null) vcpu.Value = "32 / 48 Cores";
+
+            var pods = Schema.Metrics.FirstOrDefault(m => m.Label.Contains("Pods"));
+            if (pods != null) pods.Value = "72 Running";
+
+            Schema.Properties["auto_scale_status"] = "Node worker-06 drained and retired.";
+            Schema.Properties["last_heartbeat"] = DateTime.UtcNow.ToString("HH:mm:ss UTC");
+            _lastActionMessage = "Drained Node worker-06: 12 pods safely rescheduled onto primary pool.";
+            await Sound.PlayAsync(TwSoundEffect.FloatingReactions);
+        }
+        else if (action.Id == "trade_buy")
+        {
+            _hasExecutedTrade = true;
+            _tradeId = Guid.NewGuid().ToString("N")[..6].ToUpper();
+            var volume = Schema.Metrics.FirstOrDefault(m => m.Label.Contains("Volume"));
+            if (volume != null) volume.Value = "48.3M Shares";
+            Schema.Properties["last_order"] = $"FILLED 100 shares @ $142.85 (#{_tradeId})";
+            _lastActionMessage = $"Market Buy Filled: Purchased 100 Shares NVDA @ $142.85.";
+            await Sound.PlayAsync(TwSoundEffect.Coins);
+        }
+        else if (action.Id == "depth_chart")
+        {
+            _showDepthChart = !_showDepthChart;
+            _lastActionMessage = _showDepthChart ? "Displaying real-time Level 2 order-book depth matrix." : null;
+        }
+        else
+        {
+            _lastActionMessage = $"Executed action: {action.Label}.";
+        }
+
+        await OnActionTriggered.InvokeAsync(action);
+    }
+
+    private string GetHeaderGradientClass() => Schema?.AccentColor switch
+    {
+        "emerald" => "bg-gradient-to-r from-emerald-600 to-teal-700",
+        "purple" => "bg-gradient-to-r from-purple-600 to-indigo-700",
+        "amber" => "bg-gradient-to-r from-amber-600 to-orange-700",
+        "rose" => "bg-gradient-to-r from-rose-600 to-pink-700",
+        "cyan" => "bg-gradient-to-r from-cyan-600 to-blue-700",
+        _ => "bg-gradient-to-r from-blue-600 to-indigo-800"
+    };
+
+    private string GetActionButtonClass(string variant) => variant switch
+    {
+        "primary" => "bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20",
+        "success" => "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20",
+        "danger" => "bg-rose-600 hover:bg-rose-500 text-white shadow-rose-500/20",
+        "outline" => "border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800",
+        _ => "bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200"
+    };
+}

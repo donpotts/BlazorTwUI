@@ -1,0 +1,495 @@
+@namespace BlazorTwUI.Components.UI
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="space-y-6 @Class">
+    <!-- Hidden Fullscreen Canvas for Fullscreen Bursts -->
+    <TwConfetti @ref="_fullConfettiRef" FullScreen="true" />
+
+    <!-- Rich Celebration Modal Demo Instance -->
+    <TwCelebrationModal @bind-IsOpen="_showCelebrationModal"
+                        Title="Level Up & Grand Prize!"
+                        Subtitle="You just calibrated the ultimate physics burst! Here is your celebratory reward:"
+                        BadgeEmoji="👑"
+                        RewardTitle="@($"{_selectedStyle} Mastery Badge")"
+                        RewardEmoji="@GetStyleEmoji(_selectedStyle)"
+                        RewardDescription="Ready for production deployment in your Blazor WebAssembly app."
+                        PrimaryActionText="Claim & Deploy"
+                        SecondaryActionText="Back to Studio"
+                        Style="@_selectedStyle"
+                        ParticleCount="@_particleCount"
+                        OnPrimaryAction="OnModalClaimed" />
+
+    <!-- Studio Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-purple-600/10 via-pink-600/10 to-transparent border border-purple-500/20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-lg">
+                🎆
+            </div>
+            <div>
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">Celebration Animations Studio</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Physics particle effects, 6 distinct animation styles, live stage preview, and full celebration modals</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <TwButton Variant="ButtonVariant.Secondary" Size="ComponentSize.Sm" OnClick="() => _showCelebrationModal = true">
+                🏆 Preview Modal Fanfare
+            </TwButton>
+            <TwButton Variant="ButtonVariant.Primary" Size="ComponentSize.Sm" OnClick="TestStageBurst">
+                🚀 Trigger Burst
+            </TwButton>
+        </div>
+    </div>
+
+    <!-- Main Workspace (Editor + Live Canvas Preview) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Panel: Sliders & Controls -->
+        <div class="lg:col-span-5 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block border-b border-slate-100 dark:border-slate-800 pb-2">
+                1. Select Animation Style
+            </span>
+
+            <!-- 6 Visual Animation Style Pills -->
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button"
+                        @onclick="() => SelectStyle(TwConfetti.CelebrationStyle.Confetti)"
+                        class="p-2.5 rounded-xl border text-left flex items-center gap-2 text-xs font-bold transition @(_selectedStyle == TwConfetti.CelebrationStyle.Confetti ? "bg-brand-500/10 border-brand-500 text-brand-600 dark:text-brand-400 ring-2 ring-brand-500/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-700 dark:text-slate-300")">
+                    <span class="text-base">🎊</span>
+                    <div class="truncate">
+                        <div>Confetti Cannons</div>
+                        <span class="text-[10px] text-slate-400 font-normal">Dual angled ribbons</span>
+                    </div>
+                </button>
+
+                <button type="button"
+                        @onclick="() => SelectStyle(TwConfetti.CelebrationStyle.Fireworks)"
+                        class="p-2.5 rounded-xl border text-left flex items-center gap-2 text-xs font-bold transition @(_selectedStyle == TwConfetti.CelebrationStyle.Fireworks ? "bg-purple-500/10 border-purple-500 text-purple-600 dark:text-purple-400 ring-2 ring-purple-500/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-700 dark:text-slate-300")">
+                    <span class="text-base">🎆</span>
+                    <div class="truncate">
+                        <div>Fireworks Rockets</div>
+                        <span class="text-[10px] text-slate-400 font-normal">360° bursting starbursts</span>
+                    </div>
+                </button>
+
+                <button type="button"
+                        @onclick="() => SelectStyle(TwConfetti.CelebrationStyle.Emojis)"
+                        class="p-2.5 rounded-xl border text-left flex items-center gap-2 text-xs font-bold transition @(_selectedStyle == TwConfetti.CelebrationStyle.Emojis ? "bg-rose-500/10 border-rose-500 text-rose-600 dark:text-rose-400 ring-2 ring-rose-500/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-700 dark:text-slate-300")">
+                    <span class="text-base">❤️</span>
+                    <div class="truncate">
+                        <div>Floating Reactions</div>
+                        <span class="text-[10px] text-slate-400 font-normal">Sinusoidal emoji drift</span>
+                    </div>
+                </button>
+
+                <button type="button"
+                        @onclick="() => SelectStyle(TwConfetti.CelebrationStyle.Coins)"
+                        class="p-2.5 rounded-xl border text-left flex items-center gap-2 text-xs font-bold transition @(_selectedStyle == TwConfetti.CelebrationStyle.Coins ? "bg-amber-500/10 border-amber-500 text-amber-600 dark:text-amber-400 ring-2 ring-amber-500/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-700 dark:text-slate-300")">
+                    <span class="text-base">🪙</span>
+                    <div class="truncate">
+                        <div>Coins Jackpot</div>
+                        <span class="text-[10px] text-slate-400 font-normal">3D spinning ground bounce</span>
+                    </div>
+                </button>
+
+                <button type="button"
+                        @onclick="() => SelectStyle(TwConfetti.CelebrationStyle.Stars)"
+                        class="p-2.5 rounded-xl border text-left flex items-center gap-2 text-xs font-bold transition @(_selectedStyle == TwConfetti.CelebrationStyle.Stars ? "bg-yellow-500/10 border-yellow-500 text-yellow-600 dark:text-yellow-400 ring-2 ring-yellow-500/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-700 dark:text-slate-300")">
+                    <span class="text-base">⭐</span>
+                    <div class="truncate">
+                        <div>Cosmic Starburst</div>
+                        <span class="text-[10px] text-slate-400 font-normal">5-point glowing stars</span>
+                    </div>
+                </button>
+
+                <button type="button"
+                        @onclick="() => SelectStyle(TwConfetti.CelebrationStyle.Streamers)"
+                        class="p-2.5 rounded-xl border text-left flex items-center gap-2 text-xs font-bold transition @(_selectedStyle == TwConfetti.CelebrationStyle.Streamers ? "bg-teal-500/10 border-teal-500 text-teal-600 dark:text-teal-400 ring-2 ring-teal-500/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-700 dark:text-slate-300")">
+                    <span class="text-base">🎗️</span>
+                    <div class="truncate">
+                        <div>Carnival Streamers</div>
+                        <span class="text-[10px] text-slate-400 font-normal">Waving serpentine ribbons</span>
+                    </div>
+                </button>
+            </div>
+
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block border-b border-slate-100 dark:border-slate-800 pt-2 pb-2">
+                2. Physics & Emission Tuning
+            </span>
+
+            <!-- Particle Count -->
+            <div class="space-y-1">
+                <div class="flex justify-between text-xs font-bold">
+                    <span class="text-slate-700 dark:text-slate-300">Particle Count</span>
+                    <span class="font-mono text-brand-600 dark:text-brand-400">@_particleCount units</span>
+                </div>
+                <input type="range" min="20" max="350" step="10" @bind="_particleCount" @bind:event="oninput" class="w-full accent-brand-600" />
+            </div>
+
+            <!-- Burst Speed Multiplier -->
+            <div class="space-y-1">
+                <div class="flex justify-between text-xs font-bold">
+                    <span class="text-slate-700 dark:text-slate-300">Burst Speed Multiplier</span>
+                    <span class="font-mono text-brand-600 dark:text-brand-400">@(_speedMultiplier.ToString("0.0"))x</span>
+                </div>
+                <input type="range" min="0.2" max="5.0" step="0.1" @bind="_speedMultiplier" @bind:event="oninput" class="w-full accent-brand-600" />
+                <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                    <span>0.5x Slow</span>
+                    <span>1.0x Normal</span>
+                    <span>2.5x Fast</span>
+                    <span>5.0x Hyper</span>
+                </div>
+            </div>
+
+            <!-- Origin Coordinates -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-slate-700 dark:text-slate-300">Origin X</span>
+                        <span class="font-mono text-brand-600 dark:text-brand-400">@((int)(_originX * 100))%</span>
+                    </div>
+                    <input type="range" min="0.1" max="0.9" step="0.05" @bind="_originX" @bind:event="oninput" class="w-full accent-brand-600" />
+                </div>
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="text-slate-700 dark:text-slate-300">Origin Y</span>
+                        <span class="font-mono text-brand-600 dark:text-brand-400">@((int)(_originY * 100))%</span>
+                    </div>
+                    <input type="range" min="0.1" max="0.9" step="0.05" @bind="_originY" @bind:event="oninput" class="w-full accent-brand-600" />
+                </div>
+            </div>
+
+            <!-- 3. Freely Distributable Procedural Sound FX Controls -->
+            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span>@(_enableSound ? "🔊" : "🔇")</span> Procedural Sound FX
+                    </span>
+                    <button type="button"
+                            @onclick="ToggleSound"
+                            class="text-[11px] font-bold px-2 py-0.5 rounded-lg border transition @(_enableSound ? "bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-500")">
+                        @(_enableSound ? "Sound ON" : "Muted")
+                    </button>
+                </div>
+
+                @if (_enableSound)
+                {
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-[11px] font-bold">
+                            <span class="text-slate-500 dark:text-slate-400">FX Volume</span>
+                            <span class="font-mono text-brand-600 dark:text-brand-400">@((int)(_soundVolume * 100))%</span>
+                        </div>
+                        <input type="range" min="0.1" max="1.0" step="0.05" @bind="_soundVolume" @bind:event="oninput" @bind:after="UpdateVolume" class="w-full accent-emerald-500" />
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1">
+                        <span class="text-[10px] text-slate-400">100% Royalty-Free Web Audio Synthesis</span>
+                        <button type="button"
+                                @onclick="PreviewSound"
+                                class="text-[11px] font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                            <span>▶️</span> Test FX Sound
+                        </button>
+                    </div>
+                }
+            </div>
+
+            <!-- Preset Palettes -->
+            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span class="text-xs font-bold text-slate-700 dark:text-slate-300 block">Quick Calibration Presets</span>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <button type="button" @onclick='() => ApplyPreset("standard")' class="p-2 text-center rounded-xl border border-slate-200 dark:border-slate-750 text-[11px] font-semibold hover:border-brand-500">
+                        🎉 Classic
+                    </button>
+                    <button type="button" @onclick='() => ApplyPreset("reactions")' class="p-2 text-center rounded-xl border border-slate-200 dark:border-slate-750 text-[11px] font-semibold hover:border-brand-500">
+                        ❤️ Floating
+                    </button>
+                    <button type="button" @onclick='() => ApplyPreset("golden")' class="p-2 text-center rounded-xl border border-slate-200 dark:border-slate-750 text-[11px] font-semibold hover:border-brand-500">
+                        🏆 Jackpot
+                    </button>
+                    <button type="button" @onclick='() => ApplyPreset("fireworks")' class="p-2 text-center rounded-xl border border-slate-200 dark:border-slate-750 text-[11px] font-semibold hover:border-brand-500">
+                        🎆 Fireworks
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Live Test Stage & Generated Code -->
+        <div class="lg:col-span-7 space-y-4">
+            <!-- Stage Area: Contains the REAL canvas right inside -->
+            <div class="h-80 rounded-3xl bg-slate-900 border border-slate-800 relative overflow-hidden flex flex-col items-center justify-center p-6 text-center shadow-2xl">
+                <!-- Embedded Stage Canvas for Direct Visual Rendering -->
+                <TwConfetti @ref="_stageConfettiRef" FullScreen="false" Class="absolute inset-0 w-full h-full pointer-events-none z-10" />
+
+                <!-- Stage UI Overlay -->
+                <div class="space-y-3 z-20 pointer-events-auto">
+                    <div class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 mx-auto flex items-center justify-center text-2xl shadow-lg">
+                        @GetStyleEmoji(_selectedStyle)
+                    </div>
+                    <div>
+                        <h4 class="text-base sm:text-lg font-black text-white">Live Physics Simulation Stage</h4>
+                        <p class="text-xs text-slate-400 max-w-sm mx-auto">
+                            Rendering real canvas particle physics: <strong>@_selectedStyle</strong> with @_particleCount particles.
+                        </p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center justify-center gap-2 pt-1">
+                        <button type="button"
+                                @onclick="TestStageBurst"
+                                class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-brand-500/25 transition flex items-center gap-2">
+                            <span>@GetStyleEmoji(_selectedStyle)</span>
+                            <span>Trigger Stage Burst</span>
+                        </button>
+
+                        <button type="button"
+                                @onclick="TestFullscreenBurst"
+                                class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold text-xs transition flex items-center gap-2">
+                            <span>🖥️</span>
+                            <span>Fullscreen Burst</span>
+                        </button>
+
+                        <button type="button"
+                                @onclick="() => _showCelebrationModal = true"
+                                class="px-4 py-2.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 font-semibold text-xs transition flex items-center gap-2">
+                            <span>🏆</span>
+                            <span>Celebration Modal</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Decorative crosshairs -->
+                <div class="absolute inset-0 pointer-events-none opacity-20">
+                    <div class="w-full h-px bg-slate-500 top-1/2 absolute"></div>
+                    <div class="h-full w-px bg-slate-500 left-1/2 absolute"></div>
+                    <div class="w-16 h-16 rounded-full border border-dashed border-slate-400 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></div>
+                </div>
+            </div>
+
+            <!-- Code Generator Tabs -->
+            <div class="p-4 rounded-3xl bg-slate-950 border border-slate-800 space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                    <div class="flex items-center gap-1.5">
+                        <button type="button"
+                                @onclick='() => _activeCodeTab = "razor"'
+                                class="px-3 py-1 rounded-lg text-xs font-semibold transition @(_activeCodeTab == "razor" ? "bg-brand-600 text-white font-bold" : "text-slate-400 hover:text-white")">
+                            Razor Markup
+                        </button>
+                        <button type="button"
+                                @onclick='() => _activeCodeTab = "csharp"'
+                                class="px-3 py-1 rounded-lg text-xs font-semibold transition @(_activeCodeTab == "csharp" ? "bg-brand-600 text-white font-bold" : "text-slate-400 hover:text-white")">
+                            C# Trigger
+                        </button>
+                        <button type="button"
+                                @onclick='() => _activeCodeTab = "modal"'
+                                class="px-3 py-1 rounded-lg text-xs font-semibold transition @(_activeCodeTab == "modal" ? "bg-brand-600 text-white font-bold" : "text-slate-400 hover:text-white")">
+                            Victory Modal Recipe
+                        </button>
+                    </div>
+
+                    <button type="button" @onclick="CopyActiveCode" class="text-xs font-bold text-brand-400 hover:underline flex items-center gap-1">
+                        <span>📋</span> Copy Snippet
+                    </button>
+                </div>
+
+                <pre class="font-mono text-xs text-emerald-400 overflow-x-auto p-3 bg-slate-900/80 rounded-2xl max-h-60"><code>@GetActiveCodeSnippet()</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Class { get; set; }
+
+    private TwConfetti? _stageConfettiRef;
+    private TwConfetti? _fullConfettiRef;
+    private TwConfetti.CelebrationStyle _selectedStyle = TwConfetti.CelebrationStyle.Fireworks;
+    private bool _showCelebrationModal = false;
+    private string _activeCodeTab = "razor";
+
+    private int _particleCount = 140;
+    private double _originX = 0.5;
+    private double _originY = 0.5;
+    private double _speedMultiplier = 2.0;
+    private bool _enableSound = true;
+    private double _soundVolume = 0.75;
+
+    private async Task ToggleSound()
+    {
+        _enableSound = !_enableSound;
+        try
+        {
+            await JS.InvokeVoidAsync("blazorSoundFx.setMuted", !_enableSound);
+        }
+        catch { }
+    }
+
+    private async Task UpdateVolume()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("blazorSoundFx.setVolume", _soundVolume);
+        }
+        catch { }
+    }
+
+    private async Task PreviewSound()
+    {
+        try
+        {
+            var styleName = _selectedStyle switch
+            {
+                TwConfetti.CelebrationStyle.Fireworks => "fireworks",
+                TwConfetti.CelebrationStyle.Emojis => "emojis",
+                TwConfetti.CelebrationStyle.Coins => "coins",
+                TwConfetti.CelebrationStyle.Stars => "stars",
+                TwConfetti.CelebrationStyle.Streamers => "streamers",
+                _ => "confetti"
+            };
+            await JS.InvokeVoidAsync("blazorSoundFx.play", styleName, _soundVolume);
+        }
+        catch { }
+    }
+
+    private async Task SelectStyle(TwConfetti.CelebrationStyle style)
+    {
+        _selectedStyle = style;
+        await TestStageBurst();
+    }
+
+    private async Task TestStageBurst()
+    {
+        if (_stageConfettiRef != null)
+        {
+            await _stageConfettiRef.FireStyleAsync(_selectedStyle, _originX, _originY, _particleCount, _speedMultiplier, _enableSound, _soundVolume);
+        }
+    }
+
+    private async Task TestFullscreenBurst()
+    {
+        if (_fullConfettiRef != null)
+        {
+            await _fullConfettiRef.FireStyleAsync(_selectedStyle, _originX, _originY, _particleCount, _speedMultiplier, _enableSound, _soundVolume);
+        }
+    }
+
+    private void ApplyPreset(string preset)
+    {
+        switch (preset)
+        {
+            case "standard":
+                _selectedStyle = TwConfetti.CelebrationStyle.Confetti;
+                _particleCount = 110;
+                _originX = 0.5;
+                _originY = 0.6;
+                _speedMultiplier = 1.2;
+                break;
+            case "reactions":
+                _selectedStyle = TwConfetti.CelebrationStyle.Emojis;
+                _particleCount = 100;
+                _originX = 0.5;
+                _originY = 0.85;
+                _speedMultiplier = 2.5;
+                break;
+            case "golden":
+                _selectedStyle = TwConfetti.CelebrationStyle.Coins;
+                _particleCount = 160;
+                _originX = 0.5;
+                _originY = 0.45;
+                _speedMultiplier = 1.4;
+                break;
+            case "fireworks":
+                _selectedStyle = TwConfetti.CelebrationStyle.Fireworks;
+                _particleCount = 220;
+                _originX = 0.5;
+                _originY = 0.4;
+                _speedMultiplier = 1.8;
+                break;
+        }
+
+        _ = TestStageBurst();
+    }
+
+    private void OnModalClaimed()
+    {
+        _showCelebrationModal = false;
+        Toast.Show("Reward Claimed!", $"Claimed {_selectedStyle} celebration badge to your inventory.", SemanticVariant.Success);
+    }
+
+    private string GetStyleEmoji(TwConfetti.CelebrationStyle style) => style switch
+    {
+        TwConfetti.CelebrationStyle.Confetti => "🎊",
+        TwConfetti.CelebrationStyle.Fireworks => "🎆",
+        TwConfetti.CelebrationStyle.Emojis => "❤️",
+        TwConfetti.CelebrationStyle.Coins => "🪙",
+        TwConfetti.CelebrationStyle.Stars => "⭐",
+        TwConfetti.CelebrationStyle.Streamers => "🎗️",
+        _ => "✨"
+    };
+
+    private string GetActiveCodeSnippet()
+    {
+        return _activeCodeTab switch
+        {
+            "csharp" => $@"// C# Event Handler or Business Logic Trigger
+private TwConfetti? _confetti;
+
+private async Task OnGoalCompleted()
+{{
+    if (_confetti != null)
+    {{
+        // Fire {_selectedStyle} with custom density, speed and procedural sound
+        await _confetti.FireStyleAsync(
+            TwConfetti.CelebrationStyle.{_selectedStyle},
+            originX: {_originX:F2},
+            originY: {_originY:F2},
+            count: {_particleCount},
+            speed: {_speedMultiplier:F1},
+            sound: {_enableSound.ToString().ToLowerInvariant()},
+            soundVolume: {_soundVolume:F2}
+        );
+    }}
+}}",
+            "modal" => $@"<!-- High-Impact Celebration Modal (Beyond plain toasts!) -->
+<TwCelebrationModal @bind-IsOpen=""_showModal""
+                    Title=""Milestone Reached!""
+                    Subtitle=""You unlocked a rare achievement award.""
+                    BadgeEmoji=""{GetStyleEmoji(_selectedStyle)}""
+                    RewardTitle=""10,000 Morale Points""
+                    RewardEmoji=""🎁""
+                    Style=""TwConfetti.CelebrationStyle.{_selectedStyle}""
+                    ParticleCount=""{_particleCount}""
+                    PrimaryActionText=""Claim Reward""
+                    SecondaryActionText=""Share with Team""
+                    OnPrimaryAction=""ClaimReward"" />
+
+@code {{
+    private bool _showModal = true;
+    private void ClaimReward() => _showModal = false;
+}}",
+            _ => $@"<!-- 1. Embedded inside a relative container or full screen -->
+<TwConfetti @ref=""_confetti""
+            FullScreen=""false""
+            Style=""TwConfetti.CelebrationStyle.{_selectedStyle}""
+            ParticleCount=""{_particleCount}""
+            Speed=""{_speedMultiplier:F1}""
+            EnableSound=""{_enableSound.ToString().ToLowerInvariant()}""
+            SoundVolume=""{_soundVolume:F2}"" />
+
+<!-- 2. Or trigger directly on button click -->
+<TwButton OnClick=""TriggerCelebration"">
+    Celebrate!
+</TwButton>"
+        };
+    }
+
+    private async Task CopyActiveCode()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", GetActiveCodeSnippet());
+            Toast.Show("Snippet Copied", "Reusable celebration code copied to clipboard.", SemanticVariant.Success);
+        }
+        catch (Exception)
+        {
+            Toast.Show("Copy Failed", "Clipboard permissions denied.", SemanticVariant.Warning);
+        }
+    }
+}

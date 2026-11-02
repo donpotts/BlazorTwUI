@@ -1,0 +1,105 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="relative group/spatial perspective-1000 select-none @Class"
+     style="perspective: 1200px;"
+     @onmousemove="HandleMouseMove"
+     @onmouseleave="HandleMouseLeave"
+     @attributes="AdditionalAttributes">
+    <div class="relative w-full rounded-3xl p-6 transition-all duration-200 ease-out preserve-3d border border-white/20 dark:border-white/10 shadow-2xl backdrop-blur-xl overflow-hidden @CardBackgroundClass"
+         style="@TransformStyle">
+
+        @* Specular Holographic Glare Follower *@
+        <div class="pointer-events-none absolute -inset-px rounded-3xl opacity-0 group-hover/spatial:opacity-100 transition-opacity duration-300 z-10"
+             style="@GlareStyle"></div>
+
+        @* Dynamic Ambient Aura Glow *@
+        <div class="pointer-events-none absolute -top-24 -right-24 w-64 h-64 rounded-full bg-gradient-to-br @GlowGradient opacity-25 blur-3xl group-hover/spatial:opacity-45 transition-opacity duration-500"></div>
+
+        @* Header Section (Elevated in 3D Space) *@
+        @if (!string.IsNullOrEmpty(Title) || HeaderExtra != null || !string.IsNullOrEmpty(BadgeText))
+        {
+            <div class="relative z-20 flex items-center justify-between pb-4 border-b border-slate-200/40 dark:border-slate-800/60 mb-5"
+                 style="transform: translateZ(28px);">
+                <div class="space-y-1">
+                    <div class="flex items-center gap-2.5">
+                        @if (!string.IsNullOrEmpty(Title))
+                        {
+                            <h3 class="text-base font-extrabold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                                @Title
+                            </h3>
+                        }
+                        @if (!string.IsNullOrEmpty(BadgeText))
+                        {
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-brand-500/15 text-brand-600 dark:text-brand-300 border border-brand-500/20 shadow-xs">
+                                @BadgeText
+                            </span>
+                        }
+                    </div>
+                    @if (!string.IsNullOrEmpty(Subtitle))
+                    {
+                        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">@Subtitle</p>
+                    }
+                </div>
+
+                @if (HeaderExtra != null)
+                {
+                    <div class="shrink-0" style="transform: translateZ(35px);">
+                        @HeaderExtra
+                    </div>
+                }
+            </div>
+        }
+
+        @* Card Body Content (Elevated in 3D Space) *@
+        <div class="relative z-20" style="transform: translateZ(20px);">
+            @ChildContent
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? BadgeText { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? HeaderExtra { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public double MaxTiltDeg { get; set; } = 12.0;
+    [Parameter] public string CardBackgroundClass { get; set; } = "bg-white/80 dark:bg-slate-900/80";
+    [Parameter] public string GlowGradient { get; set; } = "from-brand-500 to-indigo-600";
+    [Parameter(CaptureUnmatchedValues = true)] public IDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private double _rotX = 0;
+    private double _rotY = 0;
+    private double _glareX = 50;
+    private double _glareY = 50;
+    private double _scale = 1.0;
+
+    private string TransformStyle =>
+        $"transform: rotateX({_rotX:F2}deg) rotateY({_rotY:F2}deg) scale3d({_scale:F3}, {_scale:F3}, {_scale:F3}); transform-style: preserve-3d;";
+
+    private string GlareStyle =>
+        $"background: radial-gradient(circle 320px at {_glareX:F1}% {_glareY:F1}%, rgba(255, 255, 255, 0.22), transparent 70%);";
+
+    private void HandleMouseMove(MouseEventArgs e)
+    {
+        // Calculate relative coordinates across element
+        const double w = 480.0;
+        const double h = 320.0;
+        var relX = Math.Clamp(e.OffsetX / w, 0.0, 1.0);
+        var relY = Math.Clamp(e.OffsetY / h, 0.0, 1.0);
+
+        _rotY = (relX - 0.5) * (MaxTiltDeg * 2.0);
+        _rotX = -(relY - 0.5) * (MaxTiltDeg * 2.0);
+        _glareX = relX * 100.0;
+        _glareY = relY * 100.0;
+        _scale = 1.015;
+    }
+
+    private void HandleMouseLeave(MouseEventArgs e)
+    {
+        _rotX = 0;
+        _rotY = 0;
+        _scale = 1.0;
+    }
+}

@@ -1,0 +1,20 @@
+<div class="mx-auto w-full px-4 sm:px-6 lg:px-8 max-w-full box-border @MaxWidthClass @Class" style="padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right));">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string MaxWidth { get; set; } = "7xl";
+    [Parameter] public string? Class { get; set; }
+
+    private string MaxWidthClass => MaxWidth switch
+    {
+        "sm" => "max-w-screen-sm",
+        "md" => "max-w-screen-md",
+        "lg" => "max-w-screen-lg",
+        "xl" => "max-w-screen-xl",
+        "2xl" => "max-w-screen-2xl",
+        "full" => "max-w-full",
+        _ => "max-w-7xl"
+    };
+}

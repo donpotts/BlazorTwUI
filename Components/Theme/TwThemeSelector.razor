@@ -1,0 +1,390 @@
+@namespace BlazorTwUI.Components.Theme
+@inject ThemeService Theme
+@inject ToastService Toast
+@implements IDisposable
+
+<div class="relative inline-block text-left @Class">
+    <!-- Trigger Button -->
+    <button type="button"
+            @onclick="ToggleDropdown"
+            class="group inline-flex items-center gap-1.5 sm:gap-2 px-2.5 py-1.5 sm:px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 hover:bg-slate-50 dark:hover:bg-slate-800/80 shadow-xs hover:shadow text-slate-700 dark:text-slate-200 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500/50 shrink-0"
+            aria-expanded="@_isOpen"
+            aria-haspopup="true"
+            title="Theme & Accent Color Selector">
+
+        <!-- Active Color Dot with Glow -->
+        <span class="relative flex h-3.5 w-3.5 shrink-0 items-center justify-center">
+            @if (Theme.IsCustomAccent && !string.IsNullOrEmpty(Theme.CustomHex))
+            {
+                <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping" style="background-color: @Theme.CustomHex;"></span>
+                <span class="relative inline-flex h-3.5 w-3.5 rounded-full ring-2 ring-white dark:ring-slate-900 shadow-xs" style="background-color: @Theme.CustomHex;"></span>
+            }
+            else
+            {
+                <span class="absolute inline-flex h-full w-full rounded-full opacity-75 animate-ping @(GetColorPulseClass(Theme.CurrentAccent))"></span>
+                <span class="relative inline-flex h-3.5 w-3.5 rounded-full ring-2 ring-white dark:ring-slate-900 shadow-xs @(GetColorBgClass(Theme.CurrentAccent))"></span>
+            }
+        </span>
+
+        <!-- Active Mode Icon -->
+        <span class="text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-200 transition-colors">
+            @if (Theme.CurrentMode == ThemeMode.Dark)
+            {
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+            }
+            else if (Theme.CurrentMode == ThemeMode.Light)
+            {
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+            }
+            else
+            {
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+            }
+        </span>
+
+        @if (!Compact)
+        {
+            <span class="text-xs font-semibold hidden sm:inline">
+                @(Theme.IsCustomAccent ? "Custom" : Theme.CurrentAccent.ToString())
+            </span>
+        }
+
+        <!-- Chevron -->
+        <svg class="w-3.5 h-3.5 text-slate-400 transition-transform duration-200 @(_isOpen ? "rotate-180 text-brand-600 dark:text-brand-400" : "")" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+    </button>
+
+    <!-- Popover Backdrop & Menu -->
+    @if (_isOpen)
+    {
+        <div class="fixed inset-0 z-40" @onclick="CloseDropdown"></div>
+
+        <div class="absolute @(Alignment == "left" ? "left-0" : "right-0") z-50 mt-2 w-80 sm:w-88 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-2xl p-4 space-y-4 animate-fade-in-down origin-top-right">
+            
+            <!-- Section 1: Appearance Mode (Light / Dark / System) -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Appearance</span>
+                    <span class="text-[10px] font-medium text-slate-500 dark:text-slate-400">@Theme.CurrentMode Mode</span>
+                </div>
+                
+                <div class="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/60 dark:border-slate-700/60">
+                    <button type="button"
+                            @onclick="() => SetMode(ThemeMode.Light)"
+                            class="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all duration-150 @(Theme.CurrentMode == ThemeMode.Light ? "bg-white dark:bg-slate-900 text-brand-600 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <span>Light</span>
+                    </button>
+
+                    <button type="button"
+                            @onclick="() => SetMode(ThemeMode.Dark)"
+                            class="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all duration-150 @(Theme.CurrentMode == ThemeMode.Dark ? "bg-white dark:bg-slate-900 text-brand-500 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                        <span>Dark</span>
+                    </button>
+
+                    <button type="button"
+                            @onclick="() => SetMode(ThemeMode.System)"
+                            class="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all duration-150 @(Theme.CurrentMode == ThemeMode.System ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-500 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                        <span>Auto</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contrast: follows the OS prefers-contrast setting until the user chooses -->
+            <div class="px-4 pb-3">
+                <button type="button" role="switch"
+                        @onclick="Theme.ToggleHighContrastAsync"
+                        aria-checked="@Theme.IsHighContrastEffective.ToString().ToLowerInvariant()"
+                        data-testid="contrast-toggle"
+                        class="w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                    <span>High contrast</span>
+                    <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors @(Theme.IsHighContrastEffective ? "bg-brand-600" : "bg-slate-300 dark:bg-slate-600")" aria-hidden="true">
+                        <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform @(Theme.IsHighContrastEffective ? "translate-x-4" : "translate-x-0.5")"></span>
+                    </span>
+                </button>
+            </div>
+
+            <!-- Section 2: Color Palette Swatches (12 Tailwind Shades) -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Accent Color</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800">
+                        @(Theme.IsCustomAccent ? Theme.CustomHex : Theme.CurrentAccent.ToString())
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-6 gap-2">
+                    @foreach (var palette in ColorPalettes)
+                    {
+                        var isSelected = !Theme.IsCustomAccent && Theme.CurrentAccent == palette.Accent;
+                        <button type="button"
+                                @onclick="() => SelectAccent(palette.Accent)"
+                                title="@palette.Name (@palette.Hex)"
+                                aria-label="@palette.Name"
+                                class="group relative flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-150 hover:scale-110 active:scale-95 focus:outline-none @(isSelected ? "ring-2 ring-offset-2 ring-slate-900 dark:ring-white dark:ring-offset-slate-900 scale-105 shadow-md" : "hover:shadow-sm opacity-85 hover:opacity-100")"
+                                style="background-color: @palette.Hex;">
+                            @if (isSelected)
+                            {
+                                <svg class="w-4 h-4 text-white drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            }
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Section 3: Custom Hex Color Engine -->
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Custom Accent</span>
+                    <button type="button"
+                            @onclick="ResetToIndigo"
+                            class="text-[10px] font-semibold text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+                        Reset Default
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <!-- HTML5 Color Picker Well -->
+                    <div class="relative w-8 h-8 rounded-lg overflow-hidden border border-slate-300 dark:border-slate-700 shrink-0 shadow-inner">
+                        <input type="color"
+                               value="@_customHexInput"
+                               @onchange="HandleNativeColorChange"
+                               class="absolute -top-2 -left-2 w-12 h-12 cursor-pointer border-0 p-0"
+                               title="Click for native color wheel" />
+                    </div>
+
+                    <!-- Hex Code Input -->
+                    <div class="relative flex-1">
+                        <span class="absolute inset-y-0 left-2.5 flex items-center text-xs font-mono text-slate-400">#</span>
+                        <input type="text"
+                               @bind="_customHexInputText"
+                               @bind:event="oninput"
+                               @onkeyup="HandleHexKey"
+                               placeholder="6366F1"
+                               maxlength="7"
+                               class="w-full pl-6 pr-2 py-1.5 text-xs font-mono uppercase rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                    </div>
+
+                    <!-- Apply Button -->
+                    <button type="button"
+                            @onclick="ApplyCustomHex"
+                            class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition active:scale-95">
+                        Apply
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section 4: Live Token Inspector -->
+            <div class="pt-2 border-t border-slate-100 dark:border-slate-800 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 p-2.5 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Live Token Preview</span>
+                    <button type="button"
+                            @onclick="CopyActiveColor"
+                            class="text-[10px] font-mono text-slate-500 hover:text-brand-600 dark:hover:text-brand-400 transition"
+                            title="Copy active color HEX">
+                        📋 Copy Hex
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" class="px-2.5 py-1 rounded-lg bg-brand-600 text-white text-[11px] font-semibold shadow-xs">
+                        Button
+                    </button>
+                    <span class="px-2 py-0.5 rounded-full bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-800 text-[10px] font-semibold">
+                        Badge
+                    </span>
+                    <span class="px-2 py-0.5 rounded-lg border-2 border-brand-500 text-brand-600 dark:text-brand-400 text-[10px] font-bold">
+                        Border
+                    </span>
+                </div>
+            </div>
+
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public string Alignment { get; set; } = "right";
+    [Parameter] public string? Class { get; set; }
+
+    private bool _isOpen;
+    private string _customHexInput = "#6366f1";
+    private string _customHexInputText = "6366F1";
+
+    private sealed record ColorPalette(AccentTheme Accent, string Name, string Hex);
+
+    private static readonly ColorPalette[] ColorPalettes = new[]
+    {
+        new ColorPalette(AccentTheme.Indigo, "Indigo", "#6366f1"),
+        new ColorPalette(AccentTheme.Violet, "Violet", "#8b5cf6"),
+        new ColorPalette(AccentTheme.Sky, "Sky Blue", "#0ea5e9"),
+        new ColorPalette(AccentTheme.Cyan, "Cyan", "#06b6d4"),
+        new ColorPalette(AccentTheme.Teal, "Teal", "#14b8a6"),
+        new ColorPalette(AccentTheme.Emerald, "Emerald", "#10b981"),
+        new ColorPalette(AccentTheme.Amber, "Amber", "#f59e0b"),
+        new ColorPalette(AccentTheme.Orange, "Orange", "#f97316"),
+        new ColorPalette(AccentTheme.Rose, "Rose", "#f43f5e"),
+        new ColorPalette(AccentTheme.Pink, "Pink", "#ec4899"),
+        new ColorPalette(AccentTheme.Fuchsia, "Fuchsia", "#d946ef"),
+        new ColorPalette(AccentTheme.Slate, "Slate", "#64748b")
+    };
+
+    protected override void OnInitialized()
+    {
+        Theme.OnChange += HandleThemeChanged;
+        SyncInputsFromTheme();
+    }
+
+    private void HandleThemeChanged()
+    {
+        SyncInputsFromTheme();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void SyncInputsFromTheme()
+    {
+        if (Theme.IsCustomAccent && !string.IsNullOrEmpty(Theme.CustomHex))
+        {
+            _customHexInput = Theme.CustomHex.StartsWith("#") ? Theme.CustomHex : "#" + Theme.CustomHex;
+            _customHexInputText = _customHexInput.TrimStart('#').ToUpperInvariant();
+        }
+        else
+        {
+            var match = ColorPalettes.FirstOrDefault(c => c.Accent == Theme.CurrentAccent);
+            if (match != null)
+            {
+                _customHexInput = match.Hex;
+                _customHexInputText = match.Hex.TrimStart('#').ToUpperInvariant();
+            }
+        }
+    }
+
+    private void ToggleDropdown()
+    {
+        _isOpen = !_isOpen;
+    }
+
+    private void CloseDropdown()
+    {
+        _isOpen = false;
+    }
+
+    private async Task SetMode(ThemeMode mode)
+    {
+        await Theme.SetModeAsync(mode);
+    }
+
+    private async Task SelectAccent(AccentTheme accent)
+    {
+        await Theme.SetAccentAsync(accent);
+        SyncInputsFromTheme();
+        Toast.Show("Theme Accent Updated", $"{accent} accent applied across tokens", SemanticVariant.Success);
+    }
+
+    private async Task ResetToIndigo()
+    {
+        await Theme.SetAccentAsync(AccentTheme.Indigo);
+        SyncInputsFromTheme();
+        Toast.Show("Accent Reset", "Default Indigo tone restored", SemanticVariant.Info);
+    }
+
+    private async Task HandleNativeColorChange(ChangeEventArgs e)
+    {
+        var hex = e.Value?.ToString() ?? "#6366f1";
+        _customHexInput = hex;
+        _customHexInputText = hex.TrimStart('#').ToUpperInvariant();
+        await Theme.SetCustomAccentAsync(hex);
+    }
+
+    private async Task HandleHexKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyCustomHex();
+        }
+    }
+
+    private async Task ApplyCustomHex()
+    {
+        var text = _customHexInputText.Trim().TrimStart('#');
+        if (text.Length == 3)
+        {
+            text = $"{text[0]}{text[0]}{text[1]}{text[1]}{text[2]}{text[2]}";
+        }
+        if (text.Length == 6)
+        {
+            var hex = "#" + text;
+            _customHexInput = hex;
+            await Theme.SetCustomAccentAsync(hex);
+            Toast.Show("Custom Accent Applied", $"Applied {hex.ToUpperInvariant()}", SemanticVariant.Success);
+        }
+        else
+        {
+            Toast.Show("Invalid HEX", "Please enter 3 or 6 hex characters", SemanticVariant.Danger);
+        }
+    }
+
+    private void CopyActiveColor()
+    {
+        var hex = Theme.IsCustomAccent && !string.IsNullOrEmpty(Theme.CustomHex)
+            ? Theme.CustomHex
+            : ColorPalettes.FirstOrDefault(c => c.Accent == Theme.CurrentAccent)?.Hex ?? "#6366f1";
+
+        Toast.Show("Copied Color Token", hex.ToUpperInvariant(), SemanticVariant.Success);
+    }
+
+    private static string GetColorBgClass(AccentTheme accent) => accent switch
+    {
+        AccentTheme.Emerald => "bg-emerald-500",
+        AccentTheme.Rose => "bg-rose-500",
+        AccentTheme.Amber => "bg-amber-500",
+        AccentTheme.Violet => "bg-violet-500",
+        AccentTheme.Sky => "bg-sky-500",
+        AccentTheme.Cyan => "bg-cyan-500",
+        AccentTheme.Teal => "bg-teal-500",
+        AccentTheme.Fuchsia => "bg-fuchsia-500",
+        AccentTheme.Pink => "bg-pink-500",
+        AccentTheme.Orange => "bg-orange-500",
+        AccentTheme.Slate => "bg-slate-500",
+        _ => "bg-indigo-500"
+    };
+
+    private static string GetColorPulseClass(AccentTheme accent) => accent switch
+    {
+        AccentTheme.Emerald => "bg-emerald-400",
+        AccentTheme.Rose => "bg-rose-400",
+        AccentTheme.Amber => "bg-amber-400",
+        AccentTheme.Violet => "bg-violet-400",
+        AccentTheme.Sky => "bg-sky-400",
+        AccentTheme.Cyan => "bg-cyan-400",
+        AccentTheme.Teal => "bg-teal-400",
+        AccentTheme.Fuchsia => "bg-fuchsia-400",
+        AccentTheme.Pink => "bg-pink-400",
+        AccentTheme.Orange => "bg-orange-400",
+        AccentTheme.Slate => "bg-slate-400",
+        _ => "bg-indigo-400"
+    };
+
+    public void Dispose()
+    {
+        Theme.OnChange -= HandleThemeChanged;
+    }
+}

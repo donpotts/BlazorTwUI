@@ -1,0 +1,317 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden @CustomClass">
+    <!-- Toolbar Header -->
+    <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-850 border-b border-slate-200 dark:border-slate-800 text-xs text-slate-650 dark:text-slate-350">
+        <!-- Left: Font Controls -->
+        <div class="flex items-center gap-2 flex-wrap">
+            <span class="inline-flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-200">
+                <svg class="w-3.5 h-3.5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                </svg>
+                @Title
+            </span>
+
+            <div class="h-4 w-px bg-slate-300 dark:bg-slate-750"></div>
+
+            <!-- Font Sizer (Step buttons & slider) -->
+            <div class="inline-flex items-center rounded-lg bg-slate-200/70 dark:bg-slate-800 p-0.5" title="Adjust Font Size">
+                <button type="button" 
+                        @onclick="DecreaseFontSize" 
+                        disabled="@(FontSize <= 10)"
+                        class="px-2 py-0.5 rounded text-xs font-mono font-medium hover:bg-white dark:hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-transparent transition-colors text-slate-700 dark:text-slate-200"
+                        title="Smaller Font (A-)">
+                    A-
+                </button>
+                <span class="px-2 font-mono text-[11px] font-semibold text-slate-800 dark:text-slate-100 min-w-[36px] text-center">
+                    @(FontSize)px
+                </span>
+                <button type="button" 
+                        @onclick="IncreaseFontSize" 
+                        disabled="@(FontSize >= 24)"
+                        class="px-2 py-0.5 rounded text-xs font-mono font-medium hover:bg-white dark:hover:bg-slate-700 disabled:opacity-40 disabled:hover:bg-transparent transition-colors text-slate-700 dark:text-slate-200"
+                        title="Larger Font (A+)">
+                    A+
+                </button>
+            </div>
+
+            <!-- Font Family Selector -->
+            <select @bind="FontFamily" @bind:after="OnSettingChanged"
+                    class="rounded-lg bg-slate-200/70 dark:bg-slate-800 border-none px-2 py-1 text-xs font-mono text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-brand-500 cursor-pointer"
+                    title="Code Font Family">
+                <option value="font-mono">Default Mono</option>
+                <option value="'JetBrains Mono', monospace">JetBrains Mono</option>
+                <option value="'Fira Code', monospace">Fira Code</option>
+                <option value="'Cascadia Code', monospace">Cascadia Code</option>
+                <option value="'SF Mono', Menlo, monospace">SF Mono</option>
+                <option value="'Source Code Pro', monospace">Source Code Pro</option>
+                <option value="Consolas, monospace">Consolas</option>
+            </select>
+
+            <!-- Line Height Toggle -->
+            <div class="inline-flex items-center rounded-lg bg-slate-200/70 dark:bg-slate-800 p-0.5 text-[11px]">
+                <button type="button" @onclick='() => SetLineHeight("leading-snug")' 
+                        class="px-1.5 py-0.5 rounded @(LineHeight == "leading-snug" ? "bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 font-semibold shadow-xs" : "text-slate-600 dark:text-slate-400")"
+                        title="Tight line height">1.3x</button>
+                <button type="button" @onclick='() => SetLineHeight("leading-normal")' 
+                        class="px-1.5 py-0.5 rounded @(LineHeight == "leading-normal" ? "bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 font-semibold shadow-xs" : "text-slate-600 dark:text-slate-400")"
+                        title="Standard line height">1.5x</button>
+                <button type="button" @onclick='() => SetLineHeight("leading-relaxed")' 
+                        class="px-1.5 py-0.5 rounded @(LineHeight == "leading-relaxed" ? "bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 font-semibold shadow-xs" : "text-slate-600 dark:text-slate-400")"
+                        title="Relaxed line height">1.8x</button>
+            </div>
+        </div>
+
+        <!-- Right: Toggles & Presets -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <!-- Ligatures Toggle -->
+            <button type="button" @onclick="ToggleLigatures"
+                    class="px-2 py-1 rounded-lg text-xs font-mono transition-colors @(EnableLigatures ? "bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/30" : "bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")"
+                    title="Toggle code ligatures (!=, =>, ===)">
+                !=&gt; Ligatures
+            </button>
+
+            <!-- Word Wrap Toggle -->
+            <button type="button" @onclick="ToggleWordWrap"
+                    class="p-1 rounded-lg transition-colors @(WordWrap ? "bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/30" : "bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")"
+                    title="Toggle Word Wrap">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v2m0 0l-3-3m3 3l3-3M3 6h18M3 14h6m-6 4h6" />
+                </svg>
+            </button>
+
+            <!-- Line Numbers Toggle -->
+            <button type="button" @onclick="ToggleLineNumbers"
+                    class="px-1.5 py-1 rounded-lg text-xs font-mono transition-colors @(ShowLineNumbers ? "bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/30" : "bg-slate-200/70 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")"
+                    title="Toggle Line Numbers">
+                # 1..n
+            </button>
+
+            <!-- Color Theme Preset Selector -->
+            <select @bind="ThemePreset" @bind:after="OnSettingChanged"
+                    class="rounded-lg bg-slate-200/70 dark:bg-slate-800 border-none px-2 py-1 text-xs font-medium text-slate-800 dark:text-slate-200 focus:ring-1 focus:ring-brand-500 cursor-pointer"
+                    title="Syntax Theme Preset">
+                <option value="emerald">Emerald Studio</option>
+                <option value="vs-dark">VS Dark</option>
+                <option value="github-dark">GitHub Dark</option>
+                <option value="monokai">Monokai Pro</option>
+                <option value="cyberpunk">Cyberpunk Neon</option>
+                <option value="light">Paper Light</option>
+            </select>
+
+            <!-- Reset Button -->
+            <button type="button" @onclick="ResetSettings"
+                    class="p-1 rounded-lg bg-slate-200/70 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                    title="Reset to Defaults">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Code Display Area -->
+    <div class="@GetThemeContainerClass() p-4 overflow-x-auto transition-all"
+         style="@GetCodeStyles()">
+        @if (ChildContent != null)
+        {
+            @ChildContent
+        }
+        else
+        {
+            <!-- Default Sample Code Display if standalone -->
+            <pre class="@(WordWrap ? "whitespace-pre-wrap break-words" : "whitespace-pre") @LineHeight font-mono">
+                @if (ShowLineNumbers)
+                {
+                    <div class="grid grid-cols-[auto_1fr] gap-4">
+                        <div class="text-right select-none opacity-40 font-mono text-[11px] leading-relaxed">
+                            <div>1</div>
+                            <div>2</div>
+                            <div>3</div>
+                            <div>4</div>
+                            <div>5</div>
+                            <div>6</div>
+                            <div>7</div>
+                            <div>8</div>
+                        </div>
+                        <div class="@GetSyntaxColorClass()">@SampleCode</div>
+                    </div>
+                }
+                else
+                {
+                    <code class="@GetSyntaxColorClass()">@SampleCode</code>
+                }
+            </pre>
+        }
+    </div>
+
+    <!-- Status Bar Footer -->
+    <div class="px-3 py-1.5 bg-slate-100 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 text-[11px] flex items-center justify-between text-slate-500 dark:text-slate-400 font-mono">
+        <div class="flex items-center gap-3">
+            <span>Size: @(FontSize)px</span>
+            <span>Family: @GetFontFamilyDisplayName()</span>
+            <span>Ligatures: @(EnableLigatures ? "On" : "Off")</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <span>Wrap: @(WordWrap ? "Enabled" : "Disabled")</span>
+            <span class="text-brand-500 dark:text-brand-400">@ThemePreset.ToUpperInvariant()</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Code Editor & Font Toolbar";
+    [Parameter] public int FontSize { get; set; } = 13;
+    [Parameter] public EventCallback<int> FontSizeChanged { get; set; }
+    [Parameter] public string FontFamily { get; set; } = "'JetBrains Mono', monospace";
+    [Parameter] public string LineHeight { get; set; } = "leading-normal";
+    [Parameter] public bool EnableLigatures { get; set; } = true;
+    [Parameter] public bool WordWrap { get; set; } = false;
+    [Parameter] public bool ShowLineNumbers { get; set; } = true;
+    [Parameter] public string ThemePreset { get; set; } = "emerald";
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? SampleCode { get; set; } = 
+@"// High-performance Blazor Tailwind Engine
+public sealed record ComponentSpec(string Name, string Category)
+{
+    public bool HasDarkModeSupport => true;
+    public string RenderBadge() => $""[OK] {Name} ({Category})"";
+}
+
+var spec = new ComponentSpec(""TwCodeFontModifier"", ""Code & Syntax Studio"");
+Console.WriteLine(spec.RenderBadge());";
+
+    [Parameter] public EventCallback<CodeFontSettings> OnSettingsChanged { get; set; }
+
+    public class CodeFontSettings
+    {
+        public int FontSize { get; set; }
+        public string FontFamily { get; set; } = "";
+        public string LineHeight { get; set; } = "";
+        public bool EnableLigatures { get; set; }
+        public bool WordWrap { get; set; }
+        public bool ShowLineNumbers { get; set; }
+        public string ThemePreset { get; set; } = "";
+    }
+
+    private async Task IncreaseFontSize()
+    {
+        if (FontSize < 24)
+        {
+            FontSize += 1;
+            await FontSizeChanged.InvokeAsync(FontSize);
+            await NotifyChange();
+        }
+    }
+
+    private async Task DecreaseFontSize()
+    {
+        if (FontSize > 10)
+        {
+            FontSize -= 1;
+            await FontSizeChanged.InvokeAsync(FontSize);
+            await NotifyChange();
+        }
+    }
+
+    private async Task SetLineHeight(string lh)
+    {
+        LineHeight = lh;
+        await NotifyChange();
+    }
+
+    private async Task ToggleLigatures()
+    {
+        EnableLigatures = !EnableLigatures;
+        await NotifyChange();
+    }
+
+    private async Task ToggleWordWrap()
+    {
+        WordWrap = !WordWrap;
+        await NotifyChange();
+    }
+
+    private async Task ToggleLineNumbers()
+    {
+        ShowLineNumbers = !ShowLineNumbers;
+        await NotifyChange();
+    }
+
+    private async Task ResetSettings()
+    {
+        FontSize = 13;
+        FontFamily = "'JetBrains Mono', monospace";
+        LineHeight = "leading-normal";
+        EnableLigatures = true;
+        WordWrap = false;
+        ShowLineNumbers = true;
+        ThemePreset = "emerald";
+        await FontSizeChanged.InvokeAsync(FontSize);
+        await NotifyChange();
+    }
+
+    private async Task OnSettingChanged()
+    {
+        await NotifyChange();
+    }
+
+    private async Task NotifyChange()
+    {
+        if (OnSettingsChanged.HasDelegate)
+        {
+            await OnSettingsChanged.InvokeAsync(new CodeFontSettings
+            {
+                FontSize = FontSize,
+                FontFamily = FontFamily,
+                LineHeight = LineHeight,
+                EnableLigatures = EnableLigatures,
+                WordWrap = WordWrap,
+                ShowLineNumbers = ShowLineNumbers,
+                ThemePreset = ThemePreset
+            });
+        }
+    }
+
+    private string GetCodeStyles()
+    {
+        var styles = $"font-size: {FontSize}px; font-family: {FontFamily};";
+        if (EnableLigatures)
+            styles += " font-variant-ligatures: normal;";
+        else
+            styles += " font-variant-ligatures: none;";
+        return styles;
+    }
+
+    private string GetFontFamilyDisplayName() => FontFamily switch
+    {
+        "'JetBrains Mono', monospace" => "JetBrains",
+        "'Fira Code', monospace" => "Fira Code",
+        "'Cascadia Code', monospace" => "Cascadia",
+        "'SF Mono', Menlo, monospace" => "SF Mono",
+        "'Source Code Pro', monospace" => "Source Code",
+        "Consolas, monospace" => "Consolas",
+        _ => "Default"
+    };
+
+    private string GetThemeContainerClass() => ThemePreset switch
+    {
+        "vs-dark" => "bg-[#1E1E1E] text-[#D4D4D4]",
+        "github-dark" => "bg-[#0D1117] text-[#C9D1D9]",
+        "monokai" => "bg-[#272822] text-[#F8F8F2]",
+        "cyberpunk" => "bg-[#090D16] text-[#00FFCC]",
+        "light" => "bg-slate-50 text-slate-900 border-t border-slate-200",
+        _ => "bg-slate-950 text-emerald-400"
+    };
+
+    private string GetSyntaxColorClass() => ThemePreset switch
+    {
+        "vs-dark" => "text-[#9CDCFE]",
+        "github-dark" => "text-[#79C0FF]",
+        "monokai" => "text-[#A6E22E]",
+        "cyberpunk" => "text-[#00FFCC]",
+        "light" => "text-slate-800",
+        _ => "text-emerald-400"
+    };
+}

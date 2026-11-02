@@ -1,0 +1,77 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="relative inline-flex items-center justify-center @Class">
+    @ChildContent
+
+    @if (Visible)
+    {
+        <span class="absolute @PlacementClass flex items-center justify-center @ShapeClass @VariantClass z-10 select-none shadow-sm font-bold">
+            @if (ShowPing)
+            {
+                <span class="absolute -inset-0.5 rounded-full animate-ping opacity-75 @PingColorClass"></span>
+            }
+
+            @if (DotOnly)
+            {
+                <span class="w-2.5 h-2.5 rounded-full bg-current"></span>
+            }
+            else
+            {
+                <span class="relative text-[10px] leading-none px-1.5 py-0.5 font-bold">
+                    @(Count > MaxCount ? $"{MaxCount}+" : Count.ToString())
+                </span>
+            }
+        </span>
+    }
+</div>
+
+@code {
+    public enum BadgePlacement
+    {
+        TopRight,
+        TopLeft,
+        BottomRight,
+        BottomLeft
+    }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool Visible { get; set; } = true;
+    [Parameter] public bool DotOnly { get; set; }
+    [Parameter] public bool ShowPing { get; set; }
+    [Parameter] public int Count { get; set; }
+    [Parameter] public int MaxCount { get; set; } = 99;
+    [Parameter] public SemanticVariant Variant { get; set; } = SemanticVariant.Danger;
+    [Parameter] public BadgePlacement Placement { get; set; } = BadgePlacement.TopRight;
+    [Parameter] public string? Class { get; set; }
+
+    private string PlacementClass => Placement switch
+    {
+        BadgePlacement.TopRight => "-top-1.5 -right-1.5",
+        BadgePlacement.TopLeft => "-top-1.5 -left-1.5",
+        BadgePlacement.BottomRight => "-bottom-1.5 -right-1.5",
+        BadgePlacement.BottomLeft => "-bottom-1.5 -left-1.5",
+        _ => "-top-1.5 -right-1.5"
+    };
+
+    private string ShapeClass => DotOnly ? "w-2.5 h-2.5 rounded-full p-0" : "rounded-full min-w-[18px] min-h-[18px]";
+
+    private string VariantClass => Variant switch
+    {
+        SemanticVariant.Danger => "bg-rose-500 text-white ring-2 ring-white dark:ring-slate-900",
+        SemanticVariant.Primary => "bg-brand-600 text-white ring-2 ring-white dark:ring-slate-900",
+        SemanticVariant.Success => "bg-emerald-500 text-white ring-2 ring-white dark:ring-slate-900",
+        SemanticVariant.Warning => "bg-amber-500 text-white ring-2 ring-white dark:ring-slate-900",
+        SemanticVariant.Info => "bg-sky-500 text-white ring-2 ring-white dark:ring-slate-900",
+        _ => "bg-slate-500 text-white ring-2 ring-white dark:ring-slate-900"
+    };
+
+    private string PingColorClass => Variant switch
+    {
+        SemanticVariant.Danger => "bg-rose-400",
+        SemanticVariant.Primary => "bg-brand-400",
+        SemanticVariant.Success => "bg-emerald-400",
+        SemanticVariant.Warning => "bg-amber-400",
+        SemanticVariant.Info => "bg-sky-400",
+        _ => "bg-slate-400"
+    };
+}

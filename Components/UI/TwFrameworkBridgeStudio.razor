@@ -1,0 +1,602 @@
+<div class="space-y-8">
+    <!-- Top Banner: Core Styling & Primitives Studio -->
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 border border-indigo-500/30 shadow-xl">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div class="space-y-3 max-w-3xl">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-amber-400 text-slate-950">
+                        ⚡ v0.8.0 Core Styling & Primitives
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-400/30">
+                        TwMerge • TwClassBuilder • TwSlots
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-pink-500/20 text-pink-300 border border-pink-400/30">
+                        246 Production Components
+                    </span>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-black tracking-tight">
+                    Next-Gen Styling Engine, Multi-Part Slots & Interactive Primitives
+                </h2>
+                <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    Featuring deterministic Tailwind utility conflict resolution (<code class="text-amber-300">TwMerge</code>), fluent class composition (<code class="text-amber-300">TwClassBuilder</code>), multi-part component slot customization (<code class="text-amber-300">TwSlots</code>), decoupled reactive validation (<code class="text-amber-300">TwValidatorGroup</code>), 3D stacked toast notifications, hover preview cards, application menubars, and device mockups.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 shrink-0">
+                <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
+                    <div class="text-xl font-black text-amber-400">246</div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Components</div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
+                    <div class="text-xl font-black text-emerald-400">TwMerge</div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Conflict Engine</div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
+                    <div class="text-xl font-black text-indigo-400">TwSlots</div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Multi-Part Slots</div>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
+                    <div class="text-xl font-black text-pink-400">v0.8.0</div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">.NET 10 WASM</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 1: TwMerge & Multi-Slot Inspector -->
+    <TwCard Title="1. Multi-Part Component Slots + TwClassBuilder + TwMerge Conflict Resolver"
+            Subtitle="Test deterministic Tailwind utility conflict resolution and multi-part component slot overrides live"
+            OverflowVisible="true"
+            Classes="@_activeCardSlots">
+        <HeaderContent>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" @onclick='() => SetCardSlotPreset("default")'
+                        class="px-2.5 py-1 rounded-lg text-xs font-bold border transition @(_cardSlotPreset == "default" ? "bg-brand-600 text-white border-brand-600" : "border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300")">
+                    Default Slots
+                </button>
+                <button type="button" @onclick='() => SetCardSlotPreset("cyber")'
+                        class="px-2.5 py-1 rounded-lg text-xs font-bold border transition @(_cardSlotPreset == "cyber" ? "bg-indigo-600 text-white border-indigo-600" : "border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300")">
+                    ✨ Cyber Neon Slot Theme
+                </button>
+                <button type="button" @onclick='() => SetCardSlotPreset("emerald")'
+                        class="px-2.5 py-1 rounded-lg text-xs font-bold border transition @(_cardSlotPreset == "emerald" ? "bg-emerald-600 text-white border-emerald-600" : "border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300")">
+                    🌿 Emerald Glass Slots
+                </button>
+            </div>
+        </HeaderContent>
+        <ChildContent>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left: Interactive TwMerge Playground -->
+                <div class="space-y-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black uppercase tracking-wider text-brand-600 dark:text-brand-400">
+                            Live TwMerge.Merge() Conflict Resolver
+                        </span>
+                        <span class="text-[11px] font-mono text-slate-400">Zero CSS Cascade Collisions</span>
+                    </div>
+
+                    <div class="space-y-2 text-xs">
+                        <label class="block font-semibold text-slate-600 dark:text-slate-400">Base Component Classes (Default):</label>
+                        <div class="p-2.5 rounded-xl bg-slate-200/70 dark:bg-slate-900 font-mono text-[11px] text-slate-600 dark:text-slate-400">
+                            @_baseButtonDemoClasses
+                        </div>
+
+                        <label class="block font-semibold text-slate-700 dark:text-slate-300 pt-1">User <code class="text-brand-500">Class</code> Override Input:</label>
+                        <input type="text"
+                               @bind="_customMergeOverride"
+                               @bind:event="oninput"
+                               placeholder="e.g. rounded-full px-8 bg-emerald-600 text-base shadow-xl"
+                               class="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+
+                        <div class="flex flex-wrap gap-1.5 pt-1">
+                            <button type="button" @onclick='() => _customMergeOverride = "rounded-full px-8 bg-emerald-600 hover:bg-emerald-500 shadow-lg"'
+                                    class="px-2 py-1 rounded-md text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                Pill Emerald Override
+                            </button>
+                            <button type="button" @onclick='() => _customMergeOverride = "rounded-none px-6 py-3 bg-amber-400 text-slate-950 font-black"'
+                                    class="px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                Brutalist Cyber Gold
+                            </button>
+                            <button type="button" @onclick='() => _customMergeOverride = "rounded-2xl bg-rose-600 px-10 shadow-xl"'
+                                    class="px-2 py-1 rounded-md text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                                Wide Crimson Action
+                            </button>
+                        </div>
+
+                        <label class="block font-semibold text-emerald-600 dark:text-emerald-400 pt-2">Resolved Merged Output (Conflicts Stripped):</label>
+                        <div class="p-2.5 rounded-xl bg-emerald-950/10 dark:bg-emerald-950/40 border border-emerald-500/30 font-mono text-[11px] text-emerald-700 dark:text-emerald-300 break-all">
+                            @TwMerge.Merge(_baseButtonDemoClasses, _customMergeOverride)
+                        </div>
+                    </div>
+
+                    <div class="pt-2 flex flex-wrap items-center gap-3">
+                        <TwButton Class="@_customMergeOverride">
+                            Live Merged TwButton
+                        </TwButton>
+                        <TwButton Variant="ButtonVariant.Soft">Soft Variant</TwButton>
+                        <TwButton Variant="ButtonVariant.Shadow">Shadow Glow</TwButton>
+                        <TwButton Variant="ButtonVariant.Flat">Flat Surface</TwButton>
+                        <TwButton Variant="ButtonVariant.Link">Link Action</TwButton>
+                    </div>
+                </div>
+
+                <!-- Right: TwUser Multi-Slot Component & HoverCard -->
+                <div class="space-y-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-black uppercase tracking-wider text-purple-600 dark:text-purple-400">
+                            TwUser Multi-Part Slots + TwHoverCard
+                        </span>
+                        <span class="text-[11px] font-mono text-slate-400">Hover any profile below</span>
+                    </div>
+
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Each <code class="font-mono text-brand-500">&lt;TwUser&gt;</code> exposes strongly-typed <code class="font-mono text-brand-500">TwUserSlots</code> (<code class="font-mono">Base</code>, <code class="font-mono">Avatar</code>, <code class="font-mono">StatusDot</code>, <code class="font-mono">Name</code>, <code class="font-mono">Description</code>) wrapped inside a hover-safe <code class="font-mono text-brand-500">&lt;TwHoverCard&gt;</code>:
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                        <TwHoverCard Placement="TwPopoverPlacement.BottomStart" ShowArrow="@_showHoverCardArrows">
+                            <TriggerContent>
+                                <TwUser Name="Elena Rostova"
+                                        Description="Principal UI Architect • @@elena_ui"
+                                        Initials="ER"
+                                        Status="online"
+                                        Classes="@(new TwUserSlots {
+                                            Base = "w-full bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xs",
+                                            Name = "text-brand-600 dark:text-brand-400 font-bold"
+                                        })" />
+                            </TriggerContent>
+                            <ChildContent>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <TwUser Name="Elena Rostova" Description="@@elena_ui" Initials="ER" Status="online" />
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-500">Maintainer</span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                                         Lead architect of the <code class="font-mono text-brand-500">TwMerge</code> conflict engine and multi-slot component primitives for .NET 10 Blazor WASM.
+                                    </p>
+                                    <div class="flex items-center gap-4 text-[11px] text-slate-400 font-mono pt-1 border-t border-slate-100 dark:border-slate-800">
+                                        <span><strong class="text-slate-800 dark:text-white">246</strong> Components</span>
+                                        <span><strong class="text-slate-800 dark:text-white">174</strong> Unit Tests</span>
+                                    </div>
+                                </div>
+                            </ChildContent>
+                        </TwHoverCard>
+
+                        <TwHoverCard Placement="TwPopoverPlacement.BottomEnd" ShowArrow="@_showHoverCardArrows">
+                            <TriggerContent>
+                                <TwUser Name="Marcus Vance"
+                                        Description="Staff FinTech Engineer • @@mvance"
+                                        Initials="MV"
+                                        Status="busy"
+                                        Classes="@(new TwUserSlots {
+                                            Base = "w-full bg-gradient-to-r from-indigo-950/90 to-slate-900 p-3 rounded-2xl border border-indigo-500/30 text-white",
+                                            Avatar = "from-amber-400 to-rose-500 text-slate-950",
+                                            Name = "text-amber-300 font-black",
+                                            Description = "text-indigo-200"
+                                        })" />
+                            </TriggerContent>
+                            <ChildContent>
+                                <div class="space-y-2.5">
+                                    <div class="text-xs font-bold text-slate-900 dark:text-white">Custom Slot Override Active</div>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                        This card's trigger uses <code class="font-mono text-amber-500">TwUserSlots</code> to style the container gradient, avatar ring, and typography without custom CSS files.
+                                    </p>
+                                </div>
+                            </ChildContent>
+                        </TwHoverCard>
+                    </div>
+
+                    <!-- Menubar & ToggleGroup -->
+                    <div class="pt-3 border-t border-slate-200/80 dark:border-slate-800 space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Application Menubar & ToggleGroup:</span>
+                            <span class="text-[11px] font-mono text-brand-500">Last Action: @_lastMenubarAction</span>
+                        </div>
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <TwMenubar Menus="@_demoMenus" OnItemSelected="HandleMenubarCommand" />
+                            <TwToggleGroup Options="@_demoToggleOptions"
+                                           Multiple="true"
+                                           @bind-SelectedValues="_selectedFormatting"
+                                           Variant="ButtonVariant.Soft" />
+                        </div>
+                        <div data-testid="toggle-group-preview"
+                             class="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between gap-2">
+                            <span class="@GetToggleFormattingClasses()">
+                                Live Formatted Token: &lt;TwCard Classes="@_cardSlotPreset" /&gt;
+                            </span>
+                            <span class="text-[10px] font-mono text-slate-400">
+                                Active: @(string.Join(", ", _selectedFormatting.OrderBy(x => x)))
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </ChildContent>
+    </TwCard>
+
+    <!-- Section 2: 3D Stacked Toast Deck + Reactive Floating Label Validator -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Left: 3D Stacked Toast Engine -->
+        <TwCard Title="2. 3D Stacked Toast Notification Deck"
+                Subtitle="Hover over the notification stack below to fan out 3D stacked toasts or trigger an async promise toast">
+            <ChildContent>
+                <div class="space-y-4">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <TwButton Size="ComponentSize.Sm" Variant="ButtonVariant.Primary"
+                                  OnClick='() => _sonnerRef?.Push("Deployment Succeeded", "Production bundle v0.8.0 is live on edge.", SemanticVariant.Success, "Inspect")'>
+                            + Success Toast
+                        </TwButton>
+                        <TwButton Size="ComponentSize.Sm" Variant="ButtonVariant.Soft"
+                                  OnClick='() => _sonnerRef?.Push("Schema Drift Detected", "2 columns in TwDataGrid require migration.", SemanticVariant.Warning, "Review")'>
+                            + Warning Toast
+                        </TwButton>
+                        <TwButton Size="ComponentSize.Sm" Variant="ButtonVariant.Destructive"
+                                  OnClick='() => _sonnerRef?.Push("Rate Limit Exceeded", "Retrying stream in 1.5s...", SemanticVariant.Danger)'>
+                            + Error Toast
+                        </TwButton>
+                        <TwButton Size="ComponentSize.Sm" Variant="ButtonVariant.Shadow"
+                                  OnClick='async () => { if (_sonnerRef != null) await _sonnerRef.PushPromiseAsync("Compiling Razor WASM...", "WASM Bundle Ready!", "Compiled 246 components in 420ms"); }'>
+                            ⚡ Promise Toast
+                        </TwButton>
+                    </div>
+
+                    <TwSonner @ref="_sonnerRef" Items="@_initialSonnerItems" Expanded="@_expandToastStack" />
+                </div>
+            </ChildContent>
+        </TwCard>
+
+        <!-- Right: Reactive Floating Labels + ValidatorGroup -->
+        <TwCard Title="3. Reactive Floating Label Validator"
+                Subtitle="Decoupled <TwValidatorGroup> & <TwFloatingLabelInput> in Outlined, Filled, and Standard styles">
+            <ChildContent>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between text-xs p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800/80">
+                        <span class="font-bold text-slate-700 dark:text-slate-300">
+                            Live Validator Group Telemetry:
+                        </span>
+                        <span class="font-mono font-bold @(_validatorGroup?.IsAllValid == true ? "text-emerald-500" : "text-amber-500")">
+                            Valid: @(_validatorGroup?.ValidCount ?? 0) / @(_validatorGroup?.TotalCount ?? 3) • Invalid: @(_validatorGroup?.InvalidCount ?? 0)
+                        </span>
+                    </div>
+
+                    <TwValidatorGroup @ref="_validatorGroup" OnStatusChanged=" _ => StateHasChanged()">
+                        <TwFloatingLabelInput Label="Enterprise Workspace Slug (Outlined)"
+                                              Variant="FloatingLabelVariant.Outlined"
+                                              @bind-Value="_valSlug"
+                                              Required="true"
+                                              MinLength="4"
+                                              Pattern="^[a-z0-9-]+$"
+                                              HelperText="Lowercase letters, numbers, and hyphens only (min 4 chars)."
+                                              ErrorMessage="Slug must be at least 4 lowercase alphanumeric characters or hyphens."
+                                              SuccessMessage="Workspace slug is available!" />
+
+                        <TwFloatingLabelInput Label="Production API Endpoint (Filled)"
+                                              Variant="FloatingLabelVariant.Filled"
+                                              @bind-Value="_valEndpoint"
+                                              Required="true"
+                                              Validator="@(v => !string.IsNullOrWhiteSpace(v) && v.StartsWith("https://") ? null : "Endpoint must start with https://")"
+                                              HelperText="Must use TLS (https://)."
+                                              SuccessMessage="TLS endpoint verified." />
+
+                        <TwFloatingLabelInput Label="Security Contact Email (Standard)"
+                                              Variant="FloatingLabelVariant.Standard"
+                                              @bind-Value="_valEmail"
+                                              Required="true"
+                                              Pattern="@_emailPattern"
+                                              ErrorMessage="Enter a valid enterprise email address."
+                                              SuccessMessage="Security contact validated." />
+                    </TwValidatorGroup>
+
+                    <div class="flex items-center gap-2 pt-2">
+                        <TwButton Size="ComponentSize.Sm" Variant="ButtonVariant.Primary" OnClick="() => _validatorGroup?.ValidateAll()">
+                            ✓ Validate All Fields
+                        </TwButton>
+                        <TwButton Size="ComponentSize.Sm" Variant="ButtonVariant.Outline" OnClick="() => _validatorGroup?.ResetAll()">
+                            Reset States
+                        </TwButton>
+                    </div>
+                </div>
+            </ChildContent>
+        </TwCard>
+    </div>
+
+    <!-- Section 3: Device Mockups, Animated Swap & Semantic Chat Bubbles -->
+    <TwCard Title="4. Device Mockups, Animated Swap & Semantic Chat Bubbles"
+            Subtitle="Switch live between Browser, Phone Dynamic Island, Terminal Code, and Window mockups">
+        <HeaderContent>
+            <div class="flex flex-wrap items-center gap-2">
+                @foreach (var kind in Enum.GetValues<MockupKind>())
+                {
+                    <button type="button"
+                            @onclick="() => _activeMockupKind = kind"
+                            class="px-3 py-1 rounded-xl text-xs font-bold transition @(_activeMockupKind == kind ? "bg-brand-600 text-white shadow-xs" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300")">
+                        @kind Mockup
+                    </button>
+                }
+            </div>
+        </HeaderContent>
+        <ChildContent>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                <!-- Left 7 cols: Active TwMockup -->
+                <div class="lg:col-span-7">
+                    <TwMockup Kind="@_activeMockupKind"
+                              Url="https://blazortwui.dev/v0.8/studio"
+                              Title="BlazorTwUI CLI — TwMerge & Slots"
+                              Class="@(_swapRotate ? "" : "ring-2 ring-amber-400/70 shadow-amber-500/10")"
+                              CodeLines="@(_activeMockupKind == MockupKind.Code ? _demoCodeLines : null)">
+                        <div class="space-y-4">
+                            @if (_swapPlay)
+                            {
+                                <div data-testid="mockup-live-telemetry"
+                                     class="flex items-center justify-between px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-[11px] font-mono text-emerald-400">
+                                    <span>● LIVE TELEMETRY STREAM ACTIVE</span>
+                                    <span>120 FPS • 0.14ms TwMerge</span>
+                                </div>
+                            }
+
+                            @foreach (var msg in _chatMessages)
+                            {
+                                <TwChatBubble Sender="@msg.Sender"
+                                              Initials="@msg.Initials"
+                                              Timestamp="@msg.Timestamp"
+                                              IsEnd="@msg.IsEnd"
+                                              Variant="@msg.Variant"
+                                              Message="@msg.Message"
+                                              FooterStatus="@msg.FooterStatus" />
+                            }
+
+                            @if (_swapFlip)
+                            {
+                                <div data-testid="unlocked-chat-composer"
+                                     class="pt-2 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                                    <input type="text"
+                                           @bind="_newChatMessage"
+                                           @bind:event="oninput"
+                                           placeholder="Type a live chat message into the mockup..."
+                                           class="flex-1 rounded-xl border border-indigo-500/40 bg-white dark:bg-slate-900 px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                                    <TwButton Size="ComponentSize.Sm" Variant="ButtonVariant.Primary" OnClick="SendChatBubble">
+                                        Send Bubble
+                                    </TwButton>
+                                </div>
+                            }
+                        </div>
+                    </TwMockup>
+                </div>
+
+                <!-- Right 5 cols: TwSwap Interactive Primitives -->
+                <div class="lg:col-span-5 space-y-4 p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800">
+                    <div class="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                        Animated &lt;TwSwap&gt; Primitives
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Click any swap button below to test <code class="font-mono">Rotate</code>, <code class="font-mono">Flip</code>, and <code class="font-mono">Fade</code> two-state transitions and live Mockup controls:
+                    </p>
+
+                    <div class="grid grid-cols-3 gap-3 text-center">
+                        <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <TwSwap @bind-Active="_swapRotate" Animation="SwapAnimation.Rotate" Class="w-12 h-12 bg-amber-500/10 text-2xl">
+                                <OnContent>☀️</OnContent>
+                                <OffContent>🌙</OffContent>
+                            </TwSwap>
+                            <div class="text-[11px] font-bold">Rotate Swap</div>
+                            <div class="text-[10px] font-mono text-slate-400">@(_swapRotate ? "Standard Ring" : "Amber Ring")</div>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <TwSwap @bind-Active="_swapFlip" Animation="SwapAnimation.Flip" Class="w-12 h-12 bg-indigo-500/10 text-2xl">
+                                <OnContent>🔓</OnContent>
+                                <OffContent>🔒</OffContent>
+                            </TwSwap>
+                            <div class="text-[11px] font-bold">3D Flip Swap</div>
+                            <div class="text-[10px] font-mono text-slate-400">@(_swapFlip ? "Chat Unlocked" : "Chat Locked")</div>
+                        </div>
+
+                        <div class="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                            <TwSwap @bind-Active="_swapPlay" Animation="SwapAnimation.Fade" Class="w-12 h-12 bg-emerald-500/10 text-2xl">
+                                <OnContent>⏸️</OnContent>
+                                <OffContent>▶️</OffContent>
+                            </TwSwap>
+                            <div class="text-[11px] font-bold">Fade Swap</div>
+                            <div class="text-[10px] font-mono text-slate-400">@(_swapPlay ? "Stream Live" : "Stream Paused")</div>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 rounded-xl bg-indigo-950/10 dark:bg-indigo-950/40 border border-indigo-500/20 text-xs space-y-1.5">
+                        <div class="font-bold text-indigo-600 dark:text-indigo-300">Deterministic Styling & Slot Architecture</div>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Built for .NET 10 Blazor WebAssembly and Tailwind CSS v3.4+ to eliminate class-cascade collisions and provide full per-slot customization.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </ChildContent>
+    </TwCard>
+</div>
+
+@code {
+    private sealed class DemoChatMessage
+    {
+        public string Sender { get; set; } = string.Empty;
+        public string Initials { get; set; } = string.Empty;
+        public string Timestamp { get; set; } = string.Empty;
+        public bool IsEnd { get; set; }
+        public SemanticVariant Variant { get; set; } = SemanticVariant.Default;
+        public string Message { get; set; } = string.Empty;
+        public string FooterStatus { get; set; } = string.Empty;
+    }
+
+    private string _cardSlotPreset = "default";
+    private TwCardSlots? _activeCardSlots;
+
+    private readonly string _baseButtonDemoClasses = "inline-flex items-center justify-center gap-2 font-medium rounded-xl px-4 py-2.5 text-sm bg-brand-600 text-white shadow-sm";
+    private string _customMergeOverride = "rounded-full px-8 bg-emerald-600 hover:bg-emerald-500 shadow-lg";
+
+    private string _lastMenubarAction = "Ready";
+    private bool _expandToastStack = false;
+    private bool _showHoverCardArrows = true;
+    private HashSet<string> _selectedFormatting = new() { "bold", "code" };
+
+    private TwSonner? _sonnerRef;
+    private List<TwSonner.SonnerToastItem> _initialSonnerItems = new()
+    {
+        new() { Title = "TwMerge Conflict Engine Ready", Description = "User Class overrides now deterministically replace conflicting base utilities.", Variant = SemanticVariant.Success, ActionLabel = "Docs" },
+        new() { Title = "Multi-Part TwSlots Active", Description = "Target Base, Header, Body, Footer, Avatar & Title independently.", Variant = SemanticVariant.Info },
+        new() { Title = "ValidatorGroup Linked", Description = "3 floating-label inputs registered in reactive validation scope.", Variant = SemanticVariant.Primary }
+    };
+
+    private TwValidatorGroup? _validatorGroup;
+    private string? _valSlug = "blazor-tw-ui";
+    private string? _valEndpoint = "https://api.blazortailwind.dev/v1";
+    private string? _valEmail = "architect@enterprise.io";
+    private readonly string _emailPattern = @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+
+    private MockupKind _activeMockupKind = MockupKind.Browser;
+    private bool _swapRotate = true;
+    private bool _swapFlip = false;
+    private bool _swapPlay = false;
+    private string _newChatMessage = string.Empty;
+
+    private readonly List<DemoChatMessage> _chatMessages = new()
+    {
+        new()
+        {
+            Sender = "BlazorTwUI System",
+            Initials = "BT",
+            Timestamp = "14:32",
+            Message = "Multi-part TwSlots and TwMerge conflict resolution are active across TwButton, TwCard, TwUser, and TwHoverCard!",
+            FooterStatus = "Delivered • Zero CSS Specificity Clashes"
+        },
+        new()
+        {
+            Sender = "You (Lead Architect)",
+            Initials = "ME",
+            Timestamp = "14:33",
+            IsEnd = true,
+            Variant = SemanticVariant.Primary,
+            Message = "Awesome! Device Mockups and reactive ValidatorGroups work out of the box too.",
+            FooterStatus = "Seen just now"
+        }
+    };
+
+    private readonly List<TwMockup.MockupCodeLine> _demoCodeLines = new()
+    {
+        new() { Prefix = "$", Text = "dotnet add package BlazorTwUI --version 0.8.0" },
+        new() { Prefix = ">", Text = "Building BlazorTwUI (.NET 10 WASM • 246 components)...", HighlightClass = "text-amber-300" },
+        new() { Prefix = "✓", Text = "TwMerge + TwSlots + 10 interactive primitives verified (0 warnings).", HighlightClass = "bg-emerald-500/20 text-emerald-300 font-bold" }
+    };
+
+    private readonly List<TwMenubar.MenubarMenu> _demoMenus = new()
+    {
+        new()
+        {
+            Title = "File",
+            Items = new()
+            {
+                new() { Label = "New Studio Tab", Shortcut = "⌘T" },
+                new() { Label = "Export TwSlots JSON", Shortcut = "⇧⌘E" },
+                new() { IsSeparator = true },
+                new() { Label = "Print NACHA Endorsement", Shortcut = "⌘P" }
+            }
+        },
+        new()
+        {
+            Title = "Edit",
+            Items = new()
+            {
+                new() { Label = "Undo Slot Override", Shortcut = "⌘Z" },
+                new() { Label = "Run TwMerge Optimizer", Shortcut = "⌥⌘M" }
+            }
+        },
+        new()
+        {
+            Title = "View",
+            Items = new()
+            {
+                new() { Label = "Expand Toast Stack", Checkable = true, Checked = false },
+                new() { Label = "Show HoverCard Arrows", Checkable = true, Checked = true }
+            }
+        }
+    };
+
+    private readonly List<TwToggleGroup.ToggleItem> _demoToggleOptions = new()
+    {
+        new() { Value = "bold", Icon = "𝐁", Label = "Bold", Tooltip = "Toggle Bold" },
+        new() { Value = "italic", Icon = "𝐼", Label = "Italic", Tooltip = "Toggle Italic" },
+        new() { Value = "code", Icon = "</>", Label = "Code", Tooltip = "Toggle Code" }
+    };
+
+    private string GetToggleFormattingClasses() =>
+        TwClassBuilder.Create("transition-all duration-150")
+            .AddIf(_selectedFormatting.Contains("bold"), "font-black text-slate-900 dark:text-white")
+            .AddIf(_selectedFormatting.Contains("italic"), "italic underline decoration-amber-500")
+            .AddIf(_selectedFormatting.Contains("code"), "font-mono bg-indigo-500/15 px-2 py-0.5 rounded border border-indigo-500/30 text-indigo-400")
+            .Build();
+
+    private void HandleMenubarCommand(TwMenubar.MenubarItem item)
+    {
+        _lastMenubarAction = item.Label;
+        switch (item.Label)
+        {
+            case "Expand Toast Stack":
+                _expandToastStack = item.Checked;
+                break;
+            case "Show HoverCard Arrows":
+                _showHoverCardArrows = item.Checked;
+                break;
+            case "Undo Slot Override":
+                SetCardSlotPreset("default");
+                _customMergeOverride = "rounded-full px-8 bg-emerald-600 hover:bg-emerald-500 shadow-lg";
+                break;
+            case "Run TwMerge Optimizer":
+                SetCardSlotPreset("cyber");
+                _customMergeOverride = "rounded-none px-12 py-4 bg-amber-400 text-slate-950 font-black shadow-2xl";
+                break;
+            case "Export TwSlots JSON":
+                _activeMockupKind = MockupKind.Code;
+                break;
+            case "New Studio Tab":
+                _activeMockupKind = MockupKind.Browser;
+                break;
+        }
+    }
+
+    private void SendChatBubble()
+    {
+        if (string.IsNullOrWhiteSpace(_newChatMessage))
+            return;
+
+        _chatMessages.Add(new DemoChatMessage
+        {
+            Sender = "You (Live E2E Action)",
+            Initials = "E2",
+            Timestamp = DateTime.Now.ToString("HH:mm"),
+            IsEnd = true,
+            Variant = SemanticVariant.Success,
+            Message = _newChatMessage.Trim(),
+            FooterStatus = "Delivered via Live TwSwap Composer"
+        });
+        _newChatMessage = string.Empty;
+    }
+
+    private void SetCardSlotPreset(string preset)
+    {
+        _cardSlotPreset = preset;
+        _activeCardSlots = preset switch
+        {
+            "cyber" => new TwCardSlots
+            {
+                Base = "border-2 border-indigo-500/60 shadow-xl shadow-indigo-500/10",
+                Header = "bg-gradient-to-r from-indigo-950/90 via-slate-900 to-purple-950/90 text-white border-b border-indigo-500/30",
+                Title = "text-amber-300 font-black tracking-tight",
+                Subtitle = "text-indigo-200"
+            },
+            "emerald" => new TwCardSlots
+            {
+                Base = "border-2 border-emerald-500/50 shadow-xl shadow-emerald-500/10",
+                Header = "bg-emerald-950/10 dark:bg-emerald-950/50 border-b border-emerald-500/20",
+                Title = "text-emerald-600 dark:text-emerald-400 font-black"
+            },
+            _ => null
+        };
+    }
+}

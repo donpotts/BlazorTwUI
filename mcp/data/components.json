@@ -1,0 +1,6010 @@
+[
+  {
+    "name": "TwMfaAuthSuite",
+    "category": "Security & Compliance",
+    "description": "Enterprise-grade multi-factor authentication suite supporting TOTP authenticator app QR setup, SMS/Email 6-digit OTP with auto-advancing segmented inputs, FIDO2 / WebAuthn biometric passkeys, and single-use emergency recovery codes.",
+    "snippet": "<TwMfaAuthSuite OnEnrollmentChanged=\\",
+    "parameters": [
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Custom Tailwind CSS classes."
+      },
+      {
+        "name": "OnEnrollmentChanged",
+        "type": "EventCallback<bool>",
+        "default": "null",
+        "description": "Callback fired when user enrolls or updates 2FA status."
+      }
+    ]
+  },
+  {
+    "name": "TwPrizeWheel",
+    "category": "Gamification & Celebrations",
+    "description": "Interactive SVG spinning fortune prize wheel with realistic deceleration physics, top pointer tick indicator, customizable prize wedges, celebratory confetti burst, and winner announcement banner for team morale boosts and party giveaways.",
+    "snippet": "<TwPrizeWheel OnPrizeWon=\\",
+    "parameters": [
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Custom Tailwind CSS classes."
+      },
+      {
+        "name": "Prizes",
+        "type": "List<PrizeItem>",
+        "default": "Default 8 wedges",
+        "description": "List of prize wedges with titles, emojis, colors, and descriptions (inspired by MyWheel)."
+      },
+      {
+        "name": "OnPrizeWon",
+        "type": "EventCallback<PrizeItem>",
+        "default": "null",
+        "description": "Fired upon completion of deceleration on the winning wedge."
+      }
+    ]
+  },
+  {
+    "name": "TwCelebrationEditor",
+    "category": "Gamification & Celebrations",
+    "description": "Visual workbench for configuring canvas particle celebrations and confetti bursts. Sliders for particle count, velocity, spread angle, gravity, and origin height with instant live testing and copyable C#/Razor markup.",
+    "snippet": "<TwCelebrationEditor />",
+    "parameters": [
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Custom Tailwind CSS classes."
+      }
+    ]
+  },
+  {
+    "name": "TwRewardsCenter",
+    "category": "Enterprise & Workplace Operations",
+    "description": "Employee perks and recognition rewards catalog with category filtering (Gift Cards, Swag, Workplace Flexibility, Learning, Wellness), points wallet ledger, search bar, and digital voucher redemption modal.",
+    "snippet": "<TwRewardsCenter />",
+    "parameters": [
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Custom Tailwind CSS classes."
+      }
+    ]
+  },
+  {
+    "name": "TwScrollCraft",
+    "category": "Animation & Micro-Interactions",
+    "description": "Scroll-driven object animation container with parallax depth layers, focal zone reading fades, and pinned illustration scrubbers linked to viewport progress.",
+    "snippet": "<TwScrollCraft Title=\\",
+    "parameters": [
+      {
+        "name": "Steps",
+        "type": "List<ScrollStep>",
+        "default": "Default 4 steps",
+        "description": "List of steps with title, description, badge, and icon."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Custom Tailwind CSS classes."
+      }
+    ]
+  },
+  {
+    "name": "TwMediaRecorder",
+    "category": "Hardware & Media Interop",
+    "description": "In-browser microphone and HD webcam media recorder with live SVG audio frequency visualizer, recording status pulse, VU meters, playback preview via TwMediaPlayer, and local file download.",
+    "snippet": "<TwMediaRecorder OnRecordingCompleted=\\",
+    "parameters": [
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Custom Tailwind CSS classes."
+      },
+      {
+        "name": "OnRecordingCompleted",
+        "type": "EventCallback<int>",
+        "default": "null",
+        "description": "Fired when user completes a recording with the elapsed seconds."
+      }
+    ]
+  },
+  {
+    "name": "TwFinancialChart",
+    "category": "Financial & Analytical Intelligence",
+    "description": "High-frequency Candlestick and Area financial charting engine with real-time volume histogram, 20-period moving average line, crosshair hover HUD inspector, timeframe range presets (1W, 1M, 3M, YTD, 1Y, ALL), and zero-JS vector SVG rendering.",
+    "snippet": "<TwFinancialChart Ticker=\\",
+    "parameters": [
+      {
+        "name": "Data",
+        "type": "List<FinancialCandle>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwTreemap",
+    "category": "Financial & Analytical Intelligence",
+    "description": "Multi-dimensional area treemap and valuation heatmap visualizing hierarchical assets, portfolio market caps, and performance returns with squarified 2D tiling, dynamic drill-down breadcrumb, and color ramps.",
+    "snippet": "<TwTreemap Title=\\",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "List<TreemapItem>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnItemClick",
+        "type": "EventCallback<TreemapItem>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwPivotGrid",
+    "category": "Financial & Analytical Intelligence",
+    "description": "Enterprise OLAP cross-tabulation matrix supporting dynamic row/column field pivoting, value aggregations (Sum, Average, Count), interactive field drop drawer, and hierarchical subtotal and grand total calculations.",
+    "snippet": "<TwPivotGrid Title=\\",
+    "parameters": [
+      {
+        "name": "Records",
+        "type": "List<PivotRecord>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwIconPicker",
+    "category": "Developer Studio & Content Creation",
+    "description": "Interactive search-and-select icon & emoji explorer with live filtering, outline/solid toggles, size previews, and one-click Razor component snippet copying.",
+    "snippet": "<TwIconPicker Title=\\",
+    "parameters": []
+  },
+  {
+    "name": "TwIcon",
+    "category": "Developer Studio & Content Creation",
+    "description": "Zero-dependency pure C# WASM inline vector SVG icon engine supporting 100+ curated icons (Heroicons & Lucide paths), customizable sizes, stroke widths, outline/solid modes, and semantic color inheritance.",
+    "snippet": "<TwIcon Name=\\",
+    "parameters": [
+      {
+        "name": "Size",
+        "type": "ComponentSize",
+        "default": "ComponentSize.Md",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "IsSolid",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "StrokeWidth",
+        "type": "double",
+        "default": "1.75",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwEmoji",
+    "category": "Developer Studio & Content Creation",
+    "description": "Modern emoji component with shortcode mapping (:rocket:, :fire:, :sparkles:), Unicode glyph parsing, hover scale physics, and click-to-copy clipboard integration.",
+    "snippet": "<TwEmoji Size=\\",
+    "parameters": [
+      {
+        "name": "Shortcode",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Glyph",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Size",
+        "type": "ComponentSize",
+        "default": "ComponentSize.Md",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "AnimateOnHover",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CopyOnClick",
+        "type": "bool",
+        "default": "false",
+        "description": "Callback invoked when state changes or item is selected."
+      }
+    ]
+  },
+  {
+    "name": "TwMarkdownEditor",
+    "category": "Developer Studio & Content Creation",
+    "description": "Enterprise-grade dual Markdown and HTML editor featuring live pure C# WASM typography preview, split/edit/preview modes, toolbar actions (headings, lists, bold, italics, code, tables), fullscreen Zen focus, and media drawer supporting image, video, audio, and link embedding.",
+    "snippet": "<TwMarkdownEditor Value=\\",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      }
+    ]
+  },
+  {
+    "name": "TwDockManager",
+    "category": "Developer Studio & Content Creation",
+    "description": "Desktop-grade multi-pane docking studio layout engine featuring Solution Explorer tree, multi-tab central document workspace, bottom diagnostic terminal output, and collapsible properties inspector.",
+    "snippet": "<TwDockManager CustomClass=\\",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      }
+    ]
+  },
+  {
+    "name": "TwSpreadsheet",
+    "category": "Developer Studio & Content Creation",
+    "description": "Spreadsheet calculation engine with alphanumeric grid coordinates (A1..E10), formula bar, formula evaluation (=SUM, =AVG, arithmetic), direct cell inline editing, and formatted total readouts.",
+    "snippet": "<TwSpreadsheet Title=\\",
+    "parameters": []
+  },
+  {
+    "name": "TwOrgChart",
+    "category": "Developer Studio & Content Creation",
+    "description": "Hierarchical organization tree visualizer with pure vector SVG orthogonal connector lines, search highlight filter, recursive branch expand/collapse toggles, and A-/A+ canvas zoom controls.",
+    "snippet": "<TwOrgChart Title=\\",
+    "parameters": [
+      {
+        "name": "Root",
+        "type": "OrgNode?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwUserRegistrationForm",
+    "category": "Task-Purpose Enterprise Forms",
+    "description": "Turnkey enterprise user registration form featuring full name, username, corporate email, role selector, real-time password strength meter, terms consent, and federated SSO options.",
+    "snippet": "<TwUserRegistrationForm Title=\\",
+    "parameters": [
+      {
+        "name": "ShowSocialLogins",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnRegistered",
+        "type": "EventCallback<RegistrationModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnSsoRequested",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwUserEditForm",
+    "category": "Task-Purpose Enterprise Forms",
+    "description": "Comprehensive profile and security management form featuring interactive avatar selection, corporate role attributes, 2FA toggle, session management, and audited account deactivation.",
+    "snippet": "<TwUserEditForm CustomClass=\\",
+    "parameters": [
+      {
+        "name": "Model",
+        "type": "UserProfileModel?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnSaved",
+        "type": "EventCallback<UserProfileModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnDeactivate",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwLoginForm",
+    "category": "Task-Purpose Enterprise Forms",
+    "description": "Split-screen enterprise authentication form featuring curated Unsplash architectural imagery, inspiring technical quotes, federated SSO buttons, password visibility toggle, and remember-me persistence.",
+    "snippet": "<TwLoginForm Title=\\",
+    "parameters": [
+      {
+        "name": "ShowSocialLogins",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AllowRememberMe",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnLogin",
+        "type": "EventCallback<LoginCredentials>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnSsoLogin",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnForgotPassword",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwTermsOfUseForm",
+    "category": "Task-Purpose Enterprise Forms",
+    "description": "Executive legal terms agreement viewer with section jump pills, PDF export, review progress tracking, signatory name/company binding, and tamper-evident SHA-256 hash stamp.",
+    "snippet": "<TwTermsOfUseForm Title=\\",
+    "parameters": [
+      {
+        "name": "OnAccepted",
+        "type": "EventCallback<TermsAcceptanceModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnDeclined",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwCookieConsent",
+    "category": "Task-Purpose Enterprise Forms",
+    "description": "GDPR and CCPA compliant cookie preference manager featuring strictly necessary lock, customizable functional/telemetry/marketing toggles, and instant preferences persistence.",
+    "snippet": "<TwCookieConsent Title=\\",
+    "parameters": [
+      {
+        "name": "OnSaved",
+        "type": "EventCallback<CookiePreferencesModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwPrivacyPolicyForm",
+    "category": "Task-Purpose Enterprise Forms",
+    "description": "Enterprise privacy charter featuring zero-CDN data guarantees and an automated self-service Data Subject Request (DSR) portal for machine-readable JSON/ZIP exports and audited account erasure.",
+    "snippet": "<TwPrivacyPolicyForm Title=\\",
+    "parameters": [
+      {
+        "name": "OnExportRequested",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnErasureRequested",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwAboutMissionForm",
+    "category": "Task-Purpose Enterprise Forms",
+    "description": "Enterprise vision and architectural charter banner with live performance metrics, engineering pillars, leadership team cards, and an interactive executive consultation inquiry form.",
+    "snippet": "<TwAboutMissionForm MissionHeading=\\",
+    "parameters": [
+      {
+        "name": "OnInquirySubmitted",
+        "type": "EventCallback<ContactInquiryModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwPledgeForm",
+    "category": "Task-Purpose Enterprise Forms",
+    "description": "Official Code of Conduct, security compliance, and supply chain integrity pledge form with three sworn adherence principles, signatory details, and digital signature capture.",
+    "snippet": "<TwPledgeForm Title=\\",
+    "parameters": [
+      {
+        "name": "OnPledgeAffirmed",
+        "type": "EventCallback<PledgeModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwAppShell",
+    "category": "Layout & Application Shell",
+    "description": "The root application shell supporting four dynamic layout variants: Sidebar (mobile drawer + desktop sidebar), TopNav (horizontal bar with mobile sheet), CompactRail (icon rail), and Stacked (single column).",
+    "snippet": "<TwAppShell Layout=\\",
+    "parameters": [
+      {
+        "name": "Layout",
+        "type": "LayoutVariant",
+        "default": "LayoutVariant.Sidebar",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "BrandContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "HeaderActions",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SidebarContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SidebarFooter",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "TopNavContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "RailContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "BottomNavContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      }
+    ]
+  },
+  {
+    "name": "TwContainer",
+    "category": "Layout & Application Shell",
+    "description": "Responsive max-width container wrapper with automatic padding and breakpoint clamping (sm, md, lg, xl, 2xl, full).",
+    "snippet": "<TwContainer MaxWidth=\\",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwGrid",
+    "category": "Layout & Application Shell",
+    "description": "Mobile-first responsive grid system with configurable column distributions (1-2-3, 1-2-4, 2-3-4, etc.) and gap scales.",
+    "snippet": "<TwGrid Preset=\\",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSplitter",
+    "category": "Layout & Application Shell",
+    "description": "Enterprise resizable split layout container supporting horizontal and vertical orientations, draggable divider handle, and one-click collapse/reset buttons.",
+    "snippet": "<TwSplitter Orientation=\\",
+    "parameters": [
+      {
+        "name": "Orientation",
+        "type": "SplitOrientation",
+        "default": "SplitOrientation.Horizontal",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SplitPercentage",
+        "type": "double",
+        "default": "40",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MinPercentage",
+        "type": "double",
+        "default": "15",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MaxPercentage",
+        "type": "double",
+        "default": "85",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MinHeight",
+        "type": "int",
+        "default": "280",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "PaneOne",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "PaneTwo",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SplitPercentageChanged",
+        "type": "EventCallback<double>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      }
+    ]
+  },
+  {
+    "name": "TwBottomNav",
+    "category": "Layout & Application Shell",
+    "description": "Fixed application bottom navigation bar for touch devices with active state indicators, notification badges, and haptic tap styling.",
+    "snippet": "<TwBottomNav Items=\\",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "IReadOnlyList<NavItem>",
+        "default": "Array.Empty<NavItem>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActiveId",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnSelect",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "ThemeProvider",
+    "category": "Theme & Palette Customization",
+    "description": "Cascading state provider managing light, dark, and system color mode preferences with localStorage synchronization and zero-FOUC initialization.",
+    "snippet": "<ThemeProvider>\\n    <span>Content</span>\\n</ThemeProvider>",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      }
+    ]
+  },
+  {
+    "name": "ThemeSwitcher",
+    "category": "Theme & Palette Customization",
+    "description": "Segmented mode selector with accent swatches for quick switching between Light, Dark, and OS System appearance.",
+    "snippet": "<ThemeSwitcher ShowAccentPicker=\\",
+    "parameters": [
+      {
+        "name": "Compact",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowAccentPicker",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwThemeSelector",
+    "category": "Theme & Palette Customization",
+    "description": "Modern comprehensive color dropdown selector featuring preset palette swatches and 16M+ custom hex color picker integration.",
+    "snippet": "<TwThemeSelector Alignment=\\",
+    "parameters": [
+      {
+        "name": "Compact",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwThemeSwitcher",
+    "category": "Theme & Palette Customization",
+    "description": "Compact pill switcher for toggling between dark, light, and system themes.",
+    "snippet": "<TwThemeSwitcher ShowAccentPicker=\\",
+    "parameters": [
+      {
+        "name": "Compact",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowAccentPicker",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwColorPicker",
+    "category": "Theme & Palette Customization",
+    "description": "Interactive 16M+ hex and RGB color picker with preview swatch, hex validation, and opacity support.",
+    "snippet": "<TwColorPicker Value=\\",
+    "parameters": [
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "ShowValueBadge",
+        "type": "bool",
+        "default": "true",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "AllowCustom",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowCopy",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Inline",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwCodeFontModifier",
+    "category": "Code & Syntax Studio",
+    "description": "Enterprise code editor toolbar with interactive font sizer (A-/A+), monospace font switcher (JetBrains, Fira Code, Cascadia), ligatures toggle, line height stepper, word wrap, and syntax theme presets.",
+    "snippet": "<TwCodeFontModifier Title=\\",
+    "parameters": [
+      {
+        "name": "FontSize",
+        "type": "int",
+        "default": "13",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "FontSizeChanged",
+        "type": "EventCallback<int>",
+        "default": "null",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "EnableLigatures",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "WordWrap",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowLineNumbers",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "OnSettingsChanged",
+        "type": "EventCallback<CodeFontSettings>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      }
+    ]
+  },
+  {
+    "name": "TwCodeTabs",
+    "category": "Code & Syntax Studio",
+    "description": "Multi-file tabbed code viewer with window controls, active file tabs, language icons, line numbers, and one-click clipboard copy.",
+    "snippet": "<TwCodeTabs Tabs=\\",
+    "parameters": [
+      {
+        "name": "Tabs",
+        "type": "IReadOnlyList<CodeTab>",
+        "default": "Array.Empty<CodeTab>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowLineNumbers",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AllowCopy",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwCodeDiff",
+    "category": "Code & Syntax Studio",
+    "description": "Git-style visual code diff viewer highlighting additions and deletions with side-by-side line numbering, syntax color coding, and stats.",
+    "snippet": "<TwCodeDiff FileName=\\",
+    "parameters": [
+      {
+        "name": "Lines",
+        "type": "IReadOnlyList<DiffLine>",
+        "default": "Array.Empty<DiffLine>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OldCode",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "NewCode",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AllowCopy",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSnippet",
+    "category": "Code & Syntax Studio",
+    "description": "macOS terminal CLI command snippet container with prompt badges, window controls, and one-click copy transition.",
+    "snippet": "<TwSnippet Code=\\",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "ShowHeader",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowWindowControls",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowCopyButton",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwCodeBlock",
+    "category": "Code & Syntax Studio",
+    "description": "Syntax code viewer with language badges, line numbers, and copy-to-clipboard button.",
+    "snippet": "<TwCodeBlock Code=\\",
+    "parameters": [
+      {
+        "name": "Code",
+        "type": "string",
+        "default": "string.Empty",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "FileName",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwFilterBuilder",
+    "category": "Advanced Forms & Inputs",
+    "description": "Visual query and filter builder supporting nested boolean AND/OR criteria trees, comparison operators, typed values, and LINQ/SQL predicate generation.",
+    "snippet": "<TwFilterBuilder Title=\\",
+    "parameters": [
+      {
+        "name": "RootGroup",
+        "type": "FilterGroup",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AvailableFields",
+        "type": "List<FieldDefinition>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowPreview",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnFilterChanged",
+        "type": "EventCallback<FilterGroup>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      }
+    ]
+  },
+  {
+    "name": "TwDropzone",
+    "category": "Advanced Forms & Inputs",
+    "description": "Enterprise multi-file drag-and-drop ingestion zone with animated focus border, file extension badges, individual upload progress bars, and queue management.",
+    "snippet": "<TwDropzone AllowMultiple=\\",
+    "parameters": [
+      {
+        "name": "AllowMultiple",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MaxFileSizeMb",
+        "type": "int",
+        "default": "25",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "Files",
+        "type": "List<DropzoneFile>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "FilesChanged",
+        "type": "EventCallback<List<DropzoneFile>>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      }
+    ]
+  },
+  {
+    "name": "TwOtpInput",
+    "category": "Advanced Forms & Inputs",
+    "description": "Segmented 6-digit one-time password / PIN verification input with auto-advance, backspace navigation, mobile numeric keypad, paste support, and dot masking.",
+    "snippet": "<TwOtpInput Length=\\",
+    "parameters": [
+      {
+        "name": "Length",
+        "type": "int",
+        "default": "6",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "OnCompleted",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Masked",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "HasError",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ErrorMessage",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "HelperText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwPasswordStrength",
+    "category": "Advanced Forms & Inputs",
+    "description": "Interactive password input with toggleable eye visibility, 4-stage color-coded entropy bar (Weak, Fair, Good, Strong), and real-time live requirements checklist.",
+    "snippet": "<TwPasswordStrength Value=\\",
+    "parameters": [
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "ShowChecklist",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwCombobox",
+    "category": "Advanced Forms & Inputs",
+    "description": "Searchable autocomplete dropdown with real-time filtering, keyboard arrow navigation, enter-to-select, clear button, and empty filter fallback.",
+    "snippet": "<TwCombobox Value=\\",
+    "parameters": [
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Items",
+        "type": "IReadOnlyList<ComboboxItem>",
+        "default": "Array.Empty<ComboboxItem>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwTagsInput",
+    "category": "Advanced Forms & Inputs",
+    "description": "Interactive token tag creator that adds chips on Enter/Comma, supports backspace removal, removable badge pills, and max tags limit.",
+    "snippet": "<TwTagsInput Tags=\\",
+    "parameters": [
+      {
+        "name": "Tags",
+        "type": "List<string>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "TagsChanged",
+        "type": "EventCallback<List<string>>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "HelperText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MaxTags",
+        "type": "int?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AllowDuplicates",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwInputGroup",
+    "category": "Advanced Forms & Inputs",
+    "description": "Composite input field with seamless prepended and appended text, icon slots, and dropdown buttons (currency, protocol, domain).",
+    "snippet": "<TwInputGroup Value=\\",
+    "parameters": [
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "PrependText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AppendText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "PrependContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AppendContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "HelperText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ErrorMessage",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "HasError",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwPill",
+    "category": "Typography, Badges & Keys",
+    "description": "Modern pill badge supporting glowing pulse dots, mini avatars, counter badges, dismissible close buttons, and semantic variants (Soft, Solid, Outline, Glow).",
+    "snippet": "<TwPill Variant=\\",
+    "parameters": [
+      {
+        "name": "Text",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "ShowDot",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "PulseDot",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AvatarUrl",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Icon",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Count",
+        "type": "int?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Removable",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Clickable",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Selected",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnClick",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "OnDismiss",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwPillGroup",
+    "category": "Typography, Badges & Keys",
+    "description": "Segmented pill filter collection for single or multi-select filtering with smooth active transitions.",
+    "snippet": "<TwPillGroup Items=\\",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "List<PillItem>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SelectedValues",
+        "type": "List<string>",
+        "default": "new()",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "SelectedValuesChanged",
+        "type": "EventCallback<List<string>>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "MultiSelect",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      }
+    ]
+  },
+  {
+    "name": "TwBadge",
+    "category": "Typography, Badges & Keys",
+    "description": "Status and counter badge supporting semantic colors (Primary, Success, Warning, Danger, Info), rounded pill styling, and optional pulsing status dots.",
+    "snippet": "<TwBadge Variant=\\",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Variant",
+        "type": "SemanticVariant",
+        "default": "SemanticVariant.Default",
+        "description": "Semantic visual variant (e.g. Primary, Secondary, Outline)."
+      },
+      {
+        "name": "ShowDot",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwNotificationBadge",
+    "category": "Typography, Badges & Keys",
+    "description": "Floating count badge designed to overlay icons or avatars for unread alerts and incoming message counters.",
+    "snippet": "<TwNotificationBadge Visible=\\",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Visible",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "DotOnly",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowPing",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Count",
+        "type": "int",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MaxCount",
+        "type": "int",
+        "default": "99",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Variant",
+        "type": "SemanticVariant",
+        "default": "SemanticVariant.Danger",
+        "description": "Semantic visual variant (e.g. Primary, Secondary, Outline)."
+      },
+      {
+        "name": "Placement",
+        "type": "BadgePlacement",
+        "default": "BadgePlacement.TopRight",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwChip",
+    "category": "Typography, Badges & Keys",
+    "description": "Interactive tag chip with optional leading icon, selectable toggle state, and dismissible close button.",
+    "snippet": "<TwChip Variant=\\",
+    "parameters": [
+      {
+        "name": "Text",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "LeadingIcon",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AvatarContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Variant",
+        "type": "SemanticVariant",
+        "default": "SemanticVariant.Default",
+        "description": "Semantic visual variant (e.g. Primary, Secondary, Outline)."
+      },
+      {
+        "name": "Size",
+        "type": "ComponentSize",
+        "default": "ComponentSize.Sm",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "Outlined",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Selectable",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Selected",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SelectedChanged",
+        "type": "EventCallback<bool>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Removable",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnRemove",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnClick",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwChipGroup",
+    "category": "Typography, Badges & Keys",
+    "description": "Container for managing groups of filter chips with single-select or multi-select modes.",
+    "snippet": "<TwChipGroup>\\n    <span>Content</span>\\n</TwChipGroup>",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwKbd",
+    "category": "Typography, Badges & Keys",
+    "description": "3D-embossed tactile keyboard shortcut badge with automatic modifier symbol mapping (\u2318, \u2325, \u21e7, \u2303, \u21b5, \u238b, \u2190, \u2192).",
+    "snippet": "<TwKbd Size=\\",
+    "parameters": [
+      {
+        "name": "Key",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Tooltip",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwDivider",
+    "category": "Typography, Badges & Keys",
+    "description": "Subtle horizontal or vertical divider with optional centered text or icon badge.",
+    "snippet": "<TwDivider>\\n    <span>Content</span>\\n</TwDivider>",
+    "parameters": [
+      {
+        "name": "Text",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwDateRangePicker",
+    "category": "Buttons, Forms & Controls",
+    "description": "Dual-month calendar popover with quick range presets (Today, 7 Days, 30 Days, This Month, YTD), continuous selection range highlighting, and manual date input.",
+    "snippet": "<TwDateRangePicker Label=\\",
+    "parameters": [
+      {
+        "name": "StartDate",
+        "type": "DateTime",
+        "default": "DateTime.Today.AddDays(-14)",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "EndDate",
+        "type": "DateTime",
+        "default": "DateTime.Today",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwButton",
+    "category": "Buttons, Forms & Controls",
+    "description": "Tactile interactive button featuring 44px touch targets, loading spinner state, semantic variants, and mobile full-width responsive expansion.",
+    "snippet": "<TwButton Variant=\\",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "LeadingIcon",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "TrailingIcon",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Variant",
+        "type": "ButtonVariant",
+        "default": "ButtonVariant.Primary",
+        "description": "Semantic visual variant (e.g. Primary, Secondary, Outline)."
+      },
+      {
+        "name": "Size",
+        "type": "ComponentSize",
+        "default": "ComponentSize.Md",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "Loading",
+        "type": "bool",
+        "default": "null",
+        "description": "Displays animated loading spinner indicator."
+      },
+      {
+        "name": "ResponsiveFullWidth",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "FullWidth",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      },
+      {
+        "name": "OnClick",
+        "type": "EventCallback<MouseEventArgs>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      }
+    ]
+  },
+  {
+    "name": "TwInput",
+    "category": "Buttons, Forms & Controls",
+    "description": "Accessible text input with validation error states, helper text slots, leading/trailing icons, and clear button.",
+    "snippet": "<TwInput Type=\\",
+    "parameters": [
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Value",
+        "type": "string?",
+        "default": "null",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string?>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Placeholder",
+        "type": "string?",
+        "default": "null",
+        "description": "Input placeholder hint."
+      },
+      {
+        "name": "HelperText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ErrorText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Required",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "PrefixContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SuffixContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSelect",
+    "category": "Buttons, Forms & Controls",
+    "description": "Styled select dropdown with floating labels, option groups, and dark mode contrast.",
+    "snippet": "<TwSelect>\\n    <span>Content</span>\\n</TwSelect>",
+    "parameters": [
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Value",
+        "type": "string?",
+        "default": "null",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string?>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "HelperText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSwitch",
+    "category": "Buttons, Forms & Controls",
+    "description": "Accessible toggle switch with smooth spring transitions and screen-reader label binding.",
+    "snippet": "<TwSwitch />",
+    "parameters": [
+      {
+        "name": "Checked",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CheckedChanged",
+        "type": "EventCallback<bool>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Description",
+        "type": "string?",
+        "default": "null",
+        "description": "Secondary descriptive caption."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwCheckbox",
+    "category": "Buttons, Forms & Controls",
+    "description": "Touch-friendly checkbox with animated checkmark and focus ring styling.",
+    "snippet": "<TwCheckbox />",
+    "parameters": [
+      {
+        "name": "Checked",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CheckedChanged",
+        "type": "EventCallback<bool>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Description",
+        "type": "string?",
+        "default": "null",
+        "description": "Secondary descriptive caption."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSlider",
+    "category": "Buttons, Forms & Controls",
+    "description": "Touch-friendly range slider with draggable thumb, track fill, and live value bubble readout.",
+    "snippet": "<TwSlider Value=\\",
+    "parameters": [
+      {
+        "name": "Value",
+        "type": "double",
+        "default": "50",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<double>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Min",
+        "type": "double",
+        "default": "0",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Max",
+        "type": "double",
+        "default": "100",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Step",
+        "type": "double",
+        "default": "1",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowValue",
+        "type": "bool",
+        "default": "true",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "Disabled",
+        "type": "bool",
+        "default": "null",
+        "description": "Disables user interaction and applies muted opacity styling."
+      },
+      {
+        "name": "HelperText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwNumeric",
+    "category": "Buttons, Forms & Controls",
+    "description": "Precise numeric stepper input with increment/decrement buttons, min/max clamping, and step intervals.",
+    "snippet": "<TwNumeric Min=\\",
+    "parameters": [
+      {
+        "name": "Value",
+        "type": "double",
+        "default": "null",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<double>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "HelperText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Prefix",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Suffix",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Min",
+        "type": "double",
+        "default": "0",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Max",
+        "type": "double",
+        "default": "100",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Step",
+        "type": "double",
+        "default": "1",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Required",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwDatePicker",
+    "category": "Buttons, Forms & Controls",
+    "description": "Accessible date picker with calendar popover, quick range presets, and international date formatting.",
+    "snippet": "<TwDatePicker Placeholder=\\",
+    "parameters": [
+      {
+        "name": "Value",
+        "type": "DateTime?",
+        "default": "null",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<DateTime?>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AllowClear",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Required",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwFileUpload",
+    "category": "Buttons, Forms & Controls",
+    "description": "Drag-and-drop file upload zone with file size validation, mime type filtering, and upload progress visualization.",
+    "snippet": "<TwFileUpload Label=\\",
+    "parameters": [
+      {
+        "name": "HelperText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Required",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Multiple",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MaxFileSize",
+        "type": "long",
+        "default": "10 * 1024 * 1024",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "FilesChanged",
+        "type": "EventCallback<IReadOnlyList<IBrowserFile>>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSegmented",
+    "category": "Buttons, Forms & Controls",
+    "description": "iOS-style segmented control pill for switching between mutually exclusive views with sliding background highlight.",
+    "snippet": "<TwSegmented Items=\\",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "IReadOnlyList<SegmentItem>",
+        "default": "Array.Empty<SegmentItem>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "FullWidth",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwRating",
+    "category": "Buttons, Forms & Controls",
+    "description": "Interactive star rating component supporting full and half-star ratings with hover preview and read-only display mode.",
+    "snippet": "<TwRating Value=\\",
+    "parameters": [
+      {
+        "name": "Value",
+        "type": "int",
+        "default": "4",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<int>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "MaxStars",
+        "type": "int",
+        "default": "5",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ReadOnly",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowValueText",
+        "type": "bool",
+        "default": "true",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwCard",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Modular card container with header, body, and footer slots, subtle hover lift, and glassmorphic borders.",
+    "snippet": "<TwCard>\\n    <span>Content</span>\\n</TwCard>",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Hoverable",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "NoPadding",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "HeaderContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "FooterContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwBentoGrid",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Modern asymmetrical CSS grid for showcasing features with radial mouse-following spotlight gradients.",
+    "snippet": "<TwBentoGrid Cols=\\",
+    "parameters": [
+      {
+        "name": "Cols",
+        "type": "int",
+        "default": "3",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      }
+    ]
+  },
+  {
+    "name": "TwBentoCard",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Card item for Bento grids with customizable column/row spans, glowing borders, and feature badge slots.",
+    "snippet": "<TwBentoCard ColSpan=\\",
+    "parameters": [
+      {
+        "name": "ColSpan",
+        "type": "int",
+        "default": "1",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "RowSpan",
+        "type": "int",
+        "default": "1",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Description",
+        "type": "string?",
+        "default": "null",
+        "description": "Secondary descriptive caption."
+      },
+      {
+        "name": "Icon",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Badge",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Footer",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowDotPattern",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwStatCard",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "SaaS metric KPI card with sparklines, percentage change indicators, and target progress bars.",
+    "snippet": "<TwStatCard Title=\\",
+    "parameters": [
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "TrendText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "IsTrendPositive",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ProgressValue",
+        "type": "int?",
+        "default": "null",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "IconContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwKpiMetric",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Compact micro-metric card with live animated count-up and cubic ease-out transitions.",
+    "snippet": "<TwKpiMetric Title=\\",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string",
+        "default": "string.Empty",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Value",
+        "type": "string",
+        "default": "string.Empty",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "ChangePercentage",
+        "type": "double?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SparklineData",
+        "type": "IReadOnlyList<double>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Color",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwMediaCard",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Rich media card with 16:9 aspect ratio image header, category badges, author avatar, and reading time.",
+    "snippet": "<TwMediaCard Title=\\",
+    "parameters": [
+      {
+        "name": "Description",
+        "type": "string?",
+        "default": "null",
+        "description": "Secondary descriptive caption."
+      },
+      {
+        "name": "ImageUrl",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CategoryBadge",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AuthorName",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "DateText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Tags",
+        "type": "IReadOnlyList<string>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActionContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnClick",
+        "type": "EventCallback<MouseEventArgs>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwFeatureCard",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Service feature card with gradient background icon, bold headline, and subtle hover scale.",
+    "snippet": "<TwFeatureCard Title=\\",
+    "parameters": [
+      {
+        "name": "BadgeText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "IconContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnClick",
+        "type": "EventCallback<MouseEventArgs>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSpotlightCard",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Interactive card that calculates cursor coordinates to project a dynamic radial spotlight beam across its surface.",
+    "snippet": "<TwSpotlightCard SpotlightColor=\\",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwPricingCard",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "SaaS subscription pricing tier card with popular badge highlight, price per interval, and feature checklist.",
+    "snippet": "<TwPricingCard PlanName=\\",
+    "parameters": [
+      {
+        "name": "Description",
+        "type": "string?",
+        "default": "null",
+        "description": "Secondary descriptive caption."
+      },
+      {
+        "name": "IsPopular",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Features",
+        "type": "IReadOnlyList<string>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnClick",
+        "type": "EventCallback<MouseEventArgs>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwPricingTable",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Full billing cycle matrix comparing Free, Pro, and Enterprise tiers with monthly/annual toggle.",
+    "snippet": "<TwPricingTable Tiers=\\",
+    "parameters": [
+      {
+        "name": "Tiers",
+        "type": "List<PricingTier>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnSelectTier",
+        "type": "EventCallback<PricingTier>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwKanbanBoard",
+    "category": "Enterprise Data & Tables",
+    "description": "Interactive workflow Kanban board with customizable columns, WIP limit thresholds, task cards, priority indicators, subtask checklists, and lane transition buttons.",
+    "snippet": "<TwKanbanBoard Title=\\",
+    "parameters": [
+      {
+        "name": "Columns",
+        "type": "List<KanbanColumn>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnCardMoved",
+        "type": "EventCallback<KanbanCard>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwDataGrid",
+    "category": "Enterprise Data & Tables",
+    "description": "High-performance enterprise data grid with column sorting, per-column text filters, column width constraints, pagination, and row-level record actions.",
+    "snippet": "<TwDataGrid Items=\\",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "IEnumerable<TItem>",
+        "default": "Enumerable.Empty<TItem>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Columns",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActionsTemplate",
+        "type": "RenderFragment<TItem>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MobileCardTemplate",
+        "type": "RenderFragment<TItem>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "BatchActionsTemplate",
+        "type": "RenderFragment<IReadOnlyList<TItem>>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Selectable",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowGlobalSearch",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SearchPredicate",
+        "type": "Func<TItem, string, bool>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AllowColumnFiltering",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowPagination",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "PageSize",
+        "type": "int",
+        "default": "5",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "ShowPageSizeSelector",
+        "type": "bool",
+        "default": "true",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "CurrentPage",
+        "type": "int",
+        "default": "1",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CurrentPageChanged",
+        "type": "EventCallback<int>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "SelectionChanged",
+        "type": "EventCallback<IReadOnlyList<TItem>>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwDataGridColumn",
+    "category": "Enterprise Data & Tables",
+    "description": "Declarative column definition for TwDataGrid specifying field binding, title, sortable flag, and custom cell templates.",
+    "snippet": "<TwDataGridColumn Title=\\",
+    "parameters": [
+      {
+        "name": "Property",
+        "type": "Func<TItem, object?>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SortBy",
+        "type": "Func<TItem, object?>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Sortable",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Filterable",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "FilterPlaceholder",
+        "type": "string?",
+        "default": "null",
+        "description": "Input placeholder hint."
+      },
+      {
+        "name": "Width",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MinWidth",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MaxWidth",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CellTemplate",
+        "type": "RenderFragment<TItem>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "HeaderTemplate",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "FilterTemplate",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "HeaderClass",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CellClass",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwDataTable",
+    "category": "Enterprise Data & Tables",
+    "description": "Generic table component that automatically transforms into touch-friendly stacked cards on mobile screens.",
+    "snippet": "<TwDataTable Items=\\",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "IReadOnlyList<TItem>",
+        "default": "Array.Empty<TItem>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "TableHeader",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "RowTemplate",
+        "type": "RenderFragment<TItem>",
+        "default": "default!",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "MobileTemplate",
+        "type": "RenderFragment<TItem>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwPagination",
+    "category": "Enterprise Data & Tables",
+    "description": "Responsive pagination control showing Prev/Next on mobile devices and numbered page pills on desktop.",
+    "snippet": "<TwPagination CurrentPage=\\",
+    "parameters": [
+      {
+        "name": "CurrentPage",
+        "type": "int",
+        "default": "1",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "TotalPages",
+        "type": "int",
+        "default": "1",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CurrentPageChanged",
+        "type": "EventCallback<int>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwTree",
+    "category": "Enterprise Data & Tables",
+    "description": "Hierarchical tree view component with expandable/collapsible nodes and selection tracking.",
+    "snippet": "<TwTree>\\n    <span>Content</span>\\n</TwTree>",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "SelectedId",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "SelectedIdChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwTreeItem",
+    "category": "Enterprise Data & Tables",
+    "description": "Individual node item inside TwTree with custom icons and nested child rendering.",
+    "snippet": "<TwTreeItem Id=\\",
+    "parameters": [
+      {
+        "name": "Badge",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "InitiallyExpanded",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "IconContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSparkline",
+    "category": "Visualizations & Gauges",
+    "description": "Zero-dependency pure C# inline SVG micro-chart engine supporting Line, Area, Bar, and Win/Loss modes for table cells and executive KPI widgets.",
+    "snippet": "<TwSparkline Type=\\",
+    "parameters": [
+      {
+        "name": "Type",
+        "type": "SparklineType",
+        "default": "SparklineType.Line",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Points",
+        "type": "List<double>",
+        "default": "new() { 12, 18, 14, 22, 19, 28, 25, 34, 30, 42 }",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Width",
+        "type": "int",
+        "default": "110",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Height",
+        "type": "int",
+        "default": "28",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "StrokeWidth",
+        "type": "double",
+        "default": "2.0",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowMinMaxDots",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowValueBadge",
+        "type": "bool",
+        "default": "false",
+        "description": "Primary data value or two-way bound model property."
+      }
+    ]
+  },
+  {
+    "name": "TwProgressAdvanced",
+    "category": "Visualizations & Gauges",
+    "description": "Advanced enterprise progress visualization supporting 5 styles: Multi-segment stacked bar with tooltips, SVG circular radial ring, flowing striped animated bar, discrete LED audio-meter bar, and milestone step tracker.",
+    "snippet": "<TwProgressAdvanced Type=\\",
+    "parameters": [
+      {
+        "name": "Type",
+        "type": "ProgressType",
+        "default": "ProgressType.Stacked",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Value",
+        "type": "double",
+        "default": "65",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "ShowHeader",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowLegend",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "RadialSize",
+        "type": "int",
+        "default": "100",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "RadialStrokeWidth",
+        "type": "int",
+        "default": "8",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "RadialContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "TotalSegments",
+        "type": "int",
+        "default": "15",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CurrentStep",
+        "type": "int",
+        "default": "2",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwChart",
+    "category": "Visualizations & Gauges",
+    "description": "Native C# inline SVG visualization engine for donut charts, sparklines, and bar charts with zero external JS dependencies.",
+    "snippet": "<TwChart Type=\\",
+    "parameters": [
+      {
+        "name": "Type",
+        "type": "ChartType",
+        "default": "ChartType.Donut",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "DataItems",
+        "type": "IReadOnlyList<ChartDataItem>",
+        "default": "Array.Empty<ChartDataItem>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwGauge",
+    "category": "Visualizations & Gauges",
+    "description": "Zero-JS radial speedometer gauge rendering pure inline SVG arcs with stroke-dasharray calculations and CSS transitions.",
+    "snippet": "<TwGauge Value=\\",
+    "parameters": [
+      {
+        "name": "Value",
+        "type": "double",
+        "default": "72",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "Min",
+        "type": "double",
+        "default": "0",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Max",
+        "type": "double",
+        "default": "100",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Sublabel",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Color",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwProgressBar",
+    "category": "Visualizations & Gauges",
+    "description": "Semantic progress bar with animated stripes, smooth transitions, and percentage labels.",
+    "snippet": "<TwProgressBar ShowLabel=\\",
+    "parameters": [
+      {
+        "name": "Value",
+        "type": "int",
+        "default": "null",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowLabel",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Animated",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Variant",
+        "type": "SemanticVariant",
+        "default": "SemanticVariant.Primary",
+        "description": "Semantic visual variant (e.g. Primary, Secondary, Outline)."
+      },
+      {
+        "name": "Size",
+        "type": "ComponentSize",
+        "default": "ComponentSize.Md",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwCountUp",
+    "category": "Visualizations & Gauges",
+    "description": "Smooth numeric counter animation with customizable duration, prefix/suffix, and easing.",
+    "snippet": "<TwCountUp StartValue=\\",
+    "parameters": [
+      {
+        "name": "StartValue",
+        "type": "double",
+        "default": "0",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "EndValue",
+        "type": "double",
+        "default": "100",
+        "description": "Primary data value or two-way bound model property."
+      },
+      {
+        "name": "DurationMs",
+        "type": "int",
+        "default": "1200",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Decimals",
+        "type": "int",
+        "default": "0",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Prefix",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Suffix",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AutoStart",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwAnimate",
+    "category": "Visualizations & Gauges",
+    "description": "Declarative CSS animation wrapper providing fade, zoom, bounce, and slide keyframes.",
+    "snippet": "<TwAnimate Type=\\",
+    "parameters": [
+      {
+        "name": "Type",
+        "type": "AnimationType",
+        "default": "AnimationType.FadeInUp",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "DurationMs",
+        "type": "int",
+        "default": "400",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "DelayMs",
+        "type": "int",
+        "default": "0",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Infinite",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnHover",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Play",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwTransition",
+    "category": "Visualizations & Gauges",
+    "description": "Smooth enter/leave transition container for mounting and unmounting Blazor components.",
+    "snippet": "<TwTransition Show=\\",
+    "parameters": [
+      {
+        "name": "Show",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      },
+      {
+        "name": "Style",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwMediaPlayer",
+    "category": "Media, Scanner & Signature",
+    "description": "Custom video and audio player with chapter markers, scrubber seek, playback speed selector (0.5x - 2x), Picture-in-Picture, volume control, and audio visualizer.",
+    "snippet": "<TwMediaPlayer Src=\\",
+    "parameters": [
+      {
+        "name": "Src",
+        "type": "string",
+        "default": "string.Empty",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Poster",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Type",
+        "type": "MediaKind",
+        "default": "MediaKind.Video",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Loop",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Chapters",
+        "type": "List<MediaChapter>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwQrCode",
+    "category": "Media, Scanner & Signature",
+    "description": "Vector SVG and PNG QR code generator supporting custom dot shapes (Square, Rounded, Circle), error correction levels, and center icon branding.",
+    "snippet": "<TwQrCode Value=\\",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Size",
+        "type": "int",
+        "default": "200",
+        "description": "Component sizing scale (Xs, Sm, Md, Lg)."
+      },
+      {
+        "name": "DotShape",
+        "type": "QrDotShape",
+        "default": "QrDotShape.Rounded",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CenterIcon",
+        "type": "QrCenterIcon",
+        "default": "QrCenterIcon.None",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "EccLevel",
+        "type": "QrEccLevel",
+        "default": "QrEccLevel.Q",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowActions",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwBarcode",
+    "category": "Media, Scanner & Signature",
+    "description": "High-density Code 128 1D vector barcode generator rendering sharp scalable SVG bars with human-readable text.",
+    "snippet": "<TwBarcode Value=\\",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "BarHeight",
+        "type": "int",
+        "default": "64",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "BarWidthMultiplier",
+        "type": "int",
+        "default": "2",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowText",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "QuietZone",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowActions",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwBarcodeScanner",
+    "category": "Media, Scanner & Signature",
+    "description": "Live camera video and file barcode scanner supporting QR codes, Code 128, EAN, UPC, and Data Matrix with audio beep feedback.",
+    "snippet": "<TwBarcodeScanner />",
+    "parameters": [
+      {
+        "name": "OnScan",
+        "type": "EventCallback<BarcodeScanResult>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSignaturePad",
+    "category": "Media, Scanner & Signature",
+    "description": "Digital canvas signature pad with smooth Bezier curve drawing, undo/redo history, background transparency, and export to PNG and SVG.",
+    "snippet": "<TwSignaturePad Height=\\",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Height",
+        "type": "int",
+        "default": "220",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowGuide",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "StrokeWidth",
+        "type": "double",
+        "default": "2.5",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnSave",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwImageCompare",
+    "category": "Media, Scanner & Signature",
+    "description": "Interactive Before/After visual comparison slider with touch/pointer dragging, glassmorphic center handle, keyboard navigation, and dual badges.",
+    "snippet": "<TwImageCompare BeforeSrc=\\",
+    "parameters": [
+      {
+        "name": "Position",
+        "type": "double",
+        "default": "50.0",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "PositionChanged",
+        "type": "EventCallback<double>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwRibbon",
+    "category": "Navigation & Steppers",
+    "description": "Award-winning enterprise Ribbon navigation bar featuring tabbed strips, Quick Access Toolbar (QAT), grouped action clusters, large/small buttons, and collapsible drawer.",
+    "snippet": "<TwRibbon Tabs=\\",
+    "parameters": [
+      {
+        "name": "Tabs",
+        "type": "List<RibbonTab>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActiveTabIndex",
+        "type": "int",
+        "default": "0",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "IsCollapsed",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnActionClicked",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "ActiveTabIndexChanged",
+        "type": "EventCallback<int>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      }
+    ]
+  },
+  {
+    "name": "TwFloatingDock",
+    "category": "Navigation & Steppers",
+    "description": "Modern floating glassmorphism dock navigation bar with hover magnification scale, active pill indicators, notification badges, and smooth tooltips.",
+    "snippet": "<TwFloatingDock Items=\\",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "List<DockItem>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnItemSelected",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwTabs",
+    "category": "Navigation & Steppers",
+    "description": "Horizontal scrollable tabs with pill or underline variants and badge counters.",
+    "snippet": "<TwTabs Tabs=\\",
+    "parameters": [
+      {
+        "name": "Tabs",
+        "type": "IReadOnlyList<TabDefinition>",
+        "default": "Array.Empty<TabDefinition>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActiveTabKey",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActiveTabKeyChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSlidingTabs",
+    "category": "Navigation & Steppers",
+    "description": "Fluid tab strip with an animated gliding background pill that follows the active selection.",
+    "snippet": "<TwSlidingTabs Tabs=\\",
+    "parameters": [
+      {
+        "name": "Tabs",
+        "type": "List<TabItem>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActiveTabId",
+        "type": "string",
+        "default": "string.Empty",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActiveTabIdChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwBreadcrumb",
+    "category": "Navigation & Steppers",
+    "description": "Accessible breadcrumb trail with custom separators and truncated intermediate paths.",
+    "snippet": "<TwBreadcrumb Items=\\",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "IReadOnlyList<BreadcrumbItem>",
+        "default": "Array.Empty<BreadcrumbItem>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwStepper",
+    "category": "Navigation & Steppers",
+    "description": "Multi-step onboarding wizard with completed step indicators and compact mobile layout.",
+    "snippet": "<TwStepper Steps=\\",
+    "parameters": [
+      {
+        "name": "Steps",
+        "type": "IReadOnlyList<StepItem>",
+        "default": "Array.Empty<StepItem>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CurrentStep",
+        "type": "int",
+        "default": "1",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CurrentStepChanged",
+        "type": "EventCallback<int>",
+        "default": "null",
+        "description": "Callback invoked when state changes or item is selected."
+      },
+      {
+        "name": "Clickable",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwTimeline",
+    "category": "Navigation & Steppers",
+    "description": "Vertical activity timeline container for audit logs, delivery tracking, and project milestones.",
+    "snippet": "<TwTimeline Position=\\",
+    "parameters": [
+      {
+        "name": "Position",
+        "type": "TimelinePosition",
+        "default": "TimelinePosition.Start",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwTimelineItem",
+    "category": "Navigation & Steppers",
+    "description": "Individual timeline entry with status dot, icon, timestamp, and card description.",
+    "snippet": "<TwTimelineItem Variant=\\",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Timestamp",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Variant",
+        "type": "SemanticVariant",
+        "default": "SemanticVariant.Primary",
+        "description": "Semantic visual variant (e.g. Primary, Secondary, Outline)."
+      },
+      {
+        "name": "Pulse",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "IsLast",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "DotContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwScrollToTop",
+    "category": "Navigation & Steppers",
+    "description": "Floating smooth scroll-to-top button with scroll position threshold and mobile safe-area clearance.",
+    "snippet": "<TwScrollToTop Variant=\\",
+    "parameters": [
+      {
+        "name": "Variant",
+        "type": "ScrollToTopVariant",
+        "default": "ScrollToTopVariant.Vertical",
+        "description": "Semantic visual variant (e.g. Primary, Secondary, Outline)."
+      },
+      {
+        "name": "ShowProgress",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Threshold",
+        "type": "int",
+        "default": "150",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AlwaysVisible",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSpeedDial",
+    "category": "Navigation & Steppers",
+    "description": "Floating action button that expands into a radial or vertical speed-dial menu of quick actions.",
+    "snippet": "<TwSpeedDial Actions=\\",
+    "parameters": [
+      {
+        "name": "Actions",
+        "type": "IReadOnlyList<SpeedDialAction>",
+        "default": "Array.Empty<SpeedDialAction>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnActionSelected",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwTour",
+    "category": "Navigation & Steppers",
+    "description": "Interactive guided walkthrough coaching tour with spotlight backdrop, step popovers, and automatic restart lifecycle.",
+    "snippet": "<TwTour Steps=\\",
+    "parameters": [
+      {
+        "name": "IsOpen",
+        "type": "bool",
+        "default": "null",
+        "description": "Two-way bindable visibility flag."
+      },
+      {
+        "name": "IsOpenChanged",
+        "type": "EventCallback<bool>",
+        "default": "null",
+        "description": "Two-way bindable visibility flag."
+      },
+      {
+        "name": "Steps",
+        "type": "IReadOnlyList<TourStep>",
+        "default": "Array.Empty<TourStep>()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnCompleted",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwContextMenu",
+    "category": "Overlays & Popovers",
+    "description": "Desktop-grade right-click context menu and anchored flyout callout featuring nested submenus, keyboard shortcut badges, icons, and click-outside dismissal.",
+    "snippet": "<TwContextMenu Items=\\",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "List<ContextMenuItem>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "PreventDefaultContextMenu",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "OnItemSelected",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwModal",
+    "category": "Overlays & Popovers",
+    "description": "Accessible dialog that presents as a bottom sheet on mobile screens and a centered modal dialog on desktop.",
+    "snippet": "<TwModal MaxWidth=\\",
+    "parameters": [
+      {
+        "name": "IsOpen",
+        "type": "bool",
+        "default": "null",
+        "description": "Two-way bindable visibility flag."
+      },
+      {
+        "name": "IsOpenChanged",
+        "type": "EventCallback<bool>",
+        "default": "null",
+        "description": "Two-way bindable visibility flag."
+      },
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Description",
+        "type": "string?",
+        "default": "null",
+        "description": "Secondary descriptive caption."
+      },
+      {
+        "name": "CloseOnBackdropClick",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "HeaderContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "FooterContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwDrawer",
+    "category": "Overlays & Popovers",
+    "description": "Off-canvas sliding drawer supporting Left, Right, and Bottom slide orientations with backdrop blur.",
+    "snippet": "<TwDrawer Placement=\\",
+    "parameters": [
+      {
+        "name": "IsOpen",
+        "type": "bool",
+        "default": "null",
+        "description": "Two-way bindable visibility flag."
+      },
+      {
+        "name": "IsOpenChanged",
+        "type": "EventCallback<bool>",
+        "default": "null",
+        "description": "Two-way bindable visibility flag."
+      },
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "Placement",
+        "type": "DrawerPlacement",
+        "default": "DrawerPlacement.Right",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "CloseOnBackdropClick",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "FooterContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwDropdown",
+    "category": "Overlays & Popovers",
+    "description": "Click-outside popover menu with keyboard navigation and position alignment (Left, Right, Center).",
+    "snippet": "<TwDropdown Alignment=\\",
+    "parameters": [
+      {
+        "name": "TriggerContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "CloseOnSelect",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwTooltip",
+    "category": "Overlays & Popovers",
+    "description": "Hover and tap tooltip popover with auto-flipping placement and arrow indicator.",
+    "snippet": "<TwTooltip Text=\\",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwAccordion",
+    "category": "Overlays & Popovers",
+    "description": "Collapsible accordion container with single-expand or multi-expand modes.",
+    "snippet": "<TwAccordion>\\n    <span>Content</span>\\n</TwAccordion>",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "AllowMultiple",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwAccordionItem",
+    "category": "Overlays & Popovers",
+    "description": "Individual accordion panel with smooth height transition and animated chevron.",
+    "snippet": "<TwAccordionItem Title=\\",
+    "parameters": [
+      {
+        "name": "InitiallyOpen",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwChatBot",
+    "category": "AI Chatbot & Reasoning",
+    "description": "Intelligent conversational chatbot interface with streaming message bubbles, thinking progress checklists, and code snippet copying.",
+    "snippet": "<TwChatBot BotName=\\",
+    "parameters": [
+      {
+        "name": "ShowCloseButton",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnClose",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwChatWidget",
+    "category": "AI Chatbot & Reasoning",
+    "description": "Floating launcher button that expands into an interactive AI assistant window (or bottom sheet on mobile).",
+    "snippet": "<TwChatWidget BotName=\\",
+    "parameters": []
+  },
+  {
+    "name": "TwAiReasoningProgress",
+    "category": "AI Chatbot & Reasoning",
+    "description": "Multi-phase thinking checklist component displaying animated progress indicators during AI reasoning tasks.",
+    "snippet": "<TwAiReasoningProgress IsThinking=\\",
+    "parameters": [
+      {
+        "name": "IsThinking",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "DurationSeconds",
+        "type": "double",
+        "default": "2.4",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ReasoningText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Steps",
+        "type": "IReadOnlyList<ReasoningStep>?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "DefaultExpanded",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwMarquee",
+    "category": "Showcase & Micro-Interactions",
+    "description": "Infinite continuous horizontal scrolling ticker with CSS keyframes, pause-on-hover, and edge gradient masks.",
+    "snippet": "<TwMarquee DurationSeconds=\\",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "DurationSeconds",
+        "type": "int",
+        "default": "25",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Reverse",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "PauseOnHover",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "FadeEdges",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      },
+      {
+        "name": "TrackClass",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwConfetti",
+    "category": "Showcase & Micro-Interactions",
+    "description": "Canvas physics celebratory particle explosion system with gravity, air resistance, and 3D rotation.",
+    "snippet": "<TwConfetti ParticleCount=\\",
+    "parameters": [
+      {
+        "name": "FullScreen",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AutoFire",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ParticleCount",
+        "type": "int",
+        "default": "85",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwSkeleton",
+    "category": "Showcase & Micro-Interactions",
+    "description": "Animated shimmer placeholder for cards, tables, text, and avatars during asynchronous data loading.",
+    "snippet": "<TwSkeleton Variant=\\",
+    "parameters": [
+      {
+        "name": "Width",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Height",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwEmptyState",
+    "category": "Showcase & Micro-Interactions",
+    "description": "Illustrated zero-data state placeholder with title, description, and call-to-action button.",
+    "snippet": "<TwEmptyState Title=\\",
+    "parameters": [
+      {
+        "name": "Description",
+        "type": "string?",
+        "default": "null",
+        "description": "Secondary descriptive caption."
+      },
+      {
+        "name": "IconContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActionContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwBanner",
+    "category": "Showcase & Micro-Interactions",
+    "description": "Full-width announcement banner with dismiss button and action link.",
+    "snippet": "<TwBanner Text=\\",
+    "parameters": [
+      {
+        "name": "Text",
+        "type": "string",
+        "default": "string.Empty",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "BadgeText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActionText",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnAction",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Dismissible",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "IsSticky",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwAlert",
+    "category": "Showcase & Micro-Interactions",
+    "description": "Dismissible inline feedback alert with semantic variants (Success, Warning, Danger, Info).",
+    "snippet": "<TwAlert Variant=\\",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Header title or accessible label."
+      },
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Child content or nested markup rendered inside the component slot."
+      },
+      {
+        "name": "Variant",
+        "type": "SemanticVariant",
+        "default": "SemanticVariant.Info",
+        "description": "Semantic visual variant (e.g. Primary, Secondary, Outline)."
+      },
+      {
+        "name": "Dismissible",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnDismiss",
+        "type": "EventCallback",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Additional custom Tailwind CSS utility classes."
+      }
+    ]
+  },
+  {
+    "name": "TwToastContainer",
+    "category": "Showcase & Micro-Interactions",
+    "description": "Fixed container managing reactive floating toast alert notifications.",
+    "snippet": "<TwToastContainer />",
+    "parameters": []
+  },
+  {
+    "name": "TwAguiCanvas",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwAguiCanvas Class=\\",
+    "parameters": [
+      {
+        "name": "Schema",
+        "type": "AguiWidgetSchema?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnActionTriggered",
+        "type": "EventCallback<AguiActionItem>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwAguiStudio",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwAguiStudio Class=\\",
+    "parameters": []
+  },
+  {
+    "name": "TwAvatar",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwAvatar Initials=\\",
+    "parameters": [
+      {
+        "name": "ImageUrl",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Size",
+        "type": "ComponentSize",
+        "default": "ComponentSize.Md",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "StatusColor",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwAvatarGroup",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwAvatarGroup Avatars=\\",
+    "parameters": [
+      {
+        "name": "Avatars",
+        "type": "List<AvatarItem>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Max",
+        "type": "int",
+        "default": "4",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Size",
+        "type": "ComponentSize",
+        "default": "ComponentSize.Md",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwCarousel",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwCarousel AutoCycle=\\",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActiveIndex",
+        "type": "int",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ActiveIndexChanged",
+        "type": "EventCallback<int>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "AutoCycle",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "IntervalSeconds",
+        "type": "int",
+        "default": "4",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowArrows",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowIndicators",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwCarouselSlide",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwCarouselSlide>\\n    <span>Content</span>\\n</TwCarouselSlide>",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Class",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwCommandPalette",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwCommandPalette Items=\\",
+    "parameters": [
+      {
+        "name": "IsOpen",
+        "type": "bool",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "IsOpenChanged",
+        "type": "EventCallback<bool>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Items",
+        "type": "List<CommandPaletteItem>",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnItemSelected",
+        "type": "EventCallback<CommandPaletteItem>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwCompanyPartyForm",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwCompanyPartyForm Model=\\",
+    "parameters": [
+      {
+        "name": "Model",
+        "type": "PartyModel",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Rsvp",
+        "type": "GuestRsvpModel",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnPartySaved",
+        "type": "EventCallback<PartyModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnRsvpSubmitted",
+        "type": "EventCallback<GuestRsvpModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwCompanyPlanForm",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwCompanyPlanForm Model=\\",
+    "parameters": [
+      {
+        "name": "Model",
+        "type": "CompanyPlanModel",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnPlanSubmitted",
+        "type": "EventCallback<CompanyPlanModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwDocsExplorer",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwDocsExplorer />",
+    "parameters": []
+  },
+  {
+    "name": "TwEmployeeAwardForm",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwEmployeeAwardForm Model=\\",
+    "parameters": [
+      {
+        "name": "Model",
+        "type": "EmployeeAwardModel",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnAwardNominated",
+        "type": "EventCallback<EmployeeAwardModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwFormEngine",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwFormEngine ShowHeader=\\",
+    "parameters": [
+      {
+        "name": "Schema",
+        "type": "FormSchema?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnSubmit",
+        "type": "EventCallback<FormSubmissionResult>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnChange",
+        "type": "EventCallback<Dictionary<string, object?>>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowHeader",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ShowCardWrapper",
+        "type": "bool",
+        "default": "true",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ReadOnly",
+        "type": "bool",
+        "default": "false",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwFormStudio",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwFormStudio />",
+    "parameters": []
+  },
+  {
+    "name": "TwProfitLossForm",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwProfitLossForm Model=\\",
+    "parameters": [
+      {
+        "name": "Model",
+        "type": "ProfitLossModel",
+        "default": "new()",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnStatementSaved",
+        "type": "EventCallback<ProfitLossModel>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwSmartFilter",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwSmartFilter Class=\\",
+    "parameters": [
+      {
+        "name": "OnFilterChanged",
+        "type": "EventCallback<Dictionary<string, string>>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwSmartPasteButton",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwSmartPasteButton Class=\\",
+    "parameters": [
+      {
+        "name": "OnApplied",
+        "type": "EventCallback<Dictionary<string, string>>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwSmartSearch",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwSmartSearch SearchQuery=\\",
+    "parameters": [
+      {
+        "name": "SearchQueryChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "OnSearchSubmitted",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwSmartTextArea",
+    "category": "Other Components",
+    "description": "Reusable Blazor WebAssembly component styled with Tailwind CSS.",
+    "snippet": "<TwSmartTextArea Value=\\",
+    "parameters": [
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "ValueChanged",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Configures component behavior or styling."
+      },
+      {
+        "name": "Rows",
+        "type": "int",
+        "default": "4",
+        "description": "Configures component behavior or styling."
+      }
+    ]
+  },
+  {
+    "name": "TwMicrCheckReader",
+    "category": "Financial & OCR",
+    "description": "Check 21 paper check & draft reader with ANSI X9.27 E-13B MICR decoding, Mod-10 ABA routing checksum validation, and courtesy-to-legal amount cross-checking.",
+    "snippet": "<TwMicrCheckReader OnCheckScanned=\\",
+    "parameters": [
+      {
+        "name": "OnCheckScanned",
+        "type": "EventCallback<CheckDraftOcrResult>",
+        "default": "null",
+        "description": "Callback fired when a check or draft is scanned."
+      },
+      {
+        "name": "OnInsertMarkdown",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Callback fired when Markdown ledger table is exported."
+      }
+    ]
+  },
+  {
+    "name": "TwDocumentOcrStudio",
+    "category": "Financial & OCR",
+    "description": "Full Form & PDF OCR Studio supporting paper checks, official bank drafts, commercial invoices, and IRS Form W-9 with spatial bounding boxes and Markdown table generation.",
+    "snippet": "<TwDocumentOcrStudio OnMarkdownExtracted=\\",
+    "parameters": [
+      {
+        "name": "OnMarkdownExtracted",
+        "type": "EventCallback<string>",
+        "default": "null",
+        "description": "Fired when extracted markdown report is copied or exported."
+      }
+    ]
+  },
+  {
+    "name": "TwSmartOcrButton",
+    "category": "Smart Components",
+    "description": "Drop-in Smart Component button that triggers instant client-side OCR for paper checks, invoices, and PDF forms.",
+    "snippet": "<TwSmartOcrButton OnDocumentScanned=\\",
+    "parameters": [
+      {
+        "name": "OnDocumentScanned",
+        "type": "EventCallback<DocumentOcrResult>",
+        "default": "null",
+        "description": "Fired when a document is scanned and entities are extracted."
+      },
+      {
+        "name": "OnCheckScanned",
+        "type": "EventCallback<CheckDraftOcrResult>",
+        "default": "null",
+        "description": "Fired when a paper check or bank draft is scanned."
+      }
+    ]
+  },
+  {
+    "name": "TwStreamingGrid",
+    "category": "Fullstack .NET 10+",
+    "description": "High-throughput streaming DataGrid consuming IAsyncEnumerable server streams with real-time row pulse animations and 1M row virtualization.",
+    "snippet": "<TwStreamingGrid Title=\"Real-time Telemetry\" MaxBufferCapacity=\"5000\" />",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string",
+        "default": "\"High-Throughput Streaming Engine (IAsyncEnumerable)\"",
+        "description": "Grid title in header toolbar."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string",
+        "default": "\"Real-time telemetry pipeline consuming asynchronous server streams...\"",
+        "description": "Toolbar subtitle."
+      },
+      {
+        "name": "MaxBufferCapacity",
+        "type": "int",
+        "default": "5000",
+        "description": "Maximum items kept in memory before circular eviction."
+      },
+      {
+        "name": "Class",
+        "type": "string",
+        "default": "\"\"",
+        "description": "Optional CSS classes."
+      }
+    ]
+  },
+  {
+    "name": "TwHydratedView",
+    "category": "Fullstack .NET 10+",
+    "description": "Universal zero-flicker SSR hydration container eliminating duplicate database queries and visual layout shift between prerender and client hydration.",
+    "snippet": "<TwHydratedView IsRestored=\"@_isRestored\" IsLoading=\"@_loading\"><p>Hydrated Content</p></TwHydratedView>",
+    "parameters": [
+      {
+        "name": "ChildContent",
+        "type": "RenderFragment",
+        "default": "null",
+        "description": "The hydrated content to render."
+      },
+      {
+        "name": "SkeletonTemplate",
+        "type": "RenderFragment",
+        "default": "null",
+        "description": "Custom skeleton placeholder to show during initial async load."
+      },
+      {
+        "name": "IsLoading",
+        "type": "bool",
+        "default": "false",
+        "description": "Whether the component is actively fetching initial state."
+      },
+      {
+        "name": "IsRestored",
+        "type": "bool",
+        "default": "false",
+        "description": "Whether the component state was restored from SSR prerender cache."
+      },
+      {
+        "name": "ShowHydrationBadge",
+        "type": "bool",
+        "default": "true",
+        "description": "Displays subtle SSR/Hydrated badge indicator in top right."
+      },
+      {
+        "name": "Class",
+        "type": "string",
+        "default": "\"\"",
+        "description": "Optional CSS classes."
+      }
+    ]
+  },
+  {
+    "name": "TwFullstackForm",
+    "category": "Fullstack .NET 10+",
+    "description": "Dual-mode enterprise form engine supporting Static SSR Enhanced Form POST (zero JS) and Interactive Auto Client RPC seamlessly.",
+    "snippet": "<TwFullstackForm Title=\"Universal Fullstack Form\" />",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string",
+        "default": "\"Universal Fullstack Form Engine\"",
+        "description": "Form card title."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string",
+        "default": "\"Dual-mode form handling supporting Static SSR and Interactive Auto...\"",
+        "description": "Form card subtitle."
+      },
+      {
+        "name": "Class",
+        "type": "string",
+        "default": "\"\"",
+        "description": "Optional CSS classes."
+      }
+    ]
+  },
+  {
+    "name": "TwFullstackHub",
+    "category": "Fullstack .NET 10+",
+    "description": "Full-stack developer architecture explorer, zero-flicker hydration workbench, and streaming playground for .NET 10+ Web Apps.",
+    "snippet": "<TwFullstackHub />",
+    "parameters": []
+  },
+  {
+    "name": "TwUnionBoundary",
+    "category": "Fullstack .NET 10+",
+    "description": "C# 15 Discriminated Union boundary rendering exhaustive states (Loading, Success, Empty, Failure) with compile-time branch safety.",
+    "snippet": "<TwUnionBoundary TItem=\"string\" State=\"@state\"><Success Context=\"d\">@d</Success></TwUnionBoundary>",
+    "parameters": [
+      {
+        "name": "State",
+        "type": "UiState<TItem>",
+        "default": "required",
+        "description": "Active algebraic union UI state."
+      },
+      {
+        "name": "Loading",
+        "type": "RenderFragment",
+        "default": "null",
+        "description": "Template rendered during loading state."
+      },
+      {
+        "name": "Success",
+        "type": "RenderFragment<TItem>",
+        "default": "null",
+        "description": "Template rendered on successful state with typed item context."
+      },
+      {
+        "name": "Empty",
+        "type": "RenderFragment",
+        "default": "null",
+        "description": "Template rendered on empty collection or record set."
+      },
+      {
+        "name": "Failure",
+        "type": "RenderFragment<UiState<TItem>.Failure>",
+        "default": "null",
+        "description": "Template rendered on error with failure details context."
+      }
+    ]
+  },
+  {
+    "name": "TwDonutCache",
+    "category": "Fullstack .NET 10+",
+    "description": "Blazor Donut Caching container that edge-caches 95%+ of static SSR page markup while dynamically perforating personalized donut holes.",
+    "snippet": "<TwDonutCache CacheKey=\"catalog\" Tags=\"@([\"catalog\"])\"><DynamicHole>...</DynamicHole></TwDonutCache>",
+    "parameters": [
+      {
+        "name": "CacheKey",
+        "type": "string",
+        "default": "\"default_donut\"",
+        "description": "Unique cache key for the static shell segment."
+      },
+      {
+        "name": "Duration",
+        "type": "TimeSpan",
+        "default": "5 minutes",
+        "description": "Cache expiration time-to-live."
+      },
+      {
+        "name": "Tags",
+        "type": "List<string>",
+        "default": "[\"catalog\"]",
+        "description": "Cache invalidation tags for programmatic cache busting."
+      },
+      {
+        "name": "StaticContent",
+        "type": "RenderFragment",
+        "default": "null",
+        "description": "Static markup cached at the edge across users."
+      },
+      {
+        "name": "DynamicHole",
+        "type": "RenderFragment",
+        "default": "null",
+        "description": "Dynamic personalized slot evaluated per-request."
+      }
+    ]
+  },
+  {
+    "name": "TwPostQuantumVault",
+    "category": "Fullstack .NET 10+",
+    "description": "Post-Quantum Cryptography secure enclave implementing NIST FIPS 203 ML-KEM-768 key encapsulation and zero-trust authenticated encryption.",
+    "snippet": "<TwPostQuantumVault />",
+    "parameters": []
+  },
+  {
+    "name": "TwTelemetryDashboard",
+    "category": "Fullstack .NET 10+",
+    "description": "Native OpenTelemetry (OTel) developer cockpit rendering real-time ActivitySource lifecycle spans, render latency waterfalls, and heap telemetry.",
+    "snippet": "<TwTelemetryDashboard />",
+    "parameters": []
+  },
+  {
+    "name": "TwMaskInput",
+    "category": "Forms & Controls",
+    "description": "High-performance masked text input with slot validation, prompt guides, and Raw vs WithFormatting modes for Phone, SSN, Credit Card, and custom masks.",
+    "snippet": "<TwMaskInput Label=\"Phone\" Mask=\"(###) ###-####\" @bind-Value=\"@phone\" />",
+    "parameters": [
+      {
+        "name": "Value",
+        "type": "string",
+        "default": "\"\"",
+        "description": "Two-way bound input value."
+      },
+      {
+        "name": "Mask",
+        "type": "string",
+        "default": "\"(###) ###-####\"",
+        "description": "Mask pattern (# digit, A letter, * alphanumeric)."
+      },
+      {
+        "name": "Prompt",
+        "type": "char",
+        "default": "'_'",
+        "description": "Prompt symbol for unfilled slots."
+      },
+      {
+        "name": "ValueMode",
+        "type": "MaskValueMode",
+        "default": "Raw",
+        "description": "Raw unformatted string vs formatted string with mask literals."
+      },
+      {
+        "name": "Preset",
+        "type": "MaskPreset",
+        "default": "Custom",
+        "description": "Preconfigured mask presets (Phone, Ssn, CreditCard, Date, ZipCode)."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Input label."
+      },
+      {
+        "name": "PrefixIcon",
+        "type": "string?",
+        "default": "null",
+        "description": "Prefix icon symbol."
+      }
+    ]
+  },
+  {
+    "name": "TwRangeSlider",
+    "category": "Forms & Controls",
+    "description": "Dual-thumb interactive range slider with Lower/Upper thumb bounds, colored track highlights, ticks, and touch-friendly tap targets.",
+    "snippet": "<TwRangeSlider Label=\"Budget\" Min=\"0\" Max=\"1000\" @bind-Lower=\"@minVal\" @bind-Upper=\"@maxVal\" Prefix=\"$\" />",
+    "parameters": [
+      {
+        "name": "Lower",
+        "type": "double",
+        "default": "20",
+        "description": "Lower boundary thumb value (two-way bound)."
+      },
+      {
+        "name": "Upper",
+        "type": "double",
+        "default": "80",
+        "description": "Upper boundary thumb value (two-way bound)."
+      },
+      {
+        "name": "Min",
+        "type": "double",
+        "default": "0",
+        "description": "Minimum range limit."
+      },
+      {
+        "name": "Max",
+        "type": "double",
+        "default": "100",
+        "description": "Maximum range limit."
+      },
+      {
+        "name": "Step",
+        "type": "double",
+        "default": "1",
+        "description": "Granular increment step."
+      },
+      {
+        "name": "Prefix",
+        "type": "string?",
+        "default": "null",
+        "description": "Prefix symbol for values ($)."
+      },
+      {
+        "name": "Suffix",
+        "type": "string?",
+        "default": "null",
+        "description": "Suffix symbol for values (%)."
+      }
+    ]
+  },
+  {
+    "name": "TwHighlight",
+    "category": "Typography & Utilities",
+    "description": "Fast text search highlighter supporting case-sensitive matching, whole-word boundaries, match count badges, and Next/Prev navigation.",
+    "snippet": "<TwHighlight Text=\"@body\" SearchText=\"@query\" ShowNavigation=\"true\" />",
+    "parameters": [
+      {
+        "name": "Text",
+        "type": "string",
+        "default": "\"\"",
+        "description": "Full body text to search."
+      },
+      {
+        "name": "SearchText",
+        "type": "string",
+        "default": "\"\"",
+        "description": "Query term to highlight."
+      },
+      {
+        "name": "CaseSensitive",
+        "type": "bool",
+        "default": "false",
+        "description": "Whether search matches exact case."
+      },
+      {
+        "name": "WholeWord",
+        "type": "bool",
+        "default": "false",
+        "description": "Match entire words only."
+      },
+      {
+        "name": "ActiveIndex",
+        "type": "int",
+        "default": "0",
+        "description": "Index of currently focused active match."
+      },
+      {
+        "name": "ShowNavigation",
+        "type": "bool",
+        "default": "true",
+        "description": "Displays Next/Prev navigation bar with match count."
+      }
+    ]
+  },
+  {
+    "name": "TwTileManager",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Executive dashboard tile manager with responsive multi-column layouts, 1-click tile focus maximization, minimize collapse, and refresh callbacks.",
+    "snippet": "<TwTileManager Title=\"Executive Command\"><TwTile Title=\"ARR\" ColSpan=\"2\">...</TwTile></TwTileManager>",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "\"Executive Operations Command\"",
+        "description": "Toolbar title."
+      },
+      {
+        "name": "ColumnCount",
+        "type": "int",
+        "default": "4",
+        "description": "Number of grid columns (Quad, Triple, Dual)."
+      },
+      {
+        "name": "Gap",
+        "type": "string",
+        "default": "\"gap-4\"",
+        "description": "Tailwind gap utility."
+      },
+      {
+        "name": "ShowToolbar",
+        "type": "bool",
+        "default": "true",
+        "description": "Whether to show view switcher toolbar."
+      }
+    ]
+  },
+  {
+    "name": "TwNavDrawer",
+    "category": "Navigation & Headers",
+    "description": "Enterprise side navigation drawer featuring Mini icon rail (64px) vs Expanded full sidebar (260px) transitions, item badges, and overlay mode.",
+    "snippet": "<TwNavDrawer BrandTitle=\"Enterprise\"><TwNavDrawerItem Text=\"Dashboard\" Icon=\"\ud83d\udcca\" /></TwNavDrawer>",
+    "parameters": [
+      {
+        "name": "BrandTitle",
+        "type": "string",
+        "default": "\"Enterprise Hub\"",
+        "description": "Drawer header brand text."
+      },
+      {
+        "name": "IsMini",
+        "type": "bool",
+        "default": "false",
+        "description": "Mini collapsed icon-only rail mode."
+      },
+      {
+        "name": "IsOpen",
+        "type": "bool",
+        "default": "true",
+        "description": "Drawer open state."
+      },
+      {
+        "name": "IsOverlay",
+        "type": "bool",
+        "default": "false",
+        "description": "Modal overlay mode with backdrop."
+      },
+      {
+        "name": "AllowToggleMini",
+        "type": "bool",
+        "default": "true",
+        "description": "Show collapse/expand toggle button."
+      }
+    ]
+  },
+  {
+    "name": "TwPopover",
+    "category": "Overlays & Modals",
+    "description": "Anchored contextual floating popover with arrow pointer, 8-way placement, click or hover triggers, keyboard Escape dismiss, and optional header/footer slots.",
+    "snippet": "<TwPopover Title=\"Filter Settings\" Placement=\"TwPopoverPlacement.Bottom\"><AnchorContent><button class=\"btn\">Filter</button></AnchorContent><ChildContent><p>Options...</p></ChildContent></TwPopover>",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "null",
+        "description": "Optional header title text."
+      },
+      {
+        "name": "Placement",
+        "type": "TwPopoverPlacement",
+        "default": "TwPopoverPlacement.Bottom",
+        "description": "Placement relative to anchor."
+      },
+      {
+        "name": "Trigger",
+        "type": "TwPopoverTrigger",
+        "default": "TwPopoverTrigger.Click",
+        "description": "Activation trigger mode."
+      },
+      {
+        "name": "ShowArrow",
+        "type": "bool",
+        "default": "true",
+        "description": "Render pointer arrow pointing to anchor."
+      },
+      {
+        "name": "Width",
+        "type": "string",
+        "default": "\"w-72\"",
+        "description": "Flyout container width utility."
+      },
+      {
+        "name": "IsOpen",
+        "type": "bool",
+        "default": "false",
+        "description": "Two-way bindable open state."
+      }
+    ]
+  },
+  {
+    "name": "TwSnackbar",
+    "category": "Feedback & Alerts",
+    "description": "Actionable bottom floating notification snackbar with action trigger callback, animated progress auto-dismiss countdown bar, pause on hover, and semantic color variants.",
+    "snippet": "<TwSnackbar Message=\"Invoice archived\" ActionText=\"Undo\" Variant=\"SemanticVariant.Info\" @bind-IsOpen=\"_showSnack\" OnAction=\"HandleUndo\" />",
+    "parameters": [
+      {
+        "name": "Message",
+        "type": "string",
+        "default": "\"\"",
+        "description": "Notification message."
+      },
+      {
+        "name": "ActionText",
+        "type": "string?",
+        "default": "null",
+        "description": "Optional action button text."
+      },
+      {
+        "name": "DurationMs",
+        "type": "int",
+        "default": "4000",
+        "description": "Auto-dismiss duration in ms."
+      },
+      {
+        "name": "ShowProgress",
+        "type": "bool",
+        "default": "true",
+        "description": "Render animated countdown progress bar."
+      },
+      {
+        "name": "Variant",
+        "type": "SemanticVariant",
+        "default": "SemanticVariant.Default",
+        "description": "Color scheme."
+      },
+      {
+        "name": "Position",
+        "type": "TwSnackbarPosition",
+        "default": "TwSnackbarPosition.BottomCenter",
+        "description": "Viewport anchoring position."
+      }
+    ]
+  },
+  {
+    "name": "TwChatStudio",
+    "category": "AI & Agentic Workflows",
+    "description": "Full-featured modern conversational AI chat studio with multiline growing composer, staged file attachment preview chips, quick reply suggestion pills, feedback reactions (thumbs up/down), copy to clipboard, and live harmonic typing indicator.",
+    "snippet": "<TwChatStudio Title=\"AI Enterprise Studio\" Messages=\"_messages\" Suggestions=\"_prompts\" OnMessageSent=\"HandleSend\" OnRegenerate=\"HandleRegen\" />",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string",
+        "default": "\"AI Enterprise Studio\"",
+        "description": "Chat studio title."
+      },
+      {
+        "name": "ModelBadge",
+        "type": "string",
+        "default": "\".NET 10+ WASM\"",
+        "description": "Model identification badge."
+      },
+      {
+        "name": "Messages",
+        "type": "List<ChatMessage>",
+        "default": "new()",
+        "description": "Chronological chat message stream."
+      },
+      {
+        "name": "Suggestions",
+        "type": "List<string>",
+        "default": "new()",
+        "description": "Quick reply suggestion chips above composer."
+      },
+      {
+        "name": "IsTyping",
+        "type": "bool",
+        "default": "false",
+        "description": "Show animated harmonic typing indicator."
+      },
+      {
+        "name": "TypingStatusText",
+        "type": "string",
+        "default": "\"AI is thinking...\"",
+        "description": "Typing indicator status message."
+      }
+    ]
+  },
+  {
+    "name": "TwPickList",
+    "category": "Buttons, Forms & Controls",
+    "description": "Dual-listbox item transfer picker with instant dual-list search filtering, move selected/all transfer actions, target list reordering, and item badges.",
+    "snippet": "<TwPickList TItem=\"string\" Source=\"_available\" @bind-Target=\"_selected\" SourceTitle=\"Roles\" TargetTitle=\"Assigned\" />",
+    "parameters": [
+      {
+        "name": "Source",
+        "type": "IEnumerable<TItem>?",
+        "default": "null",
+        "description": "Source available items collection."
+      },
+      {
+        "name": "Target",
+        "type": "IList<TItem>",
+        "default": "new List<TItem>()",
+        "description": "Selected target items collection."
+      },
+      {
+        "name": "SourceTitle",
+        "type": "string",
+        "default": "\"Available Items\"",
+        "description": "Left panel header title."
+      },
+      {
+        "name": "TargetTitle",
+        "type": "string",
+        "default": "\"Selected Items\"",
+        "description": "Right panel header title."
+      },
+      {
+        "name": "AllowFiltering",
+        "type": "bool",
+        "default": "true",
+        "description": "Show real-time filter search input on both lists."
+      },
+      {
+        "name": "ShowMoveAll",
+        "type": "bool",
+        "default": "true",
+        "description": "Show transfer all (>> and <<) buttons."
+      },
+      {
+        "name": "ShowReorder",
+        "type": "bool",
+        "default": "true",
+        "description": "Show up/down reorder buttons in target list."
+      }
+    ]
+  },
+  {
+    "name": "TwTimeSpanPicker",
+    "category": "Advanced Forms & Inputs",
+    "description": "Structured duration and timespan picker with Days, Hours, Minutes, Seconds input blocks, step increments, reset trigger, and quick preset duration pills.",
+    "snippet": "<TwTimeSpanPicker Label=\"SLA Duration\" @bind-Value=\"_sla\" ShowPresets=\"true\" />",
+    "parameters": [
+      {
+        "name": "Value",
+        "type": "TimeSpan",
+        "default": "TimeSpan.Zero",
+        "description": "Two-way bindable duration value."
+      },
+      {
+        "name": "Label",
+        "type": "string?",
+        "default": "null",
+        "description": "Optional form label."
+      },
+      {
+        "name": "AllowDays",
+        "type": "bool",
+        "default": "true",
+        "description": "Whether to show Days stepper unit."
+      },
+      {
+        "name": "AllowSeconds",
+        "type": "bool",
+        "default": "true",
+        "description": "Whether to show Seconds stepper unit."
+      },
+      {
+        "name": "ShowPresets",
+        "type": "bool",
+        "default": "true",
+        "description": "Show quick duration preset buttons."
+      },
+      {
+        "name": "ShowReset",
+        "type": "bool",
+        "default": "true",
+        "description": "Show zero-reset button."
+      }
+    ]
+  },
+  {
+    "name": "TwVirtualKeyboard",
+    "category": "Typography, Badges & Keys",
+    "description": "On-screen virtual keyboard for kiosks, touch displays, POS terminals, and anti-keylogger secure PIN entry with QWERTY, Numeric, and scrambled PIN modes.",
+    "snippet": "<TwVirtualKeyboard @bind-Value=\"_enteredPin\" Mode=\"VirtualKeyboardMode.Pin\" IsPassword=\"true\" OnSubmit=\"HandlePinSubmit\" />",
+    "parameters": [
+      {
+        "name": "Value",
+        "type": "string",
+        "default": "\"\"",
+        "description": "Two-way bindable typed text/PIN value."
+      },
+      {
+        "name": "Mode",
+        "type": "VirtualKeyboardMode",
+        "default": "VirtualKeyboardMode.Qwerty",
+        "description": "Key layout mode (Qwerty, Numeric, Pin)."
+      },
+      {
+        "name": "IsPassword",
+        "type": "bool",
+        "default": "false",
+        "description": "Mask display output with bullet points."
+      },
+      {
+        "name": "ShowDisplay",
+        "type": "bool",
+        "default": "true",
+        "description": "Show top value display bar with clear button."
+      },
+      {
+        "name": "AllowModeSwitch",
+        "type": "bool",
+        "default": "true",
+        "description": "Show mode switcher tabs."
+      },
+      {
+        "name": "OnSubmit",
+        "type": "EventCallback",
+        "default": "-",
+        "description": "Callback invoked when Enter / Submit key is pressed."
+      }
+    ]
+  },
+  {
+    "name": "TwWordCloud",
+    "category": "Visualizations & Gauges",
+    "description": "Pure SVG weighted term and keyword frequency cloud with Archimedean spiral positioning, harmonic color palettes, hover scaling, and click callbacks.",
+    "snippet": "<TwWordCloud Words=\"_keywords\" Title=\"Sentiment Keywords\" OnWordClick=\"HandleWordClick\" />",
+    "parameters": [
+      {
+        "name": "Words",
+        "type": "IReadOnlyList<WordCloudItem>",
+        "default": "[]",
+        "description": "Weighted words collection."
+      },
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "\"Keyword Density & Term Frequency\"",
+        "description": "Chart header title."
+      },
+      {
+        "name": "Width",
+        "type": "int",
+        "default": "640",
+        "description": "SVG viewBox width."
+      },
+      {
+        "name": "Height",
+        "type": "int",
+        "default": "320",
+        "description": "SVG viewBox height."
+      },
+      {
+        "name": "MinFontSize",
+        "type": "double",
+        "default": "12",
+        "description": "Smallest font size in points."
+      },
+      {
+        "name": "MaxFontSize",
+        "type": "double",
+        "default": "42",
+        "description": "Largest font size in points."
+      },
+      {
+        "name": "OnWordClick",
+        "type": "EventCallback<WordCloudItem>",
+        "default": "-",
+        "description": "Fired when user clicks any keyword."
+      }
+    ]
+  },
+  {
+    "name": "TwSankeyChart",
+    "category": "Visualizations & Gauges",
+    "description": "Pure SVG flow and migration diagram rendering source/target nodes and cubic bezier ribbons with thickness proportional to flow volume.",
+    "snippet": "<TwSankeyChart Nodes=\"_nodes\" Links=\"_links\" Title=\"Pipeline Throughput Flow\" />",
+    "parameters": [
+      {
+        "name": "Nodes",
+        "type": "IReadOnlyList<SankeyNode>",
+        "default": "[]",
+        "description": "Nodes collection."
+      },
+      {
+        "name": "Links",
+        "type": "IReadOnlyList<SankeyLink>",
+        "default": "[]",
+        "description": "Ribbon links collection."
+      },
+      {
+        "name": "Title",
+        "type": "string?",
+        "default": "\"Enterprise Pipeline & Resource Flow\"",
+        "description": "Chart header title."
+      },
+      {
+        "name": "Width",
+        "type": "int",
+        "default": "700",
+        "description": "SVG viewBox width."
+      },
+      {
+        "name": "Height",
+        "type": "int",
+        "default": "360",
+        "description": "SVG viewBox height."
+      },
+      {
+        "name": "OnNodeClick",
+        "type": "EventCallback<SankeyNode>",
+        "default": "-",
+        "description": "Callback when node is clicked."
+      }
+    ]
+  },
+  {
+    "name": "TwFileManager",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "Enterprise cloud and asset file manager with folder tree navigation, breadcrumbs, grid/table view modes, search, storage quota meter, and upload/delete actions.",
+    "snippet": "<TwFileManager Items=\"_files\" CurrentPath=\"/\" OnFileSelected=\"HandleFileSelected\" />",
+    "parameters": [
+      {
+        "name": "Items",
+        "type": "List<FileItem>",
+        "default": "new()",
+        "description": "Files and folders collection."
+      },
+      {
+        "name": "CurrentPath",
+        "type": "string",
+        "default": "\"/\"",
+        "description": "Current active directory path."
+      },
+      {
+        "name": "OnFileSelected",
+        "type": "EventCallback<FileItem>",
+        "default": "-",
+        "description": "Fired when file/folder is selected."
+      },
+      {
+        "name": "OnFileOpened",
+        "type": "EventCallback<FileItem>",
+        "default": "-",
+        "description": "Fired when file/folder is opened."
+      },
+      {
+        "name": "OnUpload",
+        "type": "EventCallback",
+        "default": "-",
+        "description": "Fired when upload is requested."
+      }
+    ]
+  },
+  {
+    "name": "TwSpatialCard",
+    "category": "Cards, Grids & Bento Systems",
+    "description": "2027 volumetric 3D card featuring real-time gyroscopic mouse tilt, dynamic specular refraction glare, multi-layer Z-depth elevation, and tactile organic blur.",
+    "razorSnippet": "<TwSpatialCard Title=\"Quantum Enclave\" MaxTiltDeg=\"14\">...content...</TwSpatialCard>",
+    "parameters": [
+      {
+        "name": "Title",
+        "type": "string?",
+        "defaultValue": "null",
+        "description": "Card title header."
+      },
+      {
+        "name": "Subtitle",
+        "type": "string?",
+        "defaultValue": "null",
+        "description": "Card subtitle text."
+      },
+      {
+        "name": "BadgeText",
+        "type": "string?",
+        "defaultValue": "null",
+        "description": "Elevated 3D pill badge text."
+      },
+      {
+        "name": "MaxTiltDeg",
+        "type": "double",
+        "defaultValue": "12.0",
+        "description": "Maximum rotation angle degrees on tilt."
+      },
+      {
+        "name": "GlowGradient",
+        "type": "string",
+        "defaultValue": "\"from-brand-500 to-indigo-600\"",
+        "description": "Tailwind gradient classes for dynamic ambient aura."
+      }
+    ]
+  },
+  {
+    "name": "TwFluidMesh",
+    "category": "Visualizations & Gauges",
+    "description": "Tactile generative fluid gradient shader with organic motion and real-time psychological emotional state resonance tuning for operator cognitive optimization.",
+    "razorSnippet": "<TwFluidMesh @bind-Mood=\"_operatorMood\" />",
+    "parameters": [
+      {
+        "name": "Mood",
+        "type": "EmotionalState",
+        "defaultValue": "EmotionalState.DeepFocus",
+        "description": "Active emotional and cognitive resonance frequency preset."
+      },
+      {
+        "name": "MoodChanged",
+        "type": "EventCallback<EmotionalState>",
+        "defaultValue": "-",
+        "description": "Fired when operator toggles sentiment mood."
+      }
+    ]
+  },
+  {
+    "name": "TwPredictiveIntent",
+    "category": "Forms & Inputs",
+    "description": "2027 anticipatory state machine demonstrating zero-click UX: gaze focal tracking, tactile biometric pulse sensor, and automated intent action synthesis.",
+    "razorSnippet": "<TwPredictiveIntent />",
+    "parameters": [
+      {
+        "name": "Class",
+        "type": "string",
+        "defaultValue": "\"\"",
+        "description": "Optional CSS classes for outer container."
+      }
+    ]
+  }
+]

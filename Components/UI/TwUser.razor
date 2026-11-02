@@ -1,0 +1,111 @@
+@if (!string.IsNullOrWhiteSpace(Href))
+{
+    <a href="@Href" target="@Target" class="@ComputedBaseClasses">
+        @RenderInner()
+    </a>
+}
+else
+{
+    <div class="@ComputedBaseClasses" @onclick="OnClick">
+        @RenderInner()
+    </div>
+}
+
+@code {
+    [Parameter] public string Name { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string? AvatarSrc { get; set; }
+    [Parameter] public string? Initials { get; set; }
+    [Parameter] public string? Status { get; set; } // "online", "busy", "away", "offline"
+    [Parameter] public bool IsFocusable { get; set; } = true;
+    [Parameter] public string? Href { get; set; }
+    [Parameter] public string Target { get; set; } = "_self";
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Per-slot class overrides (Base, AvatarWrapper, Avatar, StatusDot, Wrapper, Name, Description)</summary>
+    [Parameter] public TwUserSlots? Classes { get; set; }
+    [Parameter] public RenderFragment? DescriptionContent { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    private string ComputedBaseClasses => TwClassBuilder
+        .Create("inline-flex items-center justify-start gap-3 rounded-xl p-1.5 transition-colors")
+        .AddIf(IsFocusable || !string.IsNullOrWhiteSpace(Href), "hover:bg-slate-100/80 dark:hover:bg-slate-800/60 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500/40")
+        .Add(Classes?.Base)
+        .Add(Class)
+        .Build();
+
+    private string ComputedAvatarWrapperClasses => TwMerge.Merge(
+        "relative inline-flex shrink-0",
+        Classes?.AvatarWrapper);
+
+    private string ComputedAvatarClasses => TwMerge.Merge(
+        "w-10 h-10 rounded-full object-cover flex items-center justify-center font-bold text-xs bg-gradient-to-br from-brand-500 to-purple-600 text-white ring-2 ring-white dark:ring-slate-900 shadow-xs",
+        Classes?.Avatar);
+
+    private string ComputedStatusDotClasses => TwMerge.Merge(
+        $"absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full ring-2 ring-white dark:ring-slate-900 {GetStatusColor()}",
+        Classes?.StatusDot);
+
+    private string ComputedWrapperClasses => TwMerge.Merge(
+        "inline-flex flex-col items-start justify-center min-w-0",
+        Classes?.Wrapper);
+
+    private string ComputedNameClasses => TwMerge.Merge(
+        "text-sm font-semibold text-slate-900 dark:text-white truncate",
+        Classes?.Name);
+
+    private string ComputedDescriptionClasses => TwMerge.Merge(
+        "text-xs text-slate-500 dark:text-slate-400 truncate",
+        Classes?.Description);
+
+    private string GetStatusColor() => Status?.ToLowerInvariant() switch
+    {
+        "online" => "bg-emerald-500",
+        "busy" or "dnd" => "bg-rose-500",
+        "away" => "bg-amber-500",
+        "offline" => "bg-slate-400",
+        _ => "bg-emerald-500"
+    };
+
+    private string GetInitials()
+    {
+        if (!string.IsNullOrWhiteSpace(Initials))
+            return Initials;
+        if (string.IsNullOrWhiteSpace(Name))
+            return "U";
+        var parts = Name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (parts.Length >= 2)
+            return $"{char.ToUpperInvariant(parts[0][0])}{char.ToUpperInvariant(parts[1][0])}";
+        return Name.Length >= 2 ? Name.Substring(0, 2).ToUpperInvariant() : Name.ToUpperInvariant();
+    }
+
+    private RenderFragment RenderInner() => __builder =>
+    {
+        <div class="@ComputedAvatarWrapperClasses">
+            @if (!string.IsNullOrWhiteSpace(AvatarSrc))
+            {
+                <img src="@AvatarSrc" alt="@Name" class="@ComputedAvatarClasses" />
+            }
+            else
+            {
+                <div class="@ComputedAvatarClasses">
+                    @GetInitials()
+                </div>
+            }
+            @if (!string.IsNullOrWhiteSpace(Status))
+            {
+                <span class="@ComputedStatusDotClasses" title="@Status"></span>
+            }
+        </div>
+        <div class="@ComputedWrapperClasses">
+            <span class="@ComputedNameClasses">@Name</span>
+            @if (DescriptionContent is not null)
+            {
+                <div class="@ComputedDescriptionClasses">@DescriptionContent</div>
+            }
+            else if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <span class="@ComputedDescriptionClasses">@Description</span>
+            }
+        </div>
+    };
+}

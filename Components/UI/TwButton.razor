@@ -1,0 +1,80 @@
+<button type="@Type"
+        disabled="@(Disabled || Loading)"
+        @onclick="OnClick"
+        @attributes="AdditionalAttributes"
+        class="@ComputedBaseClasses">
+    @if (Loading)
+    {
+        <svg class="@TwMerge.Merge("animate-spin h-4 w-4 shrink-0", Classes?.Spinner)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    }
+    else if (LeadingIcon is not null)
+    {
+        <span class="@TwMerge.Merge("shrink-0", Classes?.LeadingIcon)">@LeadingIcon</span>
+    }
+
+    @ChildContent
+
+    @if (TrailingIcon is not null && !Loading)
+    {
+        <span class="@TwMerge.Merge("shrink-0", Classes?.TrailingIcon)">@TrailingIcon</span>
+    }
+</button>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? LeadingIcon { get; set; }
+    [Parameter] public RenderFragment? TrailingIcon { get; set; }
+    [Parameter] public ButtonVariant Variant { get; set; } = ButtonVariant.Primary;
+    [Parameter] public ComponentSize Size { get; set; } = ComponentSize.Md;
+    [Parameter] public string Type { get; set; } = "button";
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool Loading { get; set; }
+    /// <summary>When true, renders full-width on mobile and auto-width on sm+ screens</summary>
+    [Parameter] public bool ResponsiveFullWidth { get; set; }
+    [Parameter] public bool FullWidth { get; set; }
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Per-slot class overrides (Base, LeadingIcon, TrailingIcon, Spinner)</summary>
+    [Parameter] public TwButtonSlots? Classes { get; set; }
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string ComputedBaseClasses => TwClassBuilder
+        .Create("inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900 disabled:opacity-50 disabled:pointer-events-none active:scale-[0.98]")
+        .Add(VariantClasses)
+        .Add(SizeClasses)
+        .Add(WidthClasses)
+        .Add(Classes?.Base)
+        .Add(Class)
+        .Build();
+
+    private string VariantClasses => Variant switch
+    {
+        ButtonVariant.Secondary => "bg-slate-100 text-slate-900 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700",
+        ButtonVariant.Outline => "border border-slate-300 dark:border-slate-700 bg-transparent text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800",
+        ButtonVariant.Ghost => "bg-transparent text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800",
+        ButtonVariant.Destructive => "bg-rose-600 text-white hover:bg-rose-700 shadow-sm",
+        ButtonVariant.Soft => "bg-brand-500/15 text-brand-700 hover:bg-brand-500/25 dark:bg-brand-400/15 dark:text-brand-300 dark:hover:bg-brand-400/25",
+        ButtonVariant.Shadow => "bg-brand-600 text-white hover:bg-brand-500 shadow-lg shadow-brand-500/35 hover:shadow-xl hover:shadow-brand-500/45",
+        ButtonVariant.Flat => "bg-slate-200/70 text-slate-800 hover:bg-slate-200 dark:bg-slate-800/70 dark:text-slate-200 dark:hover:bg-slate-800",
+        ButtonVariant.Link => "bg-transparent text-brand-600 dark:text-brand-400 underline-offset-4 hover:underline shadow-none px-1",
+        _ => "bg-brand-600 text-white hover:bg-brand-700 shadow-sm"
+    };
+
+    private string SizeClasses => Size switch
+    {
+        ComponentSize.Xs => "px-2.5 py-1.5 text-xs min-h-[32px]",
+        ComponentSize.Sm => "px-3.5 py-2 text-xs sm:text-sm min-h-[38px]",
+        ComponentSize.Lg => "px-6 py-3 text-base min-h-[48px]",
+        ComponentSize.Xl => "px-7 py-3.5 text-lg min-h-[54px]",
+        _ => "px-4 py-2.5 text-sm min-h-[42px]"
+    };
+
+    private string WidthClasses => FullWidth
+        ? "w-full"
+        : ResponsiveFullWidth
+            ? "w-full sm:w-auto"
+            : "";
+}

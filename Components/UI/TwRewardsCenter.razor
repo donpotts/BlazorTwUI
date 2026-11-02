@@ -1,0 +1,219 @@
+@namespace BlazorTwUI.Components.UI
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="space-y-6 @Class">
+    <TwConfetti @ref="_confettiRef" />
+
+    <!-- Wallet Header Banner -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-600/10 via-brand-600/10 to-transparent border border-emerald-500/20">
+        <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-2xl shadow-sm">
+                🎁
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Employee Rewards Center</h3>
+                    <TwBadge Variant="SemanticVariant.Success">Active Roster</TwBadge>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Redeem peer recognition awards and spot bonuses for perks, gift cards, and experiences
+                </p>
+            </div>
+        </div>
+
+        <!-- Points Wallet Card -->
+        <div class="flex items-center gap-3 p-3 px-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+            <div class="text-right">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Available Points</span>
+                <span class="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
+                    @_walletPoints.ToString("N0") PTS
+                </span>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-xs">
+                ⭐
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar & Search -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <!-- Category Filter Pills -->
+        <div class="flex flex-wrap gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800">
+            @foreach (var cat in _categories)
+            {
+                <button type="button"
+                        @onclick="() => _selectedCategory = cat"
+                        class="px-3 py-1.5 rounded-xl text-xs font-bold transition @(_selectedCategory == cat ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm border border-slate-200 dark:border-slate-700" : "text-slate-600 dark:text-slate-400 hover:text-slate-900")">
+                    @cat
+                </button>
+            }
+        </div>
+
+        <!-- Search Input -->
+        <div class="relative w-full md:w-64">
+            <input type="text"
+                   placeholder="Search offerings..."
+                   @bind="_searchQuery"
+                   @bind:event="oninput"
+                   class="w-full px-3 py-2 pl-8 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:border-brand-500" />
+            <span class="absolute left-2.5 top-2.5 text-xs text-slate-400">🔍</span>
+        </div>
+    </div>
+
+    <!-- Rewards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        @foreach (var item in FilteredItems)
+        {
+            var canAfford = _walletPoints >= item.CostPoints;
+            <div class="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-3 hover:border-brand-500/50 transition">
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-2xl p-2 rounded-2xl bg-slate-100 dark:bg-slate-800">@item.Emoji</span>
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase @(item.DeliveryKind == "Digital" ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400")">
+                            @item.DeliveryKind
+                        </span>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">@item.Title</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">@item.Description</p>
+                    </div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Price</span>
+                        <span class="text-sm font-black font-mono text-slate-900 dark:text-white">
+                            @item.CostPoints.ToString("N0") <span class="text-[10px] text-emerald-600 dark:text-emerald-400">PTS</span>
+                        </span>
+                    </div>
+                    <TwButton Variant="@(canAfford ? ButtonVariant.Primary : ButtonVariant.Outline)"
+                              Size="ComponentSize.Sm"
+                              Disabled="@(!canAfford)"
+                              OnClick="() => OpenRedemptionModal(item)">
+                        @(canAfford ? "Redeem" : "Need Points")
+                    </TwButton>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Redemption Confirmation Modal -->
+    @if (_selectedReward != null)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+            <div class="w-full max-w-md p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-4">
+                <div class="text-center space-y-2">
+                    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-3xl">
+                        @_selectedReward.Emoji
+                    </div>
+                    <h4 class="text-lg font-black text-slate-900 dark:text-white">Confirm Redemption</h4>
+                    <p class="text-xs text-slate-500">
+                        You are about to redeem <strong>@_selectedReward.Title</strong> for <strong>@_selectedReward.CostPoints PTS</strong>.
+                    </p>
+                </div>
+
+                @if (_voucherClaimed)
+                {
+                    <div class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-2">
+                        <span class="text-xs font-bold text-emerald-700 dark:text-emerald-300 block">Digital Voucher Code:</span>
+                        <div class="font-mono text-base font-black tracking-widest text-emerald-800 dark:text-emerald-200 bg-white dark:bg-slate-900 p-2 rounded-xl border border-emerald-300 select-all">
+                            @_voucherCode
+                        </div>
+                        <p class="text-[11px] text-emerald-600 dark:text-emerald-400">A confirmation email with instructions was dispatched.</p>
+                    </div>
+
+                    <TwButton Variant="ButtonVariant.Primary" ResponsiveFullWidth="true" OnClick="CloseRedemptionModal">
+                        Done
+                    </TwButton>
+                }
+                else
+                {
+                    <div class="flex items-center gap-3 pt-2">
+                        <TwButton Variant="ButtonVariant.Outline" ResponsiveFullWidth="true" OnClick="CloseRedemptionModal">
+                            Cancel
+                        </TwButton>
+                        <TwButton Variant="ButtonVariant.Primary" ResponsiveFullWidth="true" OnClick="ConfirmRedeem">
+                            Confirm & Claim
+                        </TwButton>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public int InitialBalance { get; set; } = 3250;
+
+    private TwConfetti? _confettiRef;
+    private int _walletPoints = 3250;
+    private string _selectedCategory = "All";
+    private string _searchQuery = "";
+
+    protected override void OnInitialized()
+    {
+        _walletPoints = InitialBalance;
+    }
+
+    private RewardItem? _selectedReward;
+    private bool _voucherClaimed = false;
+    private string _voucherCode = "";
+
+    public record RewardItem(string Title, string Emoji, string Category, int CostPoints, string DeliveryKind, string Description);
+
+    private readonly List<string> _categories = new()
+    {
+        "All", "Gift Cards", "Swag & Gear", "Workplace Flexibility", "Learning & Growth", "Wellness"
+    };
+
+    private readonly List<RewardItem> _rewards = new()
+    {
+        new("$25 Coffee & Breakfast Card", "☕", "Gift Cards", 500, "Digital", "Starbucks, Peet's, or local cafe digital gift card e-code."),
+        new("$50 Dinner Delivery Voucher", "🍕", "Gift Cards", 1000, "Digital", "DoorDash, UberEats, or Grubhub digital gift code."),
+        new("Company Premium Zip Hoodie", "👕", "Swag & Gear", 1200, "Shipped", "Heavyweight fleece hoodie with embroidered minimalist crest."),
+        new("Insulated Stainless Tumbler", "🥤", "Swag & Gear", 400, "Shipped", "32oz vacuum insulated matte travel tumbler with straw."),
+        new("Extra Floating PTO Holiday", "🏖️", "Workplace Flexibility", 2500, "Instant", "Add 1 additional paid day off to your enterprise balance."),
+        new("Friday Afternoon Early-Out Pass", "⏰", "Workplace Flexibility", 800, "Instant", "Log off at 1:00 PM this Friday with manager blessing."),
+        new("Technical Book & Audible Allowance", "📚", "Learning & Growth", 600, "Digital", "$35 stipend for technical O'Reilly books or audiobooks."),
+        new("O'Reilly / Pluralsight Annual Seat", "🎓", "Learning & Growth", 3000, "Digital", "1-year access to enterprise software architecture courses."),
+        new("Desktop Ergonomic Massage Cushion", "💆", "Wellness", 1500, "Shipped", "Heated shiatsu massage pad for your office chair."),
+        new("Corporate Charity Match ($50)", "🤝", "Wellness", 1000, "Digital", "Company donates $50 to your chosen non-profit organization.")
+    };
+
+    private IEnumerable<RewardItem> FilteredItems => _rewards
+        .Where(r => _selectedCategory == "All" || r.Category == _selectedCategory)
+        .Where(r => string.IsNullOrWhiteSpace(_searchQuery) ||
+                    r.Title.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                    r.Description.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase));
+
+    private void OpenRedemptionModal(RewardItem item)
+    {
+        _selectedReward = item;
+        _voucherClaimed = false;
+        _voucherCode = "";
+    }
+
+    private async Task ConfirmRedeem()
+    {
+        if (_selectedReward != null && _walletPoints >= _selectedReward.CostPoints)
+        {
+            _walletPoints -= _selectedReward.CostPoints;
+            _voucherCode = $"RWD-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+            _voucherClaimed = true;
+
+            if (_confettiRef != null)
+            {
+                await _confettiRef.FireAsync(0.5, 0.4, 120);
+            }
+            Toast.Show("Reward Claimed!", $"Successfully redeemed {_selectedReward.Title}.", SemanticVariant.Success);
+        }
+    }
+
+    private void CloseRedemptionModal()
+    {
+        _selectedReward = null;
+        _voucherClaimed = false;
+    }
+}

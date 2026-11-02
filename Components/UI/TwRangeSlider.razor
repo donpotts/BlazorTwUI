@@ -1,0 +1,119 @@
+@namespace BlazorTwUI.Components.UI
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="btui-range-slider w-full space-y-2 select-none @Class">
+    <!-- Header Labels -->
+    <div class="flex items-center justify-between text-xs">
+        @if (!string.IsNullOrEmpty(Label))
+        {
+            <span class="font-semibold text-slate-700 dark:text-slate-300">@Label</span>
+        }
+        @if (ShowValueDisplay)
+        {
+            <div class="flex items-center gap-1 font-mono font-bold text-slate-900 dark:text-white">
+                <span class="px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800/40">
+                    @(Prefix)@Lower.ToString(ValueFormat)@(Suffix)
+                </span>
+                <span class="text-slate-400">─</span>
+                <span class="px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 border border-brand-200 dark:border-brand-800/40">
+                    @(Prefix)@Upper.ToString(ValueFormat)@(Suffix)
+                </span>
+            </div>
+        }
+    </div>
+
+    <!-- Interactive Track Container -->
+    <div class="relative py-4 flex items-center">
+        <!-- Background Track -->
+        <div class="w-full h-2 rounded-full bg-slate-200 dark:bg-slate-700 relative overflow-hidden">
+            <!-- Selected Range Highlight -->
+            <div class="absolute h-full bg-gradient-to-r from-brand-500 to-indigo-600 rounded-full"
+                 style="left: @(LowerPercent)%; width: @(UpperPercent - LowerPercent)%;"></div>
+        </div>
+
+        <!-- Lower Native Range Input (Transparent Overlay) -->
+        <input type="range"
+               min="@Min"
+               max="@Max"
+               step="@Step"
+               value="@Lower"
+               disabled="@Disabled"
+               @oninput="HandleLowerInput"
+               aria-label="Lower boundary"
+               aria-valuemin="@Min"
+               aria-valuemax="@Upper"
+               aria-valuenow="@Lower"
+               class="absolute w-full h-2 appearance-none bg-transparent pointer-events-none z-20 cursor-pointer accent-brand-600 focus:outline-hidden [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-brand-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:appearance-none [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-brand-600" />
+
+        <!-- Upper Native Range Input (Transparent Overlay) -->
+        <input type="range"
+               min="@Min"
+               max="@Max"
+               step="@Step"
+               value="@Upper"
+               disabled="@Disabled"
+               @oninput="HandleUpperInput"
+               aria-label="Upper boundary"
+               aria-valuemin="@Lower"
+               aria-valuemax="@Max"
+               aria-valuenow="@Upper"
+               class="absolute w-full h-2 appearance-none bg-transparent pointer-events-none z-30 cursor-pointer accent-indigo-600 focus:outline-hidden [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-indigo-600 [&::-webkit-slider-thumb]:shadow-md [&::-webkit-slider-thumb]:appearance-none [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-indigo-600" />
+    </div>
+
+    <!-- Ticks & Min/Max Labels -->
+    <div class="flex items-center justify-between text-[10px] font-mono text-slate-400">
+        <span>@(Prefix)@Min@(Suffix)</span>
+        @if (ShowTicks)
+        {
+            <span>@(Prefix)@((Min + (Max - Min) * 0.25).ToString(ValueFormat))@(Suffix)</span>
+            <span>@(Prefix)@((Min + (Max - Min) * 0.50).ToString(ValueFormat))@(Suffix)</span>
+            <span>@(Prefix)@((Min + (Max - Min) * 0.75).ToString(ValueFormat))@(Suffix)</span>
+        }
+        <span>@(Prefix)@Max@(Suffix)</span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public double Lower { get; set; } = 20;
+    [Parameter] public EventCallback<double> LowerChanged { get; set; }
+
+    [Parameter] public double Upper { get; set; } = 80;
+    [Parameter] public EventCallback<double> UpperChanged { get; set; }
+
+    [Parameter] public double Min { get; set; } = 0;
+    [Parameter] public double Max { get; set; } = 100;
+    [Parameter] public double Step { get; set; } = 1;
+
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Prefix { get; set; }
+    [Parameter] public string? Suffix { get; set; }
+    [Parameter] public string ValueFormat { get; set; } = "F0";
+    [Parameter] public bool ShowValueDisplay { get; set; } = true;
+    [Parameter] public bool ShowTicks { get; set; } = true;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string Class { get; set; } = string.Empty;
+
+    private double LowerPercent => (Max > Min) ? Math.Clamp((Lower - Min) / (Max - Min) * 100.0, 0, 100) : 0;
+    private double UpperPercent => (Max > Min) ? Math.Clamp((Upper - Min) / (Max - Min) * 100.0, 0, 100) : 100;
+
+    private async Task HandleLowerInput(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), out double val))
+        {
+            if (val > Upper) val = Upper;
+            Lower = val;
+            await LowerChanged.InvokeAsync(val);
+        }
+    }
+
+    private async Task HandleUpperInput(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), out double val))
+        {
+            if (val < Lower) val = Lower;
+            Upper = val;
+            await UpperChanged.InvokeAsync(val);
+        }
+    }
+}

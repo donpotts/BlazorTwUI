@@ -1,0 +1,185 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@typeparam TItem
+
+<div class="tw-union-boundary relative w-full transition-all duration-300 @Class">
+    @if (State is UiState<TItem>.Loading loading)
+    {
+        @if (Loading != null)
+        {
+            @Loading
+        }
+        else
+        {
+            <!-- Default High-Impact Shimmer Skeleton -->
+            <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 animate-pulse">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 flex items-center justify-center text-indigo-500">
+                            <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="h-4 w-32 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+                            <div class="h-3 w-48 bg-slate-100 dark:bg-slate-800 rounded-md mt-1.5"></div>
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-ping"></span>
+                        STATE: LOADING
+                    </span>
+                </div>
+
+                <div class="space-y-2 pt-2">
+                    <div class="h-3.5 bg-slate-100 dark:bg-slate-800 rounded-lg w-full"></div>
+                    <div class="h-3.5 bg-slate-100 dark:bg-slate-800 rounded-lg w-5/6"></div>
+                    <div class="h-3.5 bg-slate-100 dark:bg-slate-800 rounded-lg w-4/6"></div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(loading.Message))
+                {
+                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <span>@loading.Message</span>
+                        @if (loading.ProgressPercent.HasValue)
+                        {
+                            <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">@loading.ProgressPercent.Value.ToString("F0")%</span>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    }
+    else if (State is UiState<TItem>.Success success)
+    {
+        @if (Success != null)
+        {
+            @Success(success.Data)
+        }
+        else
+        {
+            <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-emerald-500/30 shadow-sm space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                        <span>✅</span>
+                        <span>State: Success</span>
+                    </div>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        CLOSED UNION RESOLVED
+                    </span>
+                </div>
+                <div class="text-xs text-slate-600 dark:text-slate-300 font-mono bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800 break-words">
+                    @(success.Data?.ToString() ?? "null")
+                </div>
+            </div>
+        }
+    }
+    else if (State is UiState<TItem>.Empty empty)
+    {
+        @if (Empty != null)
+        {
+            @Empty
+        }
+        else
+        {
+            <!-- Default Clean Empty State Fallback -->
+            <div class="p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm text-center flex flex-col items-center justify-center space-y-3">
+                <div class="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center text-2xl shadow-inner">
+                    📭
+                </div>
+                <div>
+                    <h4 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                        @(empty.Title ?? "No Records Available")
+                    </h4>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm">
+                        @(empty.Description ?? "There are currently no items matching this criteria.")
+                    </p>
+                </div>
+                @if (OnRetry.HasDelegate)
+                {
+                    <button type="button" @onclick="OnRetry"
+                            class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-semibold transition flex items-center gap-1.5">
+                        <span>🔄 Query Again</span>
+                    </button>
+                }
+            </div>
+        }
+    }
+    else if (State is UiState<TItem>.Failure failure)
+    {
+        @if (Failure != null)
+        {
+            @Failure(failure)
+        }
+        else
+        {
+            <!-- Default Resilient Error Alert Fallback -->
+            <div class="p-6 rounded-3xl bg-rose-50/60 dark:bg-rose-950/20 border border-rose-300 dark:border-rose-900/50 shadow-sm space-y-4 text-rose-900 dark:text-rose-200">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-rose-500 text-white flex items-center justify-center text-lg shadow-md shrink-0">
+                            ⚠️
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="text-sm font-bold text-rose-900 dark:text-rose-100">
+                                    Operation Failed
+                                </h4>
+                                @if (!string.IsNullOrEmpty(failure.ErrorCode))
+                                {
+                                    <span class="px-2 py-0.5 rounded-md text-[11px] font-mono font-bold bg-rose-200 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300">
+                                        @failure.ErrorCode
+                                    </span>
+                                }
+                            </div>
+                            <p class="text-xs text-rose-700 dark:text-rose-300 mt-1">
+                                @failure.Message
+                            </p>
+                        </div>
+                    </div>
+
+                    <span class="text-[10px] font-mono text-rose-500 dark:text-rose-400 shrink-0">
+                        @failure.TimestampUtc.ToString("HH:mm:ss") UTC
+                    </span>
+                </div>
+
+                @if (failure.Exception != null)
+                {
+                    <details class="text-[11px] font-mono bg-white/70 dark:bg-slate-950/70 p-3 rounded-xl border border-rose-200 dark:border-rose-900/40">
+                        <summary class="cursor-pointer font-bold text-rose-800 dark:text-rose-300">
+                            View Diagnostic Stack Trace
+                        </summary>
+                        <pre class="mt-2 text-[10px] overflow-x-auto whitespace-pre-wrap text-slate-700 dark:text-slate-300">@failure.Exception.ToString()</pre>
+                    </details>
+                }
+
+                @if (OnRetry.HasDelegate)
+                {
+                    <div class="flex items-center justify-end pt-2 border-t border-rose-200/60 dark:border-rose-900/40">
+                        <button type="button" @onclick="OnRetry"
+                                class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5 active:scale-95">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                            </svg>
+                            <span>Retry Operation</span>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public UiState<TItem> State { get; set; } = new UiState<TItem>.Loading();
+
+    [Parameter] public RenderFragment? Loading { get; set; }
+    [Parameter] public RenderFragment<TItem>? Success { get; set; }
+    [Parameter] public RenderFragment? Empty { get; set; }
+    [Parameter] public RenderFragment<UiState<TItem>.Failure>? Failure { get; set; }
+
+    [Parameter] public EventCallback OnRetry { get; set; }
+    [Parameter] public string Class { get; set; } = string.Empty;
+}

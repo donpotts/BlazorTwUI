@@ -1,0 +1,232 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="space-y-3 @CustomClass">
+    @switch (Type)
+    {
+        case ProgressType.Stacked:
+            @if (ShowHeader)
+            {
+                <div class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    <span>@Title</span>
+                    <span>@GetTotalStackedPercentage()%</span>
+                </div>
+            }
+
+            <div class="w-full bg-slate-150 dark:bg-slate-800 rounded-full h-3 overflow-hidden flex shadow-inner">
+                @foreach (var segment in Segments)
+                {
+                    <div class="h-full transition-all duration-300 relative group @segment.ColorClass" 
+                         style="width: @(segment.Percentage)%"
+                         title="@segment.Label: @segment.Percentage%">
+                    </div>
+                }
+            </div>
+
+            @if (ShowLegend)
+            {
+                <div class="flex flex-wrap items-center gap-3 text-xs pt-1">
+                    @foreach (var segment in Segments)
+                    {
+                        <div class="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-400">
+                            <span class="w-2.5 h-2.5 rounded-xs @segment.ColorClass"></span>
+                            <span class="font-medium text-slate-700 dark:text-slate-300">@segment.Label</span>
+                            <span class="font-mono text-slate-400 dark:text-slate-500">(@segment.Percentage%)</span>
+                        </div>
+                    }
+                </div>
+            }
+            break;
+
+        case ProgressType.Radial:
+            <div class="inline-flex flex-col items-center justify-center w-full">
+                <div class="relative inline-flex items-center justify-center">
+                    <svg class="transform -rotate-90" width="@RadialSize" height="@RadialSize">
+                        <circle cx="@(RadialSize/2)" cy="@(RadialSize/2)" r="@RadialRadius" 
+                                stroke="currentColor" stroke-width="@RadialStrokeWidth" 
+                                class="text-slate-200 dark:text-slate-800" fill="transparent" />
+                        <circle cx="@(RadialSize/2)" cy="@(RadialSize/2)" r="@RadialRadius" 
+                                stroke="currentColor" stroke-width="@RadialStrokeWidth" 
+                                stroke-linecap="round"
+                                class="@GetRadialColorClass() transition-all duration-500 ease-out" 
+                                fill="transparent" 
+                                stroke-dasharray="@RadialCircumference" 
+                                stroke-dashoffset="@RadialDashOffset" />
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                        @if (RadialContent != null)
+                        {
+                            @RadialContent
+                        }
+                        else
+                        {
+                            <span class="font-bold font-mono text-slate-800 dark:text-slate-100 @(RadialSize >= 120 ? "text-xl" : "text-sm")">
+                                @Value%
+                            </span>
+                            @if (!string.IsNullOrEmpty(Label))
+                            {
+                                <span class="text-[10px] text-slate-500 dark:text-slate-400 font-medium">@Label</span>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+            break;
+
+        case ProgressType.StripedAnimated:
+            @if (ShowHeader)
+            {
+                <div class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    <span>@Title</span>
+                    <span class="font-mono">@Value%</span>
+                </div>
+            }
+
+            <div class="w-full bg-slate-150 dark:bg-slate-800 rounded-full h-3 overflow-hidden shadow-inner">
+                <div class="h-full rounded-full transition-all duration-300 @GetBarColorClass() relative overflow-hidden" 
+                     style="width: @(Math.Clamp(Value, 0, 100))%">
+                    <div class="absolute inset-0 opacity-25 bg-[linear-gradient(45deg,rgba(255,255,255,0.4)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.4)_50%,rgba(255,255,255,0.4)_75%,transparent_75%,transparent)] bg-[length:1rem_1rem] animate-pulse"></div>
+                </div>
+            </div>
+            break;
+
+        case ProgressType.SegmentedLed:
+            @if (ShowHeader)
+            {
+                <div class="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400 font-medium">
+                    <span>@Title</span>
+                    <span class="font-mono">@Value%</span>
+                </div>
+            }
+
+            <div class="flex items-center gap-1 w-full">
+                @for (int i = 1; i <= TotalSegments; i++)
+                {
+                    var segThreshold = (int)Math.Round((double)i / TotalSegments * 100);
+                    var isLit = Value >= segThreshold;
+                    <div class="h-4 flex-1 rounded-xs transition-colors duration-200 @(isLit ? GetLedColorClass(segThreshold) : "bg-slate-250 dark:bg-slate-800 opacity-40")"></div>
+                }
+            </div>
+            break;
+
+        case ProgressType.Milestone:
+            <div class="w-full py-2">
+                <div class="flex items-center justify-between relative">
+                    <div class="absolute left-0 top-1/2 -translate-y-1/2 w-full h-0.5 bg-slate-200 dark:bg-slate-700 -z-0"></div>
+                    <div class="absolute left-0 top-1/2 -translate-y-1/2 h-0.5 bg-brand-500 transition-all duration-300 -z-0"
+                         style="width: @(GetMilestoneProgressPercentage())%"></div>
+
+                    @for (int i = 0; i < Steps.Count; i++)
+                    {
+                        var stepIndex = i;
+                        var step = Steps[stepIndex];
+                        var isCompleted = CurrentStep > stepIndex;
+                        var isCurrent = CurrentStep == stepIndex;
+
+                        <div class="flex flex-col items-center relative z-10">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300 @(isCompleted ? "bg-emerald-500 text-white shadow-xs" : isCurrent ? "bg-brand-600 text-white ring-4 ring-brand-500/20 shadow-xs" : "bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 text-slate-500")">
+                                @if (isCompleted)
+                                {
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <span>@(stepIndex + 1)</span>
+                                }
+                            </div>
+                            <span class="text-[11px] font-medium mt-1.5 whitespace-nowrap @(isCurrent ? "text-brand-600 dark:text-brand-400 font-semibold" : "text-slate-600 dark:text-slate-400")">
+                                @step
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+            break;
+    }
+</div>
+
+@code {
+    public enum ProgressType
+    {
+        Stacked,
+        Radial,
+        StripedAnimated,
+        SegmentedLed,
+        Milestone
+    }
+
+    public class ProgressSegment
+    {
+        public string Label { get; set; } = "";
+        public double Percentage { get; set; }
+        public string ColorClass { get; set; } = "bg-brand-500";
+    }
+
+    [Parameter] public ProgressType Type { get; set; } = ProgressType.Stacked;
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public double Value { get; set; } = 65; // 0 to 100
+    [Parameter] public bool ShowHeader { get; set; } = true;
+    [Parameter] public bool ShowLegend { get; set; } = true;
+    [Parameter] public string Color { get; set; } = "brand"; // brand, emerald, sky, amber, rose
+    [Parameter] public string CustomClass { get; set; } = "";
+
+    // Stacked Segments
+    [Parameter] public List<ProgressSegment> Segments { get; set; } = new()
+    {
+        new ProgressSegment { Label = "Code & Engine", Percentage = 42, ColorClass = "bg-brand-500" },
+        new ProgressSegment { Label = "Assets & Icons", Percentage = 28, ColorClass = "bg-emerald-500" },
+        new ProgressSegment { Label = "Cached Data", Percentage = 18, ColorClass = "bg-amber-500" },
+        new ProgressSegment { Label = "Free Memory", Percentage = 12, ColorClass = "bg-slate-300 dark:bg-slate-700" }
+    };
+
+    // Radial Gauge
+    [Parameter] public int RadialSize { get; set; } = 100;
+    [Parameter] public int RadialStrokeWidth { get; set; } = 8;
+    [Parameter] public RenderFragment? RadialContent { get; set; }
+
+    // Segmented LED
+    [Parameter] public int TotalSegments { get; set; } = 15;
+
+    // Milestone Steps
+    [Parameter] public List<string> Steps { get; set; } = new() { "Initialize", "Validate", "Compile", "Deploy" };
+    [Parameter] public int CurrentStep { get; set; } = 2; // 0-based index
+
+    private double RadialRadius => (RadialSize - RadialStrokeWidth) / 2.0;
+    private double RadialCircumference => 2 * Math.PI * RadialRadius;
+    private double RadialDashOffset => RadialCircumference - (Math.Clamp(Value, 0, 100) / 100.0 * RadialCircumference);
+
+    private double GetTotalStackedPercentage() => Math.Round(Segments.Sum(s => s.Percentage), 1);
+
+    private double GetMilestoneProgressPercentage()
+    {
+        if (Steps.Count <= 1) return 100;
+        return Math.Clamp((double)CurrentStep / (Steps.Count - 1) * 100, 0, 100);
+    }
+
+    private string GetBarColorClass() => Color.ToLowerInvariant() switch
+    {
+        "emerald" => "bg-emerald-500",
+        "sky" => "bg-sky-500",
+        "amber" => "bg-amber-500",
+        "rose" => "bg-rose-500",
+        _ => "bg-brand-500"
+    };
+
+    private string GetRadialColorClass() => Color.ToLowerInvariant() switch
+    {
+        "emerald" => "text-emerald-500",
+        "sky" => "text-sky-500",
+        "amber" => "text-amber-500",
+        "rose" => "text-rose-500",
+        _ => "text-brand-500"
+    };
+
+    private string GetLedColorClass(int threshold)
+    {
+        if (threshold > 85) return "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]";
+        if (threshold > 65) return "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]";
+        return "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]";
+    }
+}

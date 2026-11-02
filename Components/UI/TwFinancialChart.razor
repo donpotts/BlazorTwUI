@@ -1,0 +1,421 @@
+@namespace BlazorTwUI.Components.UI
+@using System.Globalization
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-4 @CustomClass">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <span class="p-2 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-sm">
+                    📈
+                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Ticker</h3>
+                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">@Exchange</span>
+                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full @(_priceChange >= 0 ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/10 text-rose-600 dark:text-rose-400")">
+                            @(_priceChange >= 0 ? "+" : "")@_priceChange.ToString("F2") (@(_priceChangePct >= 0 ? "+" : "")@_priceChangePct.ToString("F2")%)
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">@CompanyName • Live WebAssembly High-Frequency Vector Stream</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 self-start sm:self-center">
+            <!-- Period Selector -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+                @foreach (var period in _periods)
+                {
+                    <button type="button" @onclick="() => SetPeriod(period)"
+                            class="px-2.5 py-1 rounded-lg transition @(_activePeriod == period ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold" : "text-slate-500 hover:text-slate-900 dark:hover:text-white")">
+                        @period
+                    </button>
+                }
+            </div>
+
+            <!-- Chart Type Toggle -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+                <button type="button" @onclick='() => _chartType = "candle"'
+                        class="px-2.5 py-1 rounded-lg transition @(_chartType == "candle" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold" : "text-slate-500")"
+                        title="Candlestick Chart">
+                    🕯️ Candles
+                </button>
+                <button type="button" @onclick='() => _chartType = "line"'
+                        class="px-2.5 py-1 rounded-lg transition @(_chartType == "line" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold" : "text-slate-500")"
+                        title="Area Line Chart">
+                    📉 Area
+                </button>
+            </div>
+
+            <!-- MA Toggle -->
+            <button type="button" @onclick="() => _showMa = !_showMa"
+                    class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-mono font-bold transition @(_showMa ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30" : "bg-white dark:bg-slate-800 text-slate-500")">
+                MA(20)
+            </button>
+        </div>
+    </div>
+
+    <!-- Active Quote Bar / Hover HUD -->
+    <div class="flex flex-wrap items-center gap-4 text-xs font-mono p-3 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800">
+        <div>
+            <span class="text-slate-400 block text-[10px] uppercase">Last Price</span>
+            <span class="text-sm font-bold text-slate-900 dark:text-white">$@_currentQuote.Close.ToString("F2")</span>
+        </div>
+        <div class="h-6 w-px bg-slate-200 dark:border-slate-700"></div>
+        <div>
+            <span class="text-slate-400 block text-[10px] uppercase">Open</span>
+            <span class="text-slate-700 dark:text-slate-300">$@_currentQuote.Open.ToString("F2")</span>
+        </div>
+        <div>
+            <span class="text-slate-400 block text-[10px] uppercase">High</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold">$@_currentQuote.High.ToString("F2")</span>
+        </div>
+        <div>
+            <span class="text-slate-400 block text-[10px] uppercase">Low</span>
+            <span class="text-rose-600 dark:text-rose-400 font-bold">$@_currentQuote.Low.ToString("F2")</span>
+        </div>
+        <div>
+            <span class="text-slate-400 block text-[10px] uppercase">Volume</span>
+            <span class="text-slate-700 dark:text-slate-300">@FormatVolume(_currentQuote.Volume)</span>
+        </div>
+        <div class="ml-auto hidden sm:flex items-center gap-2 text-[11px] text-slate-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Real-time C# Math</span>
+        </div>
+    </div>
+
+    <!-- SVG Financial Chart Area -->
+    <div class="relative w-full h-[360px] bg-slate-950 rounded-2xl p-2 select-none overflow-hidden border border-slate-800 shadow-inner"
+         @onmousemove="HandleMouseMove"
+         @onmouseleave="HandleMouseLeave">
+
+        <!-- Grid Lines & Background -->
+        <svg class="w-full h-full" viewBox="0 0 1000 360" preserveAspectRatio="none">
+            <defs>
+                <linearGradient id="bull-area-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stop-color="#10b981" stop-opacity="0.3" />
+                    <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+                </linearGradient>
+            </defs>
+
+            <!-- Horizontal Price Grid Lines -->
+            @for (int i = 0; i < 5; i++)
+            {
+                var y = 20 + i * 55;
+                var price = _maxPrice - ((_maxPrice - _minPrice) * (i / 4.0m));
+                <line x1="0" y1="@y" x2="930" y2="@y" stroke="rgba(255,255,255,0.06)" stroke-dasharray="3,3" />
+                <g>
+                    <text x="940" y="@(y + 4)" fill="#64748b" font-size="10" font-family="monospace">$@price.ToString("F1")</text>
+                </g>
+            }
+
+            <!-- Volume Split Line -->
+            <line x1="0" y1="280" x2="930" y2="280" stroke="rgba(255,255,255,0.12)" />
+            <g>
+                <text x="940" y="284" fill="#64748b" font-size="9" font-family="monospace">VOL</text>
+            </g>
+
+            <!-- 1. Volume Histogram Bars (bottom) -->
+            @for (int i = 0; i < _filteredData.Count; i++)
+            {
+                var bar = _filteredData[i];
+                var x = GetX(i);
+                var barW = Math.Max(2, (900.0 / _filteredData.Count) * 0.7);
+                var volHeight = (double)bar.Volume / (double)_maxVolume * 65.0;
+                var volY = 350 - volHeight;
+                var color = bar.Close >= bar.Open ? "#10b981" : "#f43f5e";
+
+                <rect x="@(x - barW / 2)" y="@volY" width="@barW" height="@volHeight"
+                      fill="@color" opacity="0.35" />
+            }
+
+            <!-- 2. Chart Rendering: Candlesticks OR Mountain Line Area -->
+            @if (_chartType == "candle")
+            {
+                @for (int i = 0; i < _filteredData.Count; i++)
+                {
+                    var c = _filteredData[i];
+                    var x = GetX(i);
+                    var candleW = Math.Max(3, (900.0 / _filteredData.Count) * 0.65);
+                    var isBull = c.Close >= c.Open;
+                    var color = isBull ? "#10b981" : "#f43f5e";
+
+                    var highY = GetPriceY(c.High);
+                    var lowY = GetPriceY(c.Low);
+                    var openY = GetPriceY(c.Open);
+                    var closeY = GetPriceY(c.Close);
+
+                    var bodyTop = Math.Min(openY, closeY);
+                    var bodyHeight = Math.Max(2, Math.Abs(closeY - openY));
+
+                    <!-- Wick High/Low -->
+                    <line x1="@x" y1="@highY" x2="@x" y2="@lowY" stroke="@color" stroke-width="1.2" />
+
+                    <!-- Candle Body -->
+                    <rect x="@(x - candleW / 2)" y="@bodyTop" width="@candleW" height="@bodyHeight"
+                          fill="@color" rx="1" />
+                }
+            }
+            else
+            {
+                <!-- Area Mountain Fill & Line -->
+                <path d="@_areaPathD" fill="url(#bull-area-grad)" />
+                <path d="@_linePathD" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" />
+            }
+
+            <!-- 3. Moving Average Overlay Line -->
+            @if (_showMa && !string.IsNullOrEmpty(_maPathD))
+            {
+                <path d="@_maPathD" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4,2" />
+            }
+
+            <!-- 4. Interactive Crosshair Lines -->
+            @if (_isHovered)
+            {
+                <line x1="@_hoverX" y1="0" x2="@_hoverX" y2="360" stroke="#818cf8" stroke-dasharray="3,3" stroke-width="1" />
+                <line x1="0" y1="@_hoverY" x2="930" y2="@_hoverY" stroke="#818cf8" stroke-dasharray="3,3" stroke-width="1" />
+                <circle cx="@_hoverX" cy="@_hoverPriceY" r="4" fill="#6366f1" stroke="#ffffff" stroke-width="2" />
+            }
+        </svg>
+
+        <!-- Hover Popover Capsule -->
+        @if (_isHovered && _hoverItem != null)
+        {
+            <div class="absolute pointer-events-none p-2 rounded-xl bg-slate-900/95 border border-brand-500/40 shadow-2xl text-[10px] font-mono text-white space-y-0.5 z-20"
+                 style="left: @(Math.Min(80, Math.Max(5, (_hoverX / 10.0))))%; top: 12px;">
+                <div class="text-brand-300 font-bold border-b border-white/10 pb-1">@_hoverItem.Date.ToString("yyyy-MM-dd HH:mm")</div>
+                <div>O: <span class="text-slate-300">$@_hoverItem.Open.ToString("F2")</span> H: <span class="text-emerald-400">$@_hoverItem.High.ToString("F2")</span></div>
+                <div>L: <span class="text-rose-400">$@_hoverItem.Low.ToString("F2")</span> C: <span class="font-bold text-white">$@_hoverItem.Close.ToString("F2")</span></div>
+                <div>Vol: <span class="text-slate-300">@FormatVolume(_hoverItem.Volume)</span></div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    public class FinancialCandle
+    {
+        public DateTime Date { get; set; }
+        public decimal Open { get; set; }
+        public decimal High { get; set; }
+        public decimal Low { get; set; }
+        public decimal Close { get; set; }
+        public long Volume { get; set; }
+    }
+
+    [Parameter] public string Ticker { get; set; } = "BLZR";
+    [Parameter] public string CompanyName { get; set; } = "Blazor Technologies Inc.";
+    [Parameter] public string Exchange { get; set; } = "NASDAQ";
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public List<FinancialCandle>? Data { get; set; }
+
+    private readonly string[] _periods = new[] { "1W", "1M", "3M", "YTD", "1Y", "ALL" };
+    private string _activePeriod = "1M";
+    private string _chartType = "candle";
+    private bool _showMa = true;
+
+    private List<FinancialCandle> _allData = new();
+    private List<FinancialCandle> _filteredData = new();
+    private decimal _minPrice;
+    private decimal _maxPrice;
+    private long _maxVolume;
+    private decimal _priceChange;
+    private decimal _priceChangePct;
+    private FinancialCandle _currentQuote = new();
+
+    private string _linePathD = "";
+    private string _areaPathD = "";
+    private string _maPathD = "";
+
+    private bool _isHovered = false;
+    private double _hoverX = 0;
+    private double _hoverY = 0;
+    private double _hoverPriceY = 0;
+    private FinancialCandle? _hoverItem;
+
+    protected override void OnInitialized()
+    {
+        if (Data != null && Data.Any())
+        {
+            _allData = Data;
+        }
+        else
+        {
+            _allData = GenerateSampleStockData();
+        }
+
+        ApplyPeriodFilter();
+    }
+
+    private void SetPeriod(string period)
+    {
+        _activePeriod = period;
+        ApplyPeriodFilter();
+    }
+
+    private void ApplyPeriodFilter()
+    {
+        int count = _activePeriod switch
+        {
+            "1W" => 7,
+            "1M" => 30,
+            "3M" => 60,
+            "YTD" => 45,
+            "1Y" => 90,
+            _ => _allData.Count
+        };
+
+        _filteredData = _allData.TakeLast(count).ToList();
+        if (!_filteredData.Any()) return;
+
+        _minPrice = _filteredData.Min(c => c.Low) * 0.98m;
+        _maxPrice = _filteredData.Max(c => c.High) * 1.02m;
+        _maxVolume = Math.Max(1, _filteredData.Max(c => c.Volume));
+
+        var first = _filteredData.First();
+        var last = _filteredData.Last();
+        _currentQuote = last;
+        _priceChange = last.Close - first.Open;
+        _priceChangePct = first.Open != 0 ? (_priceChange / first.Open) * 100 : 0;
+
+        ComputePaths();
+    }
+
+    private double GetX(int index)
+    {
+        if (_filteredData.Count <= 1) return 20;
+        return 20 + ((double)index / (_filteredData.Count - 1)) * 900.0;
+    }
+
+    private double GetPriceY(decimal price)
+    {
+        if (_maxPrice == _minPrice) return 130;
+        var normalized = (double)((price - _minPrice) / (_maxPrice - _minPrice));
+        return 260 - (normalized * 240); // bounds 20 to 260
+    }
+
+    private void ComputePaths()
+    {
+        if (!_filteredData.Any()) return;
+
+        // Area & Line paths
+        var sbLine = new System.Text.StringBuilder();
+        var sbArea = new System.Text.StringBuilder();
+
+        for (int i = 0; i < _filteredData.Count; i++)
+        {
+            var x = GetX(i);
+            var y = GetPriceY(_filteredData[i].Close);
+
+            if (i == 0)
+            {
+                sbLine.Append($"M {x.ToString("F1", CultureInfo.InvariantCulture)} {y.ToString("F1", CultureInfo.InvariantCulture)}");
+                sbArea.Append($"M {x.ToString("F1", CultureInfo.InvariantCulture)} {y.ToString("F1", CultureInfo.InvariantCulture)}");
+            }
+            else
+            {
+                sbLine.Append($" L {x.ToString("F1", CultureInfo.InvariantCulture)} {y.ToString("F1", CultureInfo.InvariantCulture)}");
+                sbArea.Append($" L {x.ToString("F1", CultureInfo.InvariantCulture)} {y.ToString("F1", CultureInfo.InvariantCulture)}");
+            }
+        }
+
+        _linePathD = sbLine.ToString();
+
+        // Close area to base y=260
+        var lastX = GetX(_filteredData.Count - 1);
+        var firstX = GetX(0);
+        sbArea.Append($" L {lastX.ToString("F1", CultureInfo.InvariantCulture)} 260 L {firstX.ToString("F1", CultureInfo.InvariantCulture)} 260 Z");
+        _areaPathD = sbArea.ToString();
+
+        // 20-period Moving Average
+        var sbMa = new System.Text.StringBuilder();
+        int period = 10;
+        bool started = false;
+
+        for (int i = period - 1; i < _filteredData.Count; i++)
+        {
+            decimal sum = 0;
+            for (int j = i - period + 1; j <= i; j++)
+            {
+                sum += _filteredData[j].Close;
+            }
+            var maVal = sum / period;
+            var x = GetX(i);
+            var y = GetPriceY(maVal);
+
+            if (!started)
+            {
+                sbMa.Append($"M {x.ToString("F1", CultureInfo.InvariantCulture)} {y.ToString("F1", CultureInfo.InvariantCulture)}");
+                started = true;
+            }
+            else
+            {
+                sbMa.Append($" L {x.ToString("F1", CultureInfo.InvariantCulture)} {y.ToString("F1", CultureInfo.InvariantCulture)}");
+            }
+        }
+        _maPathD = sbMa.ToString();
+    }
+
+    private void HandleMouseMove(MouseEventArgs e)
+    {
+        _isHovered = true;
+        // Container is 1000 coordinate width
+        _hoverX = Math.Max(20, Math.Min(920, (e.OffsetX / 700.0) * 1000.0));
+        _hoverY = e.OffsetY;
+
+        // Find nearest candle
+        if (_filteredData.Any())
+        {
+            var ratio = (_hoverX - 20) / 900.0;
+            var idx = Math.Clamp((int)Math.Round(ratio * (_filteredData.Count - 1)), 0, _filteredData.Count - 1);
+            _hoverItem = _filteredData[idx];
+            _hoverPriceY = GetPriceY(_hoverItem.Close);
+        }
+    }
+
+    private void HandleMouseLeave()
+    {
+        _isHovered = false;
+        _hoverItem = null;
+    }
+
+    private string FormatVolume(long vol)
+    {
+        if (vol >= 1_000_000) return $"{(vol / 1_000_000.0):F1}M";
+        if (vol >= 1_000) return $"{(vol / 1_000.0):F0}K";
+        return vol.ToString();
+    }
+
+    private List<FinancialCandle> GenerateSampleStockData()
+    {
+        var list = new List<FinancialCandle>();
+        var rand = new Random(42);
+        decimal current = 142.50m;
+        var start = DateTime.UtcNow.AddDays(-120);
+
+        for (int i = 0; i < 120; i++)
+        {
+            var delta = (decimal)(rand.NextDouble() * 6.0 - 2.8);
+            var open = current;
+            var close = open + delta;
+            var high = Math.Max(open, close) + (decimal)(rand.NextDouble() * 2.5);
+            var low = Math.Min(open, close) - (decimal)(rand.NextDouble() * 2.5);
+            var vol = rand.Next(1_200_000, 9_500_000);
+
+            list.Add(new FinancialCandle
+            {
+                Date = start.AddDays(i),
+                Open = Math.Round(open, 2),
+                High = Math.Round(high, 2),
+                Low = Math.Round(low, 2),
+                Close = Math.Round(close, 2),
+                Volume = vol
+            });
+
+            current = close;
+        }
+
+        return list;
+    }
+}

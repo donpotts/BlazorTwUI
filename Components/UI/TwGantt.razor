@@ -1,0 +1,145 @@
+@using System.Globalization
+@* Project timeline: a task table beside day-scaled bars with progress, finish-to-start dependency arrows, a today line, and conflict detection
+   (a task that starts before something it depends on has finished is flagged in red and in text). *@
+<section aria-label="@Label" class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-hidden @Class" data-testid="gantt">
+    <div class="flex">
+        <div class="w-56 shrink-0 border-e border-slate-200 dark:border-slate-700">
+            <div class="h-14 px-3 flex items-end pb-1 text-xs font-bold uppercase text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">Task</div>
+            @foreach (var t in Tasks)
+            {
+                <div class="h-9 px-3 flex items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 text-sm text-slate-900 dark:text-slate-100 @(t.Id == SelectedId ? "bg-brand-50 dark:bg-brand-500/10" : "")" data-testid="gantt-row" data-id="@t.Id">
+                    <span class="truncate font-semibold">@t.Name</span>
+                    @if (Conflicts(t))
+                    {
+                        <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-red-200 text-red-950 dark:bg-red-500/30 dark:text-red-100" data-testid="gantt-conflict">Conflict</span>
+                    }
+                </div>
+            }
+        </div>
+        <div class="flex-1 overflow-x-auto" tabindex="0" aria-label="Timeline">
+            <div class="relative" style="width:@(Days * DayWidth)px">
+                <div class="h-14 border-b border-slate-200 dark:border-slate-700 relative" aria-hidden="true">
+                    @foreach (var m in MonthSpans())
+                    {
+                        <span class="absolute top-0 h-6 px-2 text-[11px] font-bold text-slate-800 dark:text-slate-200 border-s border-slate-200 dark:border-slate-700 flex items-center" style="left:@(m.Offset * DayWidth)px;width:@(m.Length * DayWidth)px">@m.Label</span>
+                    }
+                    @for (var d = 0; d < Days; d++)
+                    {
+                        var day = Origin.AddDays(d);
+                        <span class="absolute bottom-0 h-8 text-center text-[10px] tabular-nums leading-8 @(day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? "text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/50" : "text-slate-700 dark:text-slate-300")"
+                              style="left:@(d * DayWidth)px;width:@(DayWidth)px">@(DayWidth >= 20 || day.Day == 1 || day.DayOfWeek == FirstDay ? day.Day.ToString() : "")</span>
+                    }
+                </div>
+
+                @for (var i = 0; i < Tasks.Count; i++)
+                {
+                    var t = Tasks[i];
+                    <div class="relative h-9 border-b border-slate-100 dark:border-slate-800">
+                        <button type="button" @onclick="() => SelectAsync(t)" data-testid="gantt-bar" data-id="@t.Id" aria-pressed="@(t.Id == SelectedId ? "true" : "false")"
+                                aria-label="@($"{t.Name}, {t.Start.ToString("d", Culture)} to {t.End.ToString("d", Culture)}, {(int)Math.Round(t.Progress * 100)} percent complete")"
+                                class="absolute top-1.5 h-6 rounded-md overflow-hidden text-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-brand-600 @(Conflicts(t) ? "bg-red-200 dark:bg-red-500/30" : "bg-brand-200 dark:bg-brand-500/30")"
+                                style="left:@(Left(t))px;width:@(Width(t))px">
+                            <span class="absolute inset-y-0 start-0 @(Conflicts(t) ? "bg-red-600" : "bg-brand-600")" style="width:@((t.Progress * 100).ToString("0.#", Inv))%" data-testid="gantt-progress"></span>
+                        </button>
+                    </div>
+                }
+
+                <svg class="absolute left-0 pointer-events-none" style="top:3.5rem" width="@(Days * DayWidth)" height="@(Tasks.Count * 36)" aria-hidden="true">
+                    @foreach (var a in Arrows())
+                    {
+                        <path d="@a.Path" fill="none" stroke-width="1.5" class="@(a.Conflict ? "stroke-red-600" : "stroke-slate-500 dark:stroke-slate-400")" data-testid="gantt-arrow" data-from="@a.From" data-to="@a.To" data-conflict="@a.Conflict.ToString().ToLowerInvariant()" />
+                    }
+                </svg>
+
+                @if (TodayInRange)
+                {
+                    <div class="absolute top-0 bottom-0 w-px bg-rose-600" style="left:@(((Today.DayNumber - Origin.DayNumber) + 0.5) * DayWidth)px" data-testid="gantt-today" aria-hidden="true"></div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+    private const int RowHeight = 36, BarTop = 6, BarHeight = 24;
+
+    public sealed class GanttTask
+    {
+        public string Id { get; init; } = Guid.NewGuid().ToString("N")[..6];
+        public string Name { get; set; } = "";
+        public DateOnly Start { get; set; }
+        public DateOnly End { get; set; }
+        /// <summary>0 to 1.</summary>
+        public double Progress { get; set; }
+        public List<string> DependsOn { get; init; } = new();
+    }
+
+    private sealed record Arrow(string Path, string From, string To, bool Conflict);
+    private sealed record MonthSpan(string Label, int Offset, int Length);
+
+    [Parameter, EditorRequired] public IReadOnlyList<GanttTask> Tasks { get; set; } = Array.Empty<GanttTask>();
+    /// <summary>Pixels per day.</summary>
+    [Parameter] public int DayWidth { get; set; } = 28;
+    [Parameter] public string? SelectedId { get; set; }
+    [Parameter] public EventCallback<GanttTask> OnTaskClick { get; set; }
+    [Parameter] public DateOnly? TodayOverride { get; set; }
+    [Parameter] public CultureInfo? CultureOverride { get; set; }
+    [Parameter] public string Label { get; set; } = "Project timeline";
+    [Parameter] public string? Class { get; set; }
+
+    private CultureInfo Culture => CultureOverride ?? CultureInfo.CurrentUICulture;
+    private DayOfWeek FirstDay => Culture.DateTimeFormat.FirstDayOfWeek;
+    private DateOnly Today => TodayOverride ?? DateOnly.FromDateTime(DateTime.Today);
+
+    private DateOnly Origin => Tasks.Count == 0 ? Today : Tasks.Min(t => t.Start).AddDays(-2);
+    private int Days => Tasks.Count == 0 ? 14 : Tasks.Max(t => t.End).DayNumber - Origin.DayNumber + 3;
+    private bool TodayInRange => Today >= Origin && Today <= Origin.AddDays(Days - 1);
+
+    private int Left(GanttTask t) => (t.Start.DayNumber - Origin.DayNumber) * DayWidth;
+    private int Width(GanttTask t) => Math.Max(DayWidth / 2, (t.End.DayNumber - t.Start.DayNumber + 1) * DayWidth);
+
+    private GanttTask? Find(string id) => Tasks.FirstOrDefault(t => t.Id == id);
+
+    // A task conflicts when it starts on or before the day a predecessor ends (finish-to-start).
+    private bool Conflicts(GanttTask t) => t.DependsOn.Select(Find).Any(p => p is not null && t.Start <= p.End);
+
+    private IEnumerable<Arrow> Arrows()
+    {
+        for (var row = 0; row < Tasks.Count; row++)
+        {
+            var succ = Tasks[row];
+            foreach (var depId in succ.DependsOn)
+            {
+                var predRow = Tasks.ToList().FindIndex(t => t.Id == depId);
+                if (predRow < 0) continue;
+                var pred = Tasks[predRow];
+                var x1 = Left(pred) + Width(pred);
+                var y1 = predRow * RowHeight + BarTop + BarHeight / 2;
+                var x2 = Left(succ);
+                var y2 = row * RowHeight + BarTop + BarHeight / 2;
+                var path = $"M{x1},{y1} H{x1 + 8} V{y2} H{x2}";
+                yield return new Arrow(path, pred.Id, succ.Id, succ.Start <= pred.End);
+            }
+        }
+    }
+
+    private IEnumerable<MonthSpan> MonthSpans()
+    {
+        var d = 0;
+        while (d < Days)
+        {
+            var day = Origin.AddDays(d);
+            var left = DateTime.DaysInMonth(day.Year, day.Month) - day.Day + 1;
+            var len = Math.Min(left, Days - d);
+            yield return new MonthSpan(day.ToString("MMMM yyyy", Culture), d, len);
+            d += len;
+        }
+    }
+
+    private async Task SelectAsync(GanttTask t)
+    {
+        SelectedId = t.Id;
+        await OnTaskClick.InvokeAsync(t);
+    }
+}

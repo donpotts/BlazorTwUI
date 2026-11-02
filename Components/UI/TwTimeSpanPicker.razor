@@ -1,0 +1,243 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="flex flex-col gap-2 w-full max-w-lg @Class" @attributes="AdditionalAttributes">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <div class="flex items-center justify-between">
+            <label class="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">@Label</label>
+            <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                @FormatSummary(Value)
+            </span>
+        </div>
+    }
+
+    @* Main Stepper Blocks Container *@
+    <div class="flex items-center gap-2 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        @* Days Unit *@
+        @if (AllowDays)
+        {
+            <div class="flex-1 flex flex-col items-center">
+                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Days</span>
+                <div class="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 overflow-hidden">
+                    <input type="number"
+                           min="0"
+                           max="999"
+                           value="@Value.Days"
+                           @onchange="e => UpdateDays(e.Value)"
+                           disabled="@Disabled"
+                           class="w-full text-center py-2 text-sm font-mono font-bold text-slate-900 dark:text-white bg-transparent focus:outline-none" />
+                    <div class="flex flex-col border-l border-slate-200 dark:border-slate-700">
+                        <button type="button" @onclick="() => StepDays(1)" disabled="@Disabled" class="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                        </button>
+                        <button type="button" @onclick="() => StepDays(-1)" disabled="@Disabled" class="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border-t border-slate-200 dark:border-slate-700">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <span class="text-slate-300 dark:text-slate-600 font-bold text-lg mt-4">:</span>
+        }
+
+        @* Hours Unit *@
+        <div class="flex-1 flex flex-col items-center">
+            <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Hours</span>
+            <div class="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 overflow-hidden">
+                <input type="number"
+                       min="0"
+                       max="23"
+                       value="@Value.Hours"
+                       @onchange="e => UpdateHours(e.Value)"
+                       disabled="@Disabled"
+                       class="w-full text-center py-2 text-sm font-mono font-bold text-slate-900 dark:text-white bg-transparent focus:outline-none" />
+                <div class="flex flex-col border-l border-slate-200 dark:border-slate-700">
+                    <button type="button" @onclick="() => StepHours(1)" disabled="@Disabled" class="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                    <button type="button" @onclick="() => StepHours(-1)" disabled="@Disabled" class="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border-t border-slate-200 dark:border-slate-700">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <span class="text-slate-300 dark:text-slate-600 font-bold text-lg mt-4">:</span>
+
+        @* Minutes Unit *@
+        <div class="flex-1 flex flex-col items-center">
+            <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Mins</span>
+            <div class="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 overflow-hidden">
+                <input type="number"
+                       min="0"
+                       max="59"
+                       value="@Value.Minutes"
+                       @onchange="e => UpdateMinutes(e.Value)"
+                       disabled="@Disabled"
+                       class="w-full text-center py-2 text-sm font-mono font-bold text-slate-900 dark:text-white bg-transparent focus:outline-none" />
+                <div class="flex flex-col border-l border-slate-200 dark:border-slate-700">
+                    <button type="button" @onclick="() => StepMinutes(1)" disabled="@Disabled" class="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                    <button type="button" @onclick="() => StepMinutes(-1)" disabled="@Disabled" class="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border-t border-slate-200 dark:border-slate-700">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* Seconds Unit *@
+        @if (AllowSeconds)
+        {
+            <span class="text-slate-300 dark:text-slate-600 font-bold text-lg mt-4">:</span>
+            <div class="flex-1 flex flex-col items-center">
+                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Secs</span>
+                <div class="flex items-center w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 overflow-hidden">
+                    <input type="number"
+                           min="0"
+                           max="59"
+                           value="@Value.Seconds"
+                           @onchange="e => UpdateSeconds(e.Value)"
+                           disabled="@Disabled"
+                           class="w-full text-center py-2 text-sm font-mono font-bold text-slate-900 dark:text-white bg-transparent focus:outline-none" />
+                    <div class="flex flex-col border-l border-slate-200 dark:border-slate-700">
+                        <button type="button" @onclick="() => StepSeconds(1)" disabled="@Disabled" class="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                        </button>
+                        <button type="button" @onclick="() => StepSeconds(-1)" disabled="@Disabled" class="px-1.5 py-0.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border-t border-slate-200 dark:border-slate-700">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* Reset / Zero button *@
+        @if (ShowReset)
+        {
+            <div class="flex flex-col items-center justify-end mt-4">
+                <button type="button"
+                        @onclick="ResetAsync"
+                        disabled="@Disabled"
+                        title="Reset duration to zero"
+                        class="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+        }
+    </div>
+
+    @* Preset Pills *@
+    @if (ShowPresets)
+    {
+        <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="text-[10px] font-semibold text-slate-400 mr-1">Presets:</span>
+            <button type="button" @onclick="() => ApplyPreset(TimeSpan.FromMinutes(15))" class="px-2 py-0.5 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors font-mono">15m</button>
+            <button type="button" @onclick="() => ApplyPreset(TimeSpan.FromMinutes(30))" class="px-2 py-0.5 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors font-mono">30m</button>
+            <button type="button" @onclick="() => ApplyPreset(TimeSpan.FromHours(1))" class="px-2 py-0.5 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors font-mono">1h</button>
+            <button type="button" @onclick="() => ApplyPreset(TimeSpan.FromHours(4))" class="px-2 py-0.5 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors font-mono">4h</button>
+            <button type="button" @onclick="() => ApplyPreset(TimeSpan.FromDays(1))" class="px-2 py-0.5 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors font-mono">1d</button>
+            <button type="button" @onclick="() => ApplyPreset(TimeSpan.FromDays(7))" class="px-2 py-0.5 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors font-mono">7d</button>
+            <button type="button" @onclick="() => ApplyPreset(TimeSpan.FromDays(30))" class="px-2 py-0.5 text-xs rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors font-mono">30d</button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public TimeSpan Value { get; set; } = TimeSpan.Zero;
+    [Parameter] public EventCallback<TimeSpan> ValueChanged { get; set; }
+
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool AllowDays { get; set; } = true;
+    [Parameter] public bool AllowSeconds { get; set; } = true;
+    [Parameter] public bool ShowPresets { get; set; } = true;
+    [Parameter] public bool ShowReset { get; set; } = true;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private async Task UpdateDays(object? raw)
+    {
+        if (int.TryParse(raw?.ToString(), out var days) && days >= 0)
+        {
+            await SetTimeSpanAsync(new TimeSpan(days, Value.Hours, Value.Minutes, Value.Seconds));
+        }
+    }
+
+    private async Task UpdateHours(object? raw)
+    {
+        if (int.TryParse(raw?.ToString(), out var hours) && hours >= 0 && hours <= 23)
+        {
+            await SetTimeSpanAsync(new TimeSpan(Value.Days, hours, Value.Minutes, Value.Seconds));
+        }
+    }
+
+    private async Task UpdateMinutes(object? raw)
+    {
+        if (int.TryParse(raw?.ToString(), out var mins) && mins >= 0 && mins <= 59)
+        {
+            await SetTimeSpanAsync(new TimeSpan(Value.Days, Value.Hours, mins, Value.Seconds));
+        }
+    }
+
+    private async Task UpdateSeconds(object? raw)
+    {
+        if (int.TryParse(raw?.ToString(), out var secs) && secs >= 0 && secs <= 59)
+        {
+            await SetTimeSpanAsync(new TimeSpan(Value.Days, Value.Hours, Value.Minutes, secs));
+        }
+    }
+
+    private async Task StepDays(int delta)
+    {
+        var newDays = Math.Max(0, Value.Days + delta);
+        await SetTimeSpanAsync(new TimeSpan(newDays, Value.Hours, Value.Minutes, Value.Seconds));
+    }
+
+    private async Task StepHours(int delta)
+    {
+        var newHours = Math.Clamp(Value.Hours + delta, 0, 23);
+        await SetTimeSpanAsync(new TimeSpan(Value.Days, newHours, Value.Minutes, Value.Seconds));
+    }
+
+    private async Task StepMinutes(int delta)
+    {
+        var newMins = Math.Clamp(Value.Minutes + delta, 0, 59);
+        await SetTimeSpanAsync(new TimeSpan(Value.Days, Value.Hours, newMins, Value.Seconds));
+    }
+
+    private async Task StepSeconds(int delta)
+    {
+        var newSecs = Math.Clamp(Value.Seconds + delta, 0, 59);
+        await SetTimeSpanAsync(new TimeSpan(Value.Days, Value.Hours, Value.Minutes, newSecs));
+    }
+
+    private async Task ApplyPreset(TimeSpan preset)
+    {
+        await SetTimeSpanAsync(preset);
+    }
+
+    private async Task ResetAsync()
+    {
+        await SetTimeSpanAsync(TimeSpan.Zero);
+    }
+
+    private async Task SetTimeSpanAsync(TimeSpan ts)
+    {
+        Value = ts;
+        await ValueChanged.InvokeAsync(ts);
+    }
+
+    private string FormatSummary(TimeSpan ts)
+    {
+        if (ts.TotalSeconds == 0) return "0s";
+        var parts = new List<string>();
+        if (ts.Days > 0) parts.Add($"{ts.Days}d");
+        if (ts.Hours > 0) parts.Add($"{ts.Hours}h");
+        if (ts.Minutes > 0) parts.Add($"{ts.Minutes}m");
+        if (ts.Seconds > 0) parts.Add($"{ts.Seconds}s");
+        return string.Join(" ", parts);
+    }
+}

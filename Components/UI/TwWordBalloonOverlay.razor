@@ -1,0 +1,464 @@
+@namespace BlazorTwUI.Components.UI
+@using System.Globalization
+@using BlazorTwUI.Models
+@implements IDisposable
+
+<div class="relative inline-flex items-center justify-center @Class" @attributes="AdditionalAttributes"
+     @onmouseenter="HandleAnchorMouseEnter"
+     @onmouseleave="HandleAnchorMouseLeave"
+     @onclick="HandleClick">
+
+    @* Anchor Element *@
+    <div class="relative z-10">
+        @ChildContent
+    </div>
+
+    @* Anchored Word Balloon Overlay *@
+    @if (IsOpen)
+    {
+        <div class="absolute z-30 @(Interactive ? "pointer-events-auto" : "pointer-events-none") transition-all duration-300 transform @GetPlacementClasses() @(AnimatePulse ? "animate-bounce" : "animate-fadeIn")"
+             style="transform-origin: @GetTransformOrigin();"
+             @onmouseenter="HandleBalloonMouseEnter"
+             @onmouseleave="HandleBalloonMouseLeave"
+             @onclick:stopPropagation="true">
+            
+            @* Invisible Hover Bridge to eliminate pointer gaps between anchor and balloon *@
+            @if (Interactive)
+            {
+                <div class="absolute inset-0 -m-4 pointer-events-auto" style="z-index: 0;"></div>
+            }
+
+            <div class="relative filter drop-shadow-lg pointer-events-auto select-none" style="width: @(SvgWidth)px; height: @(SvgHeight)px; z-index: 1;">
+                <svg viewBox="0 0 @SvgWidth @SvgHeight" width="@SvgWidth" height="@SvgHeight" class="w-full h-full select-none overflow-visible pointer-events-auto">
+                    <defs>
+                        <filter id="@_shadowId" x="-30%" y="-30%" width="160%" height="160%">
+                            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.3" />
+                        </filter>
+                        <linearGradient id="@_gradId" x1="0%" y1="0%" x2="100%" y2="100%">
+                            @if (Theme == WordBalloonTheme.ComicYellow)
+                            {
+                                <stop offset="0%" stop-color="#fef08a" />
+                                <stop offset="100%" stop-color="#facc15" />
+                            }
+                            else if (Theme == WordBalloonTheme.CrimsonBurst)
+                            {
+                                <stop offset="0%" stop-color="#ef4444" />
+                                <stop offset="100%" stop-color="#f97316" />
+                            }
+                            else if (Theme == WordBalloonTheme.CyberCyan)
+                            {
+                                <stop offset="0%" stop-color="#0891b2" />
+                                <stop offset="100%" stop-color="#06b6d4" />
+                            }
+                            else if (Theme == WordBalloonTheme.EmeraldTech)
+                            {
+                                <stop offset="0%" stop-color="#059669" />
+                                <stop offset="100%" stop-color="#10b981" />
+                            }
+                            else if (Theme == WordBalloonTheme.SunsetBlaze)
+                            {
+                                <stop offset="0%" stop-color="#ec4899" />
+                                <stop offset="100%" stop-color="#f97316" />
+                            }
+                            else if (Theme == WordBalloonTheme.NeonMatrix)
+                            {
+                                <stop offset="0%" stop-color="#022c22" />
+                                <stop offset="100%" stop-color="#22c55e" />
+                            }
+                            else if (Theme == WordBalloonTheme.MonochromeNoir)
+                            {
+                                <stop offset="0%" stop-color="#0f172a" />
+                                <stop offset="100%" stop-color="#334155" />
+                            }
+                            else if (Theme == WordBalloonTheme.GoldenHero)
+                            {
+                                <stop offset="0%" stop-color="#78350f" />
+                                <stop offset="100%" stop-color="#fde68a" />
+                            }
+                            else
+                            {
+                                <stop offset="0%" stop-color="#4338ca" />
+                                <stop offset="100%" stop-color="#6366f1" />
+                            }
+                        </linearGradient>
+                    </defs>
+
+                    @* Balloon Body & Tail *@
+                    @if (Shape == WordBalloonShape.ComicBurst)
+                    {
+                        <polygon points="@GenerateStarburstPoints(CenterX, CenterY, BodyWidth, BodyHeight)"
+                                 fill="url(#@_gradId)"
+                                 stroke="@GetStrokeColor()"
+                                 stroke-width="3"
+                                 stroke-linejoin="round"
+                                 filter="url(#@_shadowId)" />
+                    }
+                    else if (Shape == WordBalloonShape.CloudPuff || Shape == WordBalloonShape.ThoughtBubble)
+                    {
+                        <path d="@GenerateCloudPath(CenterX, CenterY, BodyWidth, BodyHeight)"
+                              fill="url(#@_gradId)"
+                              stroke="@GetStrokeColor()"
+                              stroke-width="2.5"
+                              stroke-linejoin="round"
+                              filter="url(#@_shadowId)" />
+                        
+                        @if (Shape == WordBalloonShape.ThoughtBubble && EffectiveTailPosition != WordBalloonTailPosition.None)
+                        {
+                            <circle cx="@(CenterX - 10)" cy="@(SvgHeight - 12)" r="5" fill="url(#@_gradId)" stroke="@GetStrokeColor()" stroke-width="2" />
+                            <circle cx="@(CenterX - 18)" cy="@(SvgHeight - 4)" r="3" fill="url(#@_gradId)" stroke="@GetStrokeColor()" stroke-width="1.5" />
+                        }
+                    }
+                    else if (Shape == WordBalloonShape.CyberHexagon)
+                    {
+                        <polygon points="@GenerateHexagonPoints(CenterX, CenterY, BodyWidth, BodyHeight)"
+                                 fill="url(#@_gradId)"
+                                 stroke="@GetStrokeColor()"
+                                 stroke-width="2.5"
+                                 stroke-linejoin="round"
+                                 filter="url(#@_shadowId)" />
+                    }
+                    else if (Shape == WordBalloonShape.BadgeShield)
+                    {
+                        <path d="@GenerateShieldPath(CenterX, CenterY, BodyWidth, BodyHeight)"
+                              fill="url(#@_gradId)"
+                              stroke="@GetStrokeColor()"
+                              stroke-width="2.5"
+                              stroke-linejoin="round"
+                              filter="url(#@_shadowId)" />
+                    }
+                    else
+                    {
+                        @* Default Speech Bubble or Smooth Callout *@
+                        <path d="@GenerateSpeechPath(CenterX, CenterY, BodyWidth, BodyHeight, EffectiveTailPosition)"
+                              fill="url(#@_gradId)"
+                              stroke="@GetStrokeColor()"
+                              stroke-width="2.5"
+                              stroke-linejoin="round"
+                              filter="url(#@_shadowId)" />
+                    }
+
+                    @* Optional Sheen Overlay *@
+                    @if (ShowSheen)
+                    {
+                        <path d="@GenerateSheenPath(CenterX, CenterY, BodyWidth, BodyHeight)"
+                              fill="#ffffff" opacity="0.35" class="pointer-events-none" />
+                    }
+
+                    @* Optional Kicker Badge Overlay *@
+                    @if (!string.IsNullOrWhiteSpace(Kicker))
+                    {
+                        var kw = (Kicker.Length * 6.5) + 12.0;
+                        var kx = CenterX - (BodyWidth * 0.35);
+                        var ky = CenterY - (BodyHeight * 0.55);
+                        <g transform="rotate(-6 @kx @ky)">
+                            <rect x="@(kx - 2)" y="@(ky - 8)" width="@kw" height="15" rx="3"
+                                  fill="#ef4444" stroke="#000000" stroke-width="1.5" />
+                            <text x="@(kx - 2 + kw / 2.0)" y="@(ky - 1)"
+                                  font-size="8" font-weight="900" text-anchor="middle" dominant-baseline="central"
+                                  fill="#ffffff" class="select-none font-mono uppercase tracking-wider">
+                                @Kicker
+                            </text>
+                        </g>
+                    }
+
+                    @* Center Word Text (Strictly On Top) *@
+                    <text x="@CenterX"
+                          y="@CenterY"
+                          font-size="@FontSize"
+                          font-weight="900"
+                          text-anchor="middle"
+                          dominant-baseline="central"
+                          fill="@GetTextColor()"
+                          style="@GetTextStyle()"
+                          class="select-none tracking-wide font-black">
+                        @Text
+                    </text>
+                </svg>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Text { get; set; } = "KABOOM!";
+    [Parameter] public string? Kicker { get; set; }
+    [Parameter] public WordBalloonShape Shape { get; set; } = WordBalloonShape.SpeechBubble;
+    [Parameter] public WordBalloonEffect Effect { get; set; } = WordBalloonEffect.Outlined;
+    [Parameter] public WordBalloonTheme Theme { get; set; } = WordBalloonTheme.ComicYellow;
+    [Parameter] public TwPopoverPlacement Placement { get; set; } = TwPopoverPlacement.Top;
+    [Parameter] public WordBalloonTailPosition TailPosition { get; set; } = WordBalloonTailPosition.BottomCenter;
+    [Parameter] public TwPopoverTrigger Trigger { get; set; } = TwPopoverTrigger.Hover;
+    [Parameter] public bool IsOpen { get; set; } = true;
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public bool ShowSheen { get; set; } = true;
+    [Parameter] public bool AnimatePulse { get; set; } = false;
+    [Parameter] public double Scale { get; set; } = 1.0;
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private readonly string _shadowId = "wb-shadow-" + Guid.NewGuid().ToString("N")[..6];
+    private readonly string _gradId = "wb-grad-" + Guid.NewGuid().ToString("N")[..6];
+
+    [Parameter] public bool AutoResizeBalloon { get; set; } = true;
+    [Parameter] public double BalloonScale { get; set; } = 1.30;
+    [Parameter] public double PaddingX { get; set; } = 36.0;
+    [Parameter] public double PaddingY { get; set; } = 18.0;
+    [Parameter] public double CustomWidth { get; set; } = 0.0;
+    [Parameter] public double CustomHeight { get; set; } = 0.0;
+
+    private double FontSize => Math.Round(14.0 * Math.Clamp(Scale, 0.7, 2.5));
+    private double BodyWidth
+    {
+        get
+        {
+            if (!AutoResizeBalloon && CustomWidth > 30.0)
+                return CustomWidth * BalloonScale;
+            var charWidth = FontSize * 0.65;
+            var textW = Text.Length * charWidth;
+            var shapeFactor = (Shape == WordBalloonShape.ComicBurst) ? 1.55 : 1.25;
+            var autoW = Math.Max(90.0, (textW * shapeFactor) + (PaddingX * 2.0)) * BalloonScale;
+            return (CustomWidth > 30.0) ? Math.Max(autoW, CustomWidth * BalloonScale) : autoW;
+        }
+    }
+
+    private double BodyHeight
+    {
+        get
+        {
+            if (!AutoResizeBalloon && CustomHeight > 20.0)
+                return CustomHeight * BalloonScale;
+            var shapeFactor = (Shape == WordBalloonShape.ComicBurst) ? 2.6 : 2.2;
+            var autoH = Math.Max(42.0, (FontSize * shapeFactor) + PaddingY) * BalloonScale;
+            return (CustomHeight > 20.0) ? Math.Max(autoH, CustomHeight * BalloonScale) : autoH;
+        }
+    }
+    private double TailHeight => 12.0;
+
+    private double SvgWidth => BodyWidth + 32.0;
+    private double SvgHeight => BodyHeight + TailHeight + 12.0;
+    private double CenterX => SvgWidth / 2.0;
+    private double CenterY => (Placement == TwPopoverPlacement.Bottom) ? (CenterYOffset + TailHeight) : CenterYOffset;
+    private double CenterYOffset => BodyHeight / 2.0 + 4.0;
+
+    private WordBalloonTailPosition EffectiveTailPosition => Placement switch
+    {
+        TwPopoverPlacement.Bottom => WordBalloonTailPosition.TopRight,
+        _ => WordBalloonTailPosition.BottomCenter
+    };
+
+    [Parameter] public bool Persistent { get; set; } = false;
+    [Parameter] public bool Interactive { get; set; } = true;
+    [Parameter] public int CloseDelayMs { get; set; } = 250;
+
+    private CancellationTokenSource? _closeCts;
+    private bool _isHoveringAnchor;
+    private bool _isHoveringBalloon;
+
+    private void HandleAnchorMouseEnter()
+    {
+        _isHoveringAnchor = true;
+        CancelClose();
+        if (!Persistent && Trigger == TwPopoverTrigger.Hover && !IsOpen)
+        {
+            IsOpen = true;
+            IsOpenChanged.InvokeAsync(true);
+        }
+    }
+
+    private void HandleAnchorMouseLeave()
+    {
+        _isHoveringAnchor = false;
+        ScheduleClose();
+    }
+
+    private void HandleBalloonMouseEnter()
+    {
+        _isHoveringBalloon = true;
+        CancelClose();
+        if (!Persistent && Trigger == TwPopoverTrigger.Hover && !IsOpen)
+        {
+            IsOpen = true;
+            IsOpenChanged.InvokeAsync(true);
+        }
+    }
+
+    private void HandleBalloonMouseLeave()
+    {
+        _isHoveringBalloon = false;
+        ScheduleClose();
+    }
+
+    private void CancelClose()
+    {
+        _closeCts?.Cancel();
+        _closeCts?.Dispose();
+        _closeCts = null;
+    }
+
+    private async void ScheduleClose()
+    {
+        if (Persistent || Trigger != TwPopoverTrigger.Hover) return;
+
+        CancelClose();
+        var cts = new CancellationTokenSource();
+        _closeCts = cts;
+
+        try
+        {
+            await Task.Delay(CloseDelayMs, cts.Token);
+            if (!cts.IsCancellationRequested && !_isHoveringAnchor && !_isHoveringBalloon && IsOpen)
+            {
+                IsOpen = false;
+                await IsOpenChanged.InvokeAsync(false);
+                StateHasChanged();
+            }
+        }
+        catch (TaskCanceledException)
+        {
+            // Hover re-entered, cancel requested
+        }
+    }
+
+    private void HandleClick()
+    {
+        if (Persistent) return;
+
+        if (Trigger == TwPopoverTrigger.Click)
+        {
+            IsOpen = !IsOpen;
+            IsOpenChanged.InvokeAsync(IsOpen);
+        }
+    }
+
+    public void Dispose()
+    {
+        CancelClose();
+    }
+
+    private string GetPlacementClasses() => Placement switch
+    {
+        TwPopoverPlacement.Bottom => "top-full left-1/2 -translate-x-1/2 pt-1",
+        TwPopoverPlacement.Left => "right-full top-1/2 -translate-y-1/2 pr-2",
+        TwPopoverPlacement.Right => "left-full top-1/2 -translate-y-1/2 pl-2",
+        _ => "bottom-full left-1/2 -translate-x-1/2 pb-1"
+    };
+
+    private string GetTransformOrigin() => Placement switch
+    {
+        TwPopoverPlacement.Bottom => "top center",
+        TwPopoverPlacement.Left => "center right",
+        TwPopoverPlacement.Right => "center left",
+        _ => "bottom center"
+    };
+
+    private string GetStrokeColor() => Theme switch
+    {
+        WordBalloonTheme.ComicYellow => "#000000",
+        WordBalloonTheme.CrimsonBurst => "#7f1d1d",
+        WordBalloonTheme.EmeraldTech => "#064e3b",
+        WordBalloonTheme.CyberCyan => "#083344",
+        WordBalloonTheme.SunsetBlaze => "#701a75",
+        WordBalloonTheme.NeonMatrix => "#022c22",
+        WordBalloonTheme.MonochromeNoir => "#ffffff",
+        WordBalloonTheme.GoldenHero => "#451a03",
+        _ => "#1e1b4b"
+    };
+
+    private string GetTextColor()
+    {
+        if (Theme == WordBalloonTheme.ComicYellow) return "#000000";
+        if (Theme == WordBalloonTheme.GoldenHero) return "#ffffff";
+        return "#ffffff";
+    }
+
+    private string GetTextStyle()
+    {
+        if (Effect == WordBalloonEffect.Outlined)
+        {
+            return $"paint-order: stroke fill; stroke: {GetStrokeColor()}; stroke-width: 2.5px; stroke-linejoin: round;";
+        }
+        if (Effect == WordBalloonEffect.PowEffect)
+        {
+            return "paint-order: stroke fill; stroke: #000000; stroke-width: 3px; font-style: italic;";
+        }
+        return "paint-order: stroke fill; stroke: rgba(0,0,0,0.3); stroke-width: 1px;";
+    }
+
+    private string GenerateSpeechPath(double cx, double cy, double w, double h, WordBalloonTailPosition pos)
+    {
+        double x = cx - (w / 2.0);
+        double y = cy - (h / 2.0);
+        double r = 10.0;
+        double tailW = 12.0;
+        double tailH = 10.0;
+        double tailX = cx - (tailW / 2.0);
+
+        if (pos == WordBalloonTailPosition.TopRight || pos == WordBalloonTailPosition.TopLeft)
+        {
+            // Pointing up towards anchor
+            return string.Create(CultureInfo.InvariantCulture,
+                $"M {x + r:F1},{y:F1} H {tailX:F1} L {cx:F1},{y - tailH:F1} L {tailX + tailW:F1},{y:F1} H {x + w - r:F1} Q {x + w:F1},{y:F1} {x + w:F1},{y + r:F1} V {y + h - r:F1} Q {x + w:F1},{y + h:F1} {x + w - r:F1},{y + h:F1} H {x + r:F1} Q {x:F1},{y + h:F1} {x:F1},{y + h - r:F1} V {y + r:F1} Q {x:F1},{y:F1} {x + r:F1},{y:F1} Z");
+        }
+
+        // Pointing down towards anchor
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M {x + r:F1},{y:F1} H {x + w - r:F1} Q {x + w:F1},{y:F1} {x + w:F1},{y + r:F1} V {y + h - r:F1} Q {x + w:F1},{y + h:F1} {x + w - r:F1},{y + h:F1} H {tailX + tailW:F1} L {cx:F1},{y + h + tailH:F1} L {tailX:F1},{y + h:F1} H {x + r:F1} Q {x:F1},{y + h:F1} {x:F1},{y + h - r:F1} V {y + r:F1} Q {x:F1},{y:F1} {x + r:F1},{y:F1} Z");
+    }
+
+    private string GenerateCloudPath(double cx, double cy, double w, double h)
+    {
+        double rX = w / 2.0;
+        double rY = h / 2.0;
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M {cx - rX * 0.7:F1},{cy:F1} C {cx - rX:F1},{cy - rY * 0.6:F1} {cx - rX * 0.6:F1},{cy - rY * 1.1:F1} {cx - rX * 0.2:F1},{cy - rY * 0.9:F1} C {cx:F1},{cy - rY * 1.2:F1} {cx + rX * 0.4:F1},{cy - rY * 1.15:F1} {cx + rX * 0.6:F1},{cy - rY * 0.8:F1} C {cx + rX * 1.05:F1},{cy - rY * 0.7:F1} {cx + rX * 1.1:F1},{cy + rY * 0.4:F1} {cx + rX * 0.7:F1},{cy + rY * 0.8:F1} C {cx + rX * 0.4:F1},{cy + rY * 1.15:F1} {cx - rX * 0.1:F1},{cy + rY * 1.1:F1} {cx - rX * 0.4:F1},{cy + rY * 0.85:F1} C {cx - rX * 0.85:F1},{cy + rY * 1.0:F1} {cx - rX * 1.1:F1},{cy + rY * 0.4:F1} {cx - rX * 0.7:F1},{cy:F1} Z");
+    }
+
+    private string GenerateHexagonPoints(double cx, double cy, double w, double h)
+    {
+        double x = cx - (w / 2.0);
+        double y = cy - (h / 2.0);
+        double cut = Math.Min(12.0, h * 0.35);
+        return string.Create(CultureInfo.InvariantCulture,
+            $"{x + cut:F1},{y:F1} {x + w - cut:F1},{y:F1} {x + w:F1},{y + cut:F1} {x + w:F1},{y + h - cut:F1} {x + w - cut:F1},{y + h:F1} {x + cut:F1},{y + h:F1} {x:F1},{y + h - cut:F1} {x:F1},{y + cut:F1}");
+    }
+
+    private string GenerateShieldPath(double cx, double cy, double w, double h)
+    {
+        double x = cx - (w / 2.0);
+        double y = cy - (h / 2.0);
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M {x:F1},{y + 6:F1} Q {cx:F1},{y - 4:F1} {x + w:F1},{y + 6:F1} V {y + (h * 0.6):F1} Q {x + w:F1},{y + (h * 0.95):F1} {cx:F1},{y + h + 6:F1} Q {x:F1},{y + (h * 0.95):F1} {x:F1},{y + (h * 0.6):F1} Z");
+    }
+
+    private string GenerateStarburstPoints(double cx, double cy, double w, double h)
+    {
+        int points = 16;
+        var sb = new System.Text.StringBuilder();
+        double rxOuter = (w / 2.0) * 1.15;
+        double ryOuter = (h / 2.0) * 1.35;
+        double rxInner = (w / 2.0) * 0.75;
+        double ryInner = (h / 2.0) * 0.75;
+
+        for (int i = 0; i < points; i++)
+        {
+            double angle = (i * 2 * Math.PI) / points - (Math.PI / 2);
+            double rX = (i % 2 == 0) ? rxOuter : rxInner;
+            double rY = (i % 2 == 0) ? ryOuter : ryInner;
+            double px = cx + (rX * Math.Cos(angle));
+            double py = cy + (rY * Math.Sin(angle));
+            sb.Append(CultureInfo.InvariantCulture, $"{px:F1},{py:F1} ");
+        }
+        return sb.ToString().Trim();
+    }
+
+    private string GenerateSheenPath(double cx, double cy, double w, double h)
+    {
+        double x = cx - (w / 2.0) + 4.0;
+        double y = cy - (h / 2.0) + 2.0;
+        double sw = w - 8.0;
+        double sh = h * 0.45;
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M {x:F1},{y + sh:F1} Q {cx:F1},{y + 2:F1} {x + sw:F1},{y + sh:F1} L {x + sw:F1},{y:F1} L {x:F1},{y:F1} Z");
+    }
+}

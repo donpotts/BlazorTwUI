@@ -1,0 +1,91 @@
+@if (IsOpen)
+{
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+             @onclick="HandleBackdropClick"></div>
+
+        <!-- Mobile-first positioning: items-end on mobile (bottom sheet) and items-center on sm+ (centered modal) -->
+        <div class="flex min-h-full items-end sm:items-center justify-center p-0 sm:p-4 text-center">
+            <div class="relative w-full @MaxWidthClass transform overflow-hidden rounded-t-3xl sm:rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-left shadow-2xl transition-all sm:my-8">
+                
+                <!-- Mobile sheet drag indicator -->
+                <div class="sm:hidden flex justify-center pt-3 pb-1">
+                    <div class="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+                </div>
+
+                <!-- Header -->
+                @if (HeaderContent is not null || !string.IsNullOrWhiteSpace(Title))
+                {
+                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <div>
+                            @if (!string.IsNullOrWhiteSpace(Title))
+                            {
+                                <h3 id="modal-title" class="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">@Title</h3>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Description))
+                            {
+                                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">@Description</p>
+                            }
+                        </div>
+                        <button type="button"
+                                @onclick="CloseAsync"
+                                class="rounded-lg p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                }
+
+                <!-- Body -->
+                <div class="px-5 py-4 sm:p-6 max-h-[75vh] overflow-y-auto">
+                    @ChildContent
+                </div>
+
+                <!-- Footer -->
+                @if (FooterContent is not null)
+                {
+                    <div class="px-5 py-3 sm:px-6 bg-slate-50/70 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800 flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pb-safe sm:pb-3">
+                        @FooterContent
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string MaxWidth { get; set; } = "md";
+    [Parameter] public bool CloseOnBackdropClick { get; set; } = true;
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+
+    private string MaxWidthClass => MaxWidth switch
+    {
+        "sm" => "sm:max-w-sm",
+        "lg" => "sm:max-w-lg",
+        "xl" => "sm:max-w-xl",
+        "2xl" => "sm:max-w-2xl",
+        _ => "sm:max-w-md"
+    };
+
+    private async Task CloseAsync()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleBackdropClick()
+    {
+        if (CloseOnBackdropClick)
+        {
+            await CloseAsync();
+        }
+    }
+}

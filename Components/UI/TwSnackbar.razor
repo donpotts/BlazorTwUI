@@ -1,0 +1,237 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@implements IDisposable
+
+@if (IsOpen)
+{
+    <div class="fixed z-50 transition-all duration-300 ease-out @GetPositionClasses()"
+         role="alert"
+         aria-live="assertive"
+         @onmouseenter="HandleMouseEnter"
+         @onmouseleave="HandleMouseLeave"
+         @attributes="AdditionalAttributes">
+
+        <div class="flex flex-col overflow-hidden rounded-xl shadow-2xl border @GetVariantBorderClasses() @GetVariantBgClasses() text-slate-100 min-w-[320px] max-w-md backdrop-blur-md">
+            <div class="flex items-center justify-between gap-3 px-4 py-3">
+                <div class="flex items-center gap-3">
+                    @* Semantic or Custom Icon *@
+                    <div class="flex-shrink-0">
+                        @if (Icon != null)
+                        {
+                            @Icon
+                        }
+                        else
+                        {
+                            @switch (Variant)
+                            {
+                                case SemanticVariant.Success:
+                                    <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    break;
+                                case SemanticVariant.Warning:
+                                    <svg class="w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    break;
+                                case SemanticVariant.Danger:
+                                    <svg class="w-5 h-5 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    break;
+                                case SemanticVariant.Info:
+                                    <svg class="w-5 h-5 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    break;
+                                default:
+                                    <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                    </svg>
+                                    break;
+                            }
+                        }
+                    </div>
+
+                    @* Message Body *@
+                    <div class="text-sm font-medium text-slate-100">
+                        @if (ChildContent != null)
+                        {
+                            @ChildContent
+                        }
+                        else
+                        {
+                            <span>@Message</span>
+                        }
+                    </div>
+                </div>
+
+                @* Action Button & Close Trigger *@
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    @if (!string.IsNullOrEmpty(ActionText))
+                    {
+                        <button type="button"
+                                @onclick="HandleActionClick"
+                                class="px-2.5 py-1 text-xs font-bold rounded-md bg-white/15 hover:bg-white/25 active:bg-white/30 text-white transition-colors focus:outline-none focus:ring-2 focus:ring-white/40">
+                            @ActionText
+                        </button>
+                    }
+
+                    @if (ShowCloseButton)
+                    {
+                        <button type="button"
+                                @onclick="CloseAsync"
+                                class="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition-colors focus:outline-none"
+                                aria-label="Dismiss">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            @* Progress countdown bar *@
+            @if (ShowProgress && DurationMs > 0)
+            {
+                <div class="w-full bg-black/20 h-1 overflow-hidden">
+                    <div class="h-full bg-white/40 transition-all duration-100 ease-linear"
+                         style="width: @($"{_progressPercentage:F1}%");"></div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Message { get; set; } = "";
+    [Parameter] public string? ActionText { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Icon { get; set; }
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback OnAction { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public int DurationMs { get; set; } = 4000;
+    [Parameter] public bool ShowProgress { get; set; } = true;
+    [Parameter] public bool ShowCloseButton { get; set; } = true;
+    [Parameter] public SemanticVariant Variant { get; set; } = SemanticVariant.Default;
+    [Parameter] public TwSnackbarPosition Position { get; set; } = TwSnackbarPosition.BottomCenter;
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private System.Threading.Timer? _dismissTimer;
+    private double _progressPercentage = 100.0;
+    private int _remainingMs;
+    private bool _isPaused;
+    private const int UpdateIntervalMs = 50;
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && _dismissTimer == null && DurationMs > 0)
+        {
+            StartTimer();
+        }
+    }
+
+    public async Task ShowAsync(string message, string? actionText = null)
+    {
+        Message = message;
+        if (actionText != null) ActionText = actionText;
+        IsOpen = true;
+        await IsOpenChanged.InvokeAsync(true);
+        StartTimer();
+    }
+
+    public async Task CloseAsync()
+    {
+        StopTimer();
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task HandleActionClick()
+    {
+        await OnAction.InvokeAsync();
+        await CloseAsync();
+    }
+
+    private void StartTimer()
+    {
+        StopTimer();
+        if (DurationMs <= 0) return;
+
+        _remainingMs = DurationMs;
+        _progressPercentage = 100.0;
+        _isPaused = false;
+
+        _dismissTimer = new System.Threading.Timer(async _ =>
+        {
+            if (_isPaused) return;
+
+            _remainingMs -= UpdateIntervalMs;
+            if (_remainingMs <= 0)
+            {
+                _progressPercentage = 0;
+                await InvokeAsync(CloseAsync);
+            }
+            else
+            {
+                _progressPercentage = Math.Max(0, (_remainingMs / (double)DurationMs) * 100.0);
+                await InvokeAsync(StateHasChanged);
+            }
+        }, null, UpdateIntervalMs, UpdateIntervalMs);
+    }
+
+    private void StopTimer()
+    {
+        _dismissTimer?.Dispose();
+        _dismissTimer = null;
+    }
+
+    private void HandleMouseEnter()
+    {
+        _isPaused = true;
+    }
+
+    private void HandleMouseLeave()
+    {
+        _isPaused = false;
+    }
+
+    private string GetPositionClasses() => Position switch
+    {
+        TwSnackbarPosition.BottomCenter => "bottom-6 left-1/2 -translate-x-1/2",
+        TwSnackbarPosition.BottomLeft => "bottom-6 left-6",
+        TwSnackbarPosition.BottomRight => "bottom-6 right-6",
+        TwSnackbarPosition.TopCenter => "top-6 left-1/2 -translate-x-1/2",
+        TwSnackbarPosition.TopLeft => "top-6 left-6",
+        TwSnackbarPosition.TopRight => "top-6 right-6",
+        _ => "bottom-6 left-1/2 -translate-x-1/2"
+    };
+
+    private string GetVariantBgClasses() => Variant switch
+    {
+        SemanticVariant.Success => "bg-slate-900/95 dark:bg-slate-900/95 border-emerald-500/50",
+        SemanticVariant.Warning => "bg-slate-900/95 dark:bg-slate-900/95 border-amber-500/50",
+        SemanticVariant.Danger => "bg-slate-900/95 dark:bg-slate-900/95 border-rose-500/50",
+        SemanticVariant.Info => "bg-slate-900/95 dark:bg-slate-900/95 border-sky-500/50",
+        _ => "bg-slate-900/95 dark:bg-slate-900/95 border-indigo-500/40"
+    };
+
+    private string GetVariantBorderClasses() => Variant switch
+    {
+        SemanticVariant.Success => "border-emerald-500/40 shadow-emerald-950/30",
+        SemanticVariant.Warning => "border-amber-500/40 shadow-amber-950/30",
+        SemanticVariant.Danger => "border-rose-500/40 shadow-rose-950/30",
+        SemanticVariant.Info => "border-sky-500/40 shadow-sky-950/30",
+        _ => "border-slate-700 shadow-indigo-950/30"
+    };
+
+    public void Dispose()
+    {
+        StopTimer();
+    }
+}

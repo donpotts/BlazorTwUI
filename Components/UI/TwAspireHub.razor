@@ -1,0 +1,208 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Services
+@inject TwAspireService AspireService
+@inject ServerPortBridgeService ServerBridge
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="btui-aspire-hub rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 sm:p-6 shadow-sm space-y-6 @Class">
+    <!-- Header with Aspire 11 Badges -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-lg">
+                🌐
+            </div>
+            <div>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    .NET Aspire 11 Live App Host Cockpit
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        Aspire 11.0 Distributed Host
+                    </span>
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Live cloud-native service orchestration, active health checks, connection string resolution, and manifest export
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-mono font-bold @(ServerBridge.IsApiOnline ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20")">
+                <span class="w-2 h-2 rounded-full @(ServerBridge.IsApiOnline ? "bg-emerald-500 animate-pulse" : "bg-purple-500")"></span>
+                @(ServerBridge.IsApiOnline ? $"API Online :{ServerBridge.ActivePort} ({ServerBridge.RoundtripMs:F1}ms)" : "AppHost Active")
+            </span>
+        </div>
+    </div>
+
+    <!-- Distributed Resource Topology Grid -->
+    <div class="space-y-3">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                <span>📦</span> Orchestrated Resources (@_resources.Count)
+            </span>
+            <button type="button"
+                    @onclick="RefreshHealthChecksAsync"
+                    disabled="@_isRefreshing"
+                    class="text-xs text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1 font-semibold disabled:opacity-50">
+                <span>🔄</span> Ping Health Checks
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            @foreach (var res in _resources)
+            {
+                var isSelected = _selectedResource.Name == res.Name;
+
+                <button type="button"
+                        @onclick="() => SelectResource(res)"
+                        class="p-4 rounded-2xl border text-left transition-all duration-200 relative overflow-hidden flex flex-col justify-between gap-3 @(isSelected ? "bg-purple-50/50 dark:bg-purple-950/20 border-purple-500 ring-2 ring-purple-500/20 shadow-sm" : "bg-slate-50/70 dark:bg-slate-850/60 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700")">
+                    <div class="flex items-start justify-between w-full">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg">
+                                @(res.Type switch {
+                                    TwAspireService.ResourceType.Project => "⚙️",
+                                    TwAspireService.ResourceType.Container => "🐳",
+                                    _ => "⚡"
+                                })
+                            </span>
+                            <div>
+                                <h5 class="text-xs font-bold text-slate-900 dark:text-white font-mono">@res.Name</h5>
+                                <span class="text-[10px] text-slate-400 uppercase font-semibold">@res.Type</span>
+                            </div>
+                        </div>
+
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold @(res.Status == TwAspireService.ResourceStatus.Healthy ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-blue-500/10 text-blue-600 dark:text-blue-400")">
+                            @res.Status
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-between text-[11px] text-slate-500 font-mono w-full pt-2 border-t border-slate-200/60 dark:border-slate-800">
+                        <span class="truncate">@(res.Port > 0 ? $":{res.Port}" : "STDIO")</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">@res.LatencyMs.ToString("F1")ms</span>
+                    </div>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Resource Detail Inspector -->
+    <div class="p-4 sm:p-5 rounded-2xl bg-slate-900 text-slate-100 border border-slate-800 space-y-4">
+        <!-- Inspector Sub-Header -->
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+            <div class="flex items-center gap-2 font-mono text-xs">
+                <span class="text-purple-400 font-bold">@_selectedResource.Name</span>
+                <span class="text-slate-500">•</span>
+                <span class="text-slate-400">@_selectedResource.Endpoint</span>
+            </div>
+
+            <!-- Tab Pills -->
+            <div class="flex items-center gap-1 bg-slate-800 p-0.5 rounded-lg text-xs font-sans">
+                <button type="button" @onclick='() => _activeInspectorTab = "env"' class="px-2.5 py-1 rounded-md text-[11px] font-semibold transition @(_activeInspectorTab == "env" ? "bg-purple-600 text-white" : "text-slate-400 hover:text-white")">
+                    Environment (@_selectedResource.EnvironmentVariables.Count)
+                </button>
+                <button type="button" @onclick='() => _activeInspectorTab = "logs"' class="px-2.5 py-1 rounded-md text-[11px] font-semibold transition @(_activeInspectorTab == "logs" ? "bg-purple-600 text-white" : "text-slate-400 hover:text-white")">
+                    Logs (@_selectedResource.RecentLogs.Count)
+                </button>
+            </div>
+        </div>
+
+        @if (_activeInspectorTab == "env")
+        {
+            <div class="space-y-1.5 max-h-48 overflow-y-auto font-mono text-[11px]">
+                @foreach (var kvp in _selectedResource.EnvironmentVariables)
+                {
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 p-2 rounded-lg bg-slate-800/60 border border-slate-800">
+                        <span class="text-purple-300 font-bold select-all">@kvp.Key</span>
+                        <span class="text-slate-300 select-all truncate">@kvp.Value</span>
+                    </div>
+                }
+            </div>
+        }
+        else if (_activeInspectorTab == "logs")
+        {
+            <div class="space-y-1 max-h-48 overflow-y-auto font-mono text-[11px] p-2 rounded-lg bg-black/40 border border-slate-800/80">
+                @foreach (var log in _selectedResource.RecentLogs)
+                {
+                    <div class="text-slate-300 select-all leading-relaxed">
+                        <span class="text-slate-500">[@DateTime.UtcNow.ToString("HH:mm:ss")]</span> @log
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <!-- 1-Click Code Generation & Export Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <div class="flex flex-wrap items-center gap-2">
+            <TwButton Variant="ButtonVariant.Primary" Size="ComponentSize.Sm" OnClick="DownloadAppHostCodeAsync">
+                <span>📥</span> Download Aspire AppHost (Program.cs)
+            </TwButton>
+            <TwButton Variant="ButtonVariant.Outline" Size="ComponentSize.Sm" OnClick="DownloadDockerComposeAsync">
+                <span>🐳</span> Download docker-compose.yml
+            </TwButton>
+        </div>
+
+        <button type="button" @onclick="CopyAppHostCodeAsync" class="text-xs font-semibold text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-1">
+            <span>📋</span> Copy C# AppHost Code
+        </button>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Class { get; set; }
+
+    private List<TwAspireService.AspireResource> _resources = new();
+    private TwAspireService.AspireResource _selectedResource = new();
+    private string _activeInspectorTab = "env";
+    private bool _isRefreshing = false;
+
+    protected override void OnInitialized()
+    {
+        _resources = AspireService.GetDefaultTopology();
+        _selectedResource = _resources[0];
+    }
+
+    private void SelectResource(TwAspireService.AspireResource res)
+    {
+        _selectedResource = res;
+    }
+
+    private async Task RefreshHealthChecksAsync()
+    {
+        _isRefreshing = true;
+        StateHasChanged();
+
+        try
+        {
+            await ServerBridge.ProbeServerHealthAsync();
+            _resources = AspireService.GetDefaultTopology();
+            _selectedResource = _resources.Find(r => r.Name == _selectedResource.Name) ?? _resources[0];
+            Toast.Show("Health Checks Refreshed", $"All {_resources.Count} distributed resources verified nominal.", SemanticVariant.Success);
+        }
+        finally
+        {
+            _isRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DownloadAppHostCodeAsync()
+    {
+        var code = AspireService.GenerateAppHostCode(_resources);
+        await JS.InvokeVoidAsync("pdfHelper.downloadText", "Program.cs", "text/plain", code);
+        Toast.Show("AppHost Code Downloaded", "Saved Program.cs Aspire 11 manifest locally.", SemanticVariant.Success);
+    }
+
+    private async Task DownloadDockerComposeAsync()
+    {
+        var compose = AspireService.GenerateDockerCompose(_resources);
+        await JS.InvokeVoidAsync("pdfHelper.downloadText", "docker-compose.yml", "text/yaml", compose);
+        Toast.Show("Docker Compose Downloaded", "Saved docker-compose.yml stack configuration.", SemanticVariant.Success);
+    }
+
+    private async Task CopyAppHostCodeAsync()
+    {
+        var code = AspireService.GenerateAppHostCode(_resources);
+        try { await JS.InvokeAsync<bool>("clipboardHelper.copyText", code); } catch {}
+        Toast.Show("AppHost Manifest Copied", "Ready to paste into Aspire AppHost Program.cs", SemanticVariant.Success);
+    }
+}

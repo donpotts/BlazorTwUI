@@ -1,0 +1,119 @@
+<div class="rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md p-4 sm:p-5 shadow-xs hover:shadow-lg transition-all overflow-hidden @Class">
+    <div class="flex items-center justify-between gap-2">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 truncate">
+            @Title
+        </span>
+        @if (ChangePercentage != null)
+        {
+            var isPositive = ChangePercentage >= 0;
+            <span class="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold shrink-0 @(isPositive ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-emerald-500/20" : "bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-rose-500/20")">
+                @if (isPositive)
+                {
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                    <span>+@ChangePercentage.Value.ToString("0.0")%</span>
+                }
+                else
+                {
+                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 17h8m0 0v-8m0 8l-8-8-4 4-6-6" />
+                    </svg>
+                    <span>@ChangePercentage.Value.ToString("0.0")%</span>
+                }
+            </span>
+        }
+    </div>
+
+    <div class="mt-3 flex items-end justify-between gap-2">
+        <div class="min-w-0 flex-1">
+            <div class="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white truncate">
+                @Value
+            </div>
+            @if (!string.IsNullOrWhiteSpace(Subtitle))
+            {
+                <div class="mt-0.5 text-[11px] text-slate-400 truncate">
+                    @Subtitle
+                </div>
+            }
+        </div>
+
+        @if (SparklineData != null && SparklineData.Count > 1)
+        {
+            <div class="w-16 sm:w-20 h-8 shrink-0 overflow-hidden">
+                <svg viewBox="0 0 100 40" class="w-full h-full overflow-hidden" preserveAspectRatio="none">
+                    <defs>
+                        <linearGradient id="@_gradientId" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="@SparklineColor" stop-opacity="0.35" />
+                            <stop offset="100%" stop-color="@SparklineColor" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+                    <path d="@AreaPath" fill="url(#@_gradientId)" />
+                    <path d="@LinePath" fill="none" stroke="@SparklineColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Value { get; set; } = string.Empty;
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public double? ChangePercentage { get; set; }
+    [Parameter] public IReadOnlyList<double>? SparklineData { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string _gradientId = "kpi-grad-" + Guid.NewGuid().ToString("N")[..8];
+
+    private string SparklineColor
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(Color)) return Color;
+            if (ChangePercentage.HasValue)
+            {
+                return ChangePercentage.Value >= 0 ? "#10b981" : "#f43f5e";
+            }
+            return "#6366f1";
+        }
+    }
+
+    private string LinePath => GenerateSvgPath(false);
+    private string AreaPath => GenerateSvgPath(true);
+
+    private string GenerateSvgPath(bool isArea)
+    {
+        if (SparklineData == null || SparklineData.Count < 2) return string.Empty;
+        var min = SparklineData.Min();
+        var max = SparklineData.Max();
+        var range = max - min == 0 ? 1 : max - min;
+        var width = 100.0;
+        var height = 36.0;
+        var padding = 2.0;
+
+        var points = new List<(double x, double y)>();
+        for (int i = 0; i < SparklineData.Count; i++)
+        {
+            var x = (width / (SparklineData.Count - 1)) * i;
+            var normalized = (SparklineData[i] - min) / range;
+            var y = height - (normalized * (height - padding * 2)) - padding;
+            points.Add((x, y));
+        }
+
+        var sb = new System.Text.StringBuilder();
+        sb.Append($"M {points[0].x:F1} {points[0].y:F1}");
+        for (int i = 1; i < points.Count; i++)
+        {
+            sb.Append($" L {points[i].x:F1} {points[i].y:F1}");
+        }
+
+        if (isArea)
+        {
+            sb.Append($" L {width:F1} 40 L 0 40 Z");
+        }
+
+        return sb.ToString();
+    }
+}

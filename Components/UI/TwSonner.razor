@@ -1,0 +1,163 @@
+<div class="@TwMerge.Merge("relative w-full min-h-[190px] flex flex-col justify-end items-end p-4 rounded-2xl bg-slate-950/5 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 overflow-hidden", Class)"
+     @onmouseenter="() => _hovered = true"
+     @onmouseleave="() => _hovered = false">
+
+    <div class="absolute top-3 left-4 flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-400">
+        <span class="w-2 h-2 rounded-full bg-brand-500 animate-pulse"></span>
+        <span>3D Stacked Toast Deck (@(IsExpanded ? "Expanded Hover View" : "Stacked 3D Depth — Hover Stack to Fan Out"))</span>
+    </div>
+
+    <div class="relative w-full max-w-sm flex flex-col items-stretch justify-end"
+         style="height: @(IsExpanded ? $"{Math.Max(140, VisibleItems.Count * 76)}px" : "130px"); transition: height 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+        @for (int i = 0; i < VisibleItems.Count; i++)
+        {
+            var item = VisibleItems[i];
+            // Index 0 is the newest (frontmost) toast
+            var depth = i;
+            var translateY = IsExpanded ? -(depth * 74) : -(depth * 13);
+            var scale = IsExpanded ? 1.0 : Math.Max(0.85, 1.0 - (depth * 0.05));
+            var opacity = depth > 2 && !IsExpanded ? 0.0 : Math.Max(0.4, 1.0 - (depth * 0.15));
+            var zIndex = 40 - depth;
+
+            <div @key="item.Id"
+                 style="transform: translateY(@(translateY)px) scale(@(scale.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))); opacity: @(opacity.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)); z-index: @zIndex; transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);"
+                 class="absolute bottom-0 left-0 right-0 p-3.5 rounded-2xl border shadow-lg backdrop-blur-md flex items-start justify-between gap-3 @GetToastClasses(item)">
+                <div class="flex items-start gap-2.5 min-w-0">
+                    <div class="mt-0.5 shrink-0">
+                        @if (item.IsLoading)
+                        {
+                            <svg class="w-4 h-4 animate-spin text-brand-500" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                        }
+                        else
+                        {
+                            <span>@GetIcon(item.Variant)</span>
+                        }
+                    </div>
+                    <div class="min-w-0">
+                        <div class="text-xs font-bold truncate">@item.Title</div>
+                        @if (!string.IsNullOrWhiteSpace(item.Description))
+                        {
+                            <div class="text-[11px] opacity-85 truncate mt-0.5">@item.Description</div>
+                        }
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                    @if (!string.IsNullOrWhiteSpace(item.ActionLabel))
+                    {
+                        <button type="button"
+                                @onclick="() => HandleAction(item)"
+                                class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-900 text-white dark:bg-white dark:text-slate-900 hover:opacity-90 transition">
+                            @item.ActionLabel
+                        </button>
+                    }
+                    <button type="button"
+                            @onclick="() => Dismiss(item.Id)"
+                            class="p-1 rounded-lg opacity-60 hover:opacity-100 transition"
+                            aria-label="Dismiss toast">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    public sealed class SonnerToastItem
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Title { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public SemanticVariant Variant { get; set; } = SemanticVariant.Default;
+        public bool IsLoading { get; set; }
+        public string? ActionLabel { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    private bool _hovered;
+    private bool IsExpanded => _hovered || Expanded;
+
+    [Parameter] public List<SonnerToastItem> Items { get; set; } = new();
+    [Parameter] public bool Expanded { get; set; }
+    [Parameter] public int MaxVisible { get; set; } = 4;
+    [Parameter] public bool RichColors { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public EventCallback<SonnerToastItem> OnActionClicked { get; set; }
+
+    private List<SonnerToastItem> VisibleItems => Items.Take(MaxVisible).ToList();
+
+    public void Push(string title, string? description = null, SemanticVariant variant = SemanticVariant.Default, string? actionLabel = null, bool isLoading = false)
+    {
+        Items.Insert(0, new SonnerToastItem
+        {
+            Title = title,
+            Description = description,
+            Variant = variant,
+            ActionLabel = actionLabel,
+            IsLoading = isLoading
+        });
+        StateHasChanged();
+    }
+
+    public async Task PushPromiseAsync(string loadingTitle, string successTitle, string successDescription, int delayMs = 1100)
+    {
+        var item = new SonnerToastItem
+        {
+            Title = loadingTitle,
+            Description = "Executing background job...",
+            Variant = SemanticVariant.Primary,
+            IsLoading = true
+        };
+        Items.Insert(0, item);
+        StateHasChanged();
+
+        await Task.Delay(delayMs);
+        item.IsLoading = false;
+        item.Title = successTitle;
+        item.Description = successDescription;
+        item.Variant = SemanticVariant.Success;
+        StateHasChanged();
+    }
+
+    public void Dismiss(string id)
+    {
+        Items.RemoveAll(x => x.Id == id);
+        StateHasChanged();
+    }
+
+    private async Task HandleAction(SonnerToastItem item)
+    {
+        await OnActionClicked.InvokeAsync(item);
+        Dismiss(item.Id);
+    }
+
+    private string GetIcon(SemanticVariant v) => v switch
+    {
+        SemanticVariant.Success => "✅",
+        SemanticVariant.Warning => "⚠️",
+        SemanticVariant.Danger => "🚨",
+        SemanticVariant.Info => "ℹ️",
+        SemanticVariant.Primary => "✨",
+        _ => "🔔"
+    };
+
+    private string GetToastClasses(SonnerToastItem item)
+    {
+        if (!RichColors)
+            return "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white";
+
+        return item.Variant switch
+        {
+            SemanticVariant.Success => "bg-emerald-50/95 dark:bg-emerald-950/95 border-emerald-300 dark:border-emerald-800 text-emerald-950 dark:text-emerald-100",
+            SemanticVariant.Warning => "bg-amber-50/95 dark:bg-amber-950/95 border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-100",
+            SemanticVariant.Danger => "bg-rose-50/95 dark:bg-rose-950/95 border-rose-300 dark:border-rose-800 text-rose-950 dark:text-rose-100",
+            SemanticVariant.Info => "bg-sky-50/95 dark:bg-sky-950/95 border-sky-300 dark:border-sky-800 text-sky-950 dark:text-sky-100",
+            _ => "bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white"
+        };
+    }
+}

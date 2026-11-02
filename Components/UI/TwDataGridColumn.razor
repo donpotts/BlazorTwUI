@@ -1,0 +1,73 @@
+@namespace BlazorTwUI.Components.UI
+@typeparam TItem
+@implements IDisposable
+@using BlazorTwUI.Services
+
+@code {
+    [CascadingParameter] public TwDataGrid<TItem>? Grid { get; set; }
+
+    [Parameter] public string Title { get; set; } = "";
+    [Parameter] public Func<TItem, object?>? Property { get; set; }
+    [Parameter] public Func<TItem, object?>? SortBy { get; set; }
+    [Parameter] public bool Sortable { get; set; } = true;
+    [Parameter] public bool Filterable { get; set; } = true;
+    [Parameter] public string? FilterPlaceholder { get; set; }
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public string? MinWidth { get; set; }
+    [Parameter] public string? MaxWidth { get; set; }
+    [Parameter] public string Align { get; set; } = "left";
+    [Parameter] public RenderFragment<TItem>? CellTemplate { get; set; }
+    [Parameter] public RenderFragment? HeaderTemplate { get; set; }
+    [Parameter] public RenderFragment? FilterTemplate { get; set; }
+    [Parameter] public string? HeaderClass { get; set; }
+    [Parameter] public string? CellClass { get; set; }
+
+    /// <summary>Footer and group-header summary for this column.</summary>
+    [Parameter] public GridSummary Summary { get; set; }
+    /// <summary>.NET numeric format for the summary, for example "C0" or "N1".</summary>
+    [Parameter] public string? SummaryFormat { get; set; }
+    /// <summary>Whether the grid's "Group by" list offers this column.</summary>
+    [Parameter] public bool Groupable { get; set; } = true;
+    /// <summary>Whether the column chooser can hide this column.</summary>
+    [Parameter] public bool Hideable { get; set; } = true;
+    /// <summary>Keep this column pinned at the start edge while scrolling sideways (use on the first column).</summary>
+    [Parameter] public bool Frozen { get; set; }
+
+    /// <summary>Row editing: this column shows an input while its row is being edited. Needs <see cref="EditValue"/>.</summary>
+    [Parameter] public bool Editable { get; set; }
+    /// <summary>Applies the edited text to the item when the row is saved.</summary>
+    [Parameter] public Action<TItem, string>? EditValue { get; set; }
+    /// <summary>Initial edit text; defaults to the display value.</summary>
+    [Parameter] public Func<TItem, string>? EditText { get; set; }
+    /// <summary>Returns an error message to block the save, or null when valid.</summary>
+    [Parameter] public Func<string, string?>? Validate { get; set; }
+    /// <summary>HTML input type for the editor: text, number, date, email.</summary>
+    [Parameter] public string InputType { get; set; } = "text";
+    /// <summary>Conditional formatting: extra classes for a cell, chosen from the row.</summary>
+    [Parameter] public Func<TItem, string?>? CellClassSelector { get; set; }
+
+    public string CurrentFilterValue { get; set; } = "";
+    public bool Visible { get; set; } = true;
+
+    public string BuildWidthStyle()
+    {
+        var styles = new List<string>();
+        if (!string.IsNullOrEmpty(Width)) styles.Add($"width: {Width};");
+        if (!string.IsNullOrEmpty(MinWidth)) styles.Add($"min-width: {MinWidth};");
+        if (!string.IsNullOrEmpty(MaxWidth)) styles.Add($"max-width: {MaxWidth};");
+        return string.Join(" ", styles);
+    }
+
+    /// <summary>The value used for sorting, grouping, filtering, summaries and export.</summary>
+    public object? ValueOf(TItem item) => Property?.Invoke(item) ?? SortBy?.Invoke(item);
+
+    protected override void OnInitialized()
+    {
+        Grid?.AddColumn(this);
+    }
+
+    public void Dispose()
+    {
+        Grid?.RemoveColumn(this);
+    }
+}

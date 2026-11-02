@@ -1,0 +1,79 @@
+@namespace BlazorTwUI.Components.UI
+@implements IDisposable
+
+<span class="inline-block font-mono tracking-tight font-black select-none @Class">
+    @FormattedValue
+</span>
+
+@code {
+    [Parameter] public double StartValue { get; set; } = 0;
+    [Parameter] public double EndValue { get; set; } = 100;
+    [Parameter] public int DurationMs { get; set; } = 1200;
+    [Parameter] public int Decimals { get; set; } = 0;
+    [Parameter] public string? Prefix { get; set; }
+    [Parameter] public string? Suffix { get; set; }
+    [Parameter] public bool AutoStart { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    private double _currentValue;
+    private CancellationTokenSource? _cts;
+
+    private string FormattedValue
+    {
+        get
+        {
+            var format = Decimals > 0 ? $"N{Decimals}" : "N0";
+            return $"{Prefix}{_currentValue.ToString(format)}{Suffix}";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        _currentValue = StartValue;
+        if (AutoStart)
+        {
+            await StartCountAsync();
+        }
+    }
+
+    public async Task StartCountAsync()
+    {
+        _cts?.Cancel();
+        _cts = new CancellationTokenSource();
+        var token = _cts.Token;
+
+        var startTime = DateTime.UtcNow;
+        var totalMs = Math.Max(100, DurationMs);
+
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var elapsed = (DateTime.UtcNow - startTime).TotalMilliseconds;
+                var progress = Math.Clamp(elapsed / totalMs, 0.0, 1.0);
+
+                // Cubic ease out
+                var easeProgress = 1.0 - Math.Pow(1.0 - progress, 3.0);
+                _currentValue = StartValue + (EndValue - StartValue) * easeProgress;
+
+                await InvokeAsync(StateHasChanged);
+
+                if (progress >= 1.0)
+                {
+                    _currentValue = EndValue;
+                    await InvokeAsync(StateHasChanged);
+                    break;
+                }
+
+                await Task.Delay(16, token); // ~60fps
+            }
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+    }
+}

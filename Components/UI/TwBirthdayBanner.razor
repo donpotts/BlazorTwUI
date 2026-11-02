@@ -1,0 +1,132 @@
+@namespace BlazorTwUI.Components.UI
+@inject ToastService Toast
+
+@if (IsOpen)
+{
+    <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-500/15 via-rose-500/15 to-purple-500/15 border border-amber-500/30 p-4 sm:p-5 shadow-lg shadow-amber-500/5 transition-all @Class">
+        <!-- Ambient Celebration Glow -->
+        <div class="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-amber-400/20 blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-rose-400/20 blur-3xl pointer-events-none"></div>
+
+        <div class="relative flex flex-col md:flex-row md:items-center justify-between gap-4 z-10">
+            <!-- Left: Avatar & Celebrant Details -->
+            <div class="flex items-start sm:items-center gap-3.5">
+                <div class="relative shrink-0">
+                    <div class="w-13 h-13 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-amber-400 via-rose-400 to-purple-500 p-0.5 shadow-md">
+                        <div class="w-full h-full rounded-[14px] bg-white dark:bg-slate-900 flex items-center justify-center text-2xl select-none">
+                            @CelebrantAvatarEmoji
+                        </div>
+                    </div>
+                    <!-- Party Hat Badge -->
+                    <span class="absolute -top-2 -right-2 text-base select-none animate-bounce">🎉</span>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-mono font-bold text-[10px] tracking-wide uppercase">
+                            🎂 Company Birthday Alert
+                        </span>
+                        <span class="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-700 dark:text-purple-300 font-semibold text-[10px]">
+                            @CelebrantTenure
+                        </span>
+                    </div>
+
+                    <h4 class="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                        Today is @CelebrantName's Birthday! 🥳
+                    </h4>
+
+                    <p class="text-xs text-slate-600 dark:text-slate-300 max-w-xl">
+                        <span class="font-semibold text-slate-800 dark:text-slate-100">@CelebrantRole:</span>
+                        @RoleCheerMessage
+                    </p>
+                </div>
+            </div>
+
+            <!-- Right: Quick Reaction Emojis & Card Action -->
+            <div class="flex flex-wrap items-center gap-2 pt-2 md:pt-0 self-end md:self-auto">
+                <!-- Interactive Reaction Pill Buttons -->
+                <div class="flex items-center gap-1 p-1 rounded-2xl bg-white/70 dark:bg-slate-900/70 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 shadow-xs">
+                    @foreach (var reaction in _reactions)
+                    {
+                        <button type="button"
+                                @onclick="() => AddReaction(reaction)"
+                                title="@($"Send {reaction.Emoji}")"
+                                class="px-2 py-1 rounded-xl text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1 active:scale-95">
+                            <span>@reaction.Emoji</span>
+                            <span class="text-[10px] font-mono text-slate-600 dark:text-slate-400">@reaction.Count</span>
+                        </button>
+                    }
+                </div>
+
+                <!-- Primary Action: Open Card -->
+                <button type="button"
+                        @onclick="HandleOpenCard"
+                        class="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 transition flex items-center gap-1.5 shrink-0">
+                    <span>💌</span>
+                    <span>@CardButtonText</span>
+                </button>
+
+                @if (Dismissible)
+                {
+                    <button type="button"
+                            @onclick="HandleDismiss"
+                            title="Dismiss notification"
+                            class="w-8 h-8 rounded-full bg-slate-200/60 dark:bg-slate-800/60 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; } = true;
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+
+    [Parameter] public string CelebrantName { get; set; } = "Sarah Jenkins";
+    [Parameter] public string CelebrantRole { get; set; } = "Staff Cloud & DevOps Architect";
+    [Parameter] public string CelebrantAvatarEmoji { get; set; } = "👩‍💻";
+    [Parameter] public string CelebrantTenure { get; set; } = "4 Years at Company";
+    [Parameter] public string RoleCheerMessage { get; set; } = "Keeping our multi-region Kubernetes clusters at 99.999% uptime with zero downtime deploys!";
+    [Parameter] public string CardButtonText { get; set; } = "Open Birthday Card";
+    [Parameter] public bool Dismissible { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    [Parameter] public EventCallback OnOpenCard { get; set; }
+
+    public class ReactionItem
+    {
+        public string Emoji { get; set; } = "🎂";
+        public int Count { get; set; } = 0;
+    }
+
+    private List<ReactionItem> _reactions = new()
+    {
+        new() { Emoji = "🎂", Count = 18 },
+        new() { Emoji = "🥳", Count = 25 },
+        new() { Emoji = "🚀", Count = 12 },
+        new() { Emoji = "❤️", Count = 31 },
+        new() { Emoji = "🍾", Count = 14 }
+    };
+
+    private void AddReaction(ReactionItem reaction)
+    {
+        reaction.Count++;
+        Toast.Show($"Cheered {CelebrantName}!", $"Sent {reaction.Emoji} reaction across the company feed.", SemanticVariant.Success);
+    }
+
+    private async Task HandleOpenCard()
+    {
+        await OnOpenCard.InvokeAsync();
+    }
+
+    private async Task HandleDismiss()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+        Toast.Show("Banner Dismissed", "You can reopen the birthday card anytime in the Celebrations tab.", SemanticVariant.Info);
+    }
+}

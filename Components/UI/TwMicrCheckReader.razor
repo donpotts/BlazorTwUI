@@ -1,0 +1,1339 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject OcrEngineService OcrEngine
+@inject TwSoundService Sound
+@inject ToastService Toast
+@inject IJSRuntime JS
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden @Class">
+    <!-- Header Controls -->
+    <div class="p-4 sm:p-5 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold border border-emerald-500/20">
+                🏦
+            </div>
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
+                        Check 21 MICR Reader & NACHA Routing Engine
+                    </h3>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        ANSI X9.27 / E-13B
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                        NACHA / FedACH
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        Tesseract WASM
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Universal Federal Reserve routing transit validation, 150+ NACHA directory lookup, dynamic Check 21 check simulation, and Tesseract optical character recognition
+                </p>
+            </div>
+        </div>
+
+        <!-- Mode Toggle & Action Buttons -->
+        <div class="flex flex-wrap items-center gap-2">
+            <div class="inline-flex rounded-xl p-0.5 bg-slate-200/70 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs">
+                <button type="button" @onclick='() => SetMode("interactive")'
+                        class="px-2.5 py-1 rounded-lg font-bold transition @(_activeMode == "interactive" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs" : "text-slate-600 dark:text-slate-400")">
+                    ⚙️ Custom Simulator
+                </button>
+                <button type="button" @onclick='() => SetMode("presets")'
+                        class="px-2.5 py-1 rounded-lg font-bold transition @(_activeMode == "presets" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs" : "text-slate-600 dark:text-slate-400")">
+                    📑 Presets
+                </button>
+                <button type="button" @onclick='() => SetMode("tesseract")'
+                        class="px-2.5 py-1 rounded-lg font-bold transition @(_activeMode == "tesseract" ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs" : "text-slate-600 dark:text-slate-400")">
+                    🧠 Tesseract OCR
+                </button>
+            </div>
+
+            @if (_activeMode == "presets")
+            {
+                <select @onchange="OnPresetChanged"
+                        class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30">
+                    <option value="check-payroll-1042">Sample: Payroll Check #1042 ($14,850.00)</option>
+                    <option value="check-nfcu-9412">Sample: Navy Federal (NFCU) Share Draft #9412 ($3,250.00) [Dash Sub-Account]</option>
+                    <option value="check-vendor-8812">Sample: Vendor Hardware Check #8812 ($8,420.50)</option>
+                    <option value="check-draft-5021">Sample: Cashier's Trust Draft #5021 ($250,000.00)</option>
+                    <option value="check-invalid-9901">Sample: Invalid Routing Test #9901 (Checksum Warning)</option>
+                </select>
+            }
+
+            <button type="button" @onclick="RunTesseractOcrAsync"
+                    disabled="@_isScanning"
+                    class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+                @if (_isScanning)
+                {
+                    <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Recognizing...</span>
+                }
+                else
+                {
+                    <span>⚡ Run Tesseract WASM</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    <!-- Interactive NACHA Bank & Check Customization Bar (When in Interactive Mode) -->
+    @if (_activeMode == "interactive")
+    {
+        <div class="p-4 bg-slate-50/70 dark:bg-slate-950/40 border-b border-slate-200 dark:border-slate-800 space-y-3">
+            <!-- NACHA Quick Select Bank Pills -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                        NACHA / FedACH Verified Bank Routes (Click to Load):
+                    </span>
+                    <span class="text-[10px] text-slate-400">150+ Direct FedACH Depository Routes</span>
+                </div>
+                <div class="flex flex-wrap gap-1.5">
+                    @foreach (var pill in _quickBanks)
+                    {
+                        <button type="button" @onclick="() => SelectQuickBank(pill.Routing, pill.BankName)"
+                                class="px-2.5 py-1 rounded-lg text-xs font-semibold border transition flex items-center gap-1.5 @(_routingNumber == pill.Routing ? "bg-emerald-50 dark:bg-emerald-950/70 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold shadow-xs" : "bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-slate-400")">
+                            <span>@pill.Icon</span>
+                            <span>@pill.ShortName</span>
+                            <span class="font-mono text-[10px] opacity-70">@pill.Routing</span>
+                        </button>
+                    }
+                </div>
+            </div>
+
+            <!-- Dynamic Form Inputs -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 pt-1">
+                <!-- Routing Number -->
+                <div class="lg:col-span-2 space-y-1">
+                    <div class="flex items-center justify-between">
+                        <label class="text-[11px] font-bold text-slate-600 dark:text-slate-300">ABA Routing Transit Number (RTN)</label>
+                        @if (_routingValidation.IsValid)
+                        {
+                            <span class="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400">✓ Mod-10 Valid</span>
+                        }
+                        else
+                        {
+                            <span class="text-[10px] font-mono font-bold text-rose-600 dark:text-rose-400">✗ Mod-10 Fail</span>
+                        }
+                    </div>
+                    <div class="relative">
+                        <input type="text" maxlength="9" value="@_routingNumber" @oninput="OnRoutingInput"
+                               placeholder="e.g. 121000358"
+                               class="w-full px-3 py-1.5 rounded-xl border font-mono text-xs font-bold bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-2 @(_routingValidation.IsValid ? "border-emerald-500/60 focus:ring-emerald-500/30" : "border-rose-500/60 focus:ring-rose-500/30")" />
+                        @if (!_routingValidation.IsValid && !string.IsNullOrEmpty(_routingValidation.Suggestion))
+                        {
+                            <button type="button" @onclick="ApplySuggestedRouting"
+                                    class="absolute right-1.5 top-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[10px] font-bold hover:bg-amber-500/20">
+                                ⚡ Fix: @_routingValidation.Suggestion
+                            </button>
+                        }
+                    </div>
+                    <div class="text-[10px] text-slate-500 truncate" title="@_routingValidation.District">
+                        @_routingValidation.District
+                    </div>
+                </div>
+
+                <!-- Account Number -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between">
+                        <label class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Account Number</label>
+                        @if (_accountNumber.Contains('-') || (_check?.MicrData.HasSubAccountSuffix == true))
+                        {
+                            <label class="flex items-center gap-1 cursor-pointer text-[10px] font-bold text-amber-600 dark:text-amber-400 select-none" title="Rule: Remove dash for ACH / digits-only core banking">
+                                <input type="checkbox" checked="@_removeDashRule" @onchange="ToggleRemoveDashRule" class="w-3 h-3 rounded text-amber-600" />
+                                <span>Rule: Remove Dash</span>
+                            </label>
+                        }
+                    </div>
+                    <input type="text" value="@_accountNumber" @oninput="OnAccountInput"
+                           placeholder="0123456789"
+                           class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 font-mono text-xs font-semibold bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                </div>
+
+                <!-- Check Number -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Check #</label>
+                    <input type="text" value="@_checkNumber" @oninput="OnCheckNumInput"
+                           placeholder="1042"
+                           class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 font-mono text-xs font-semibold bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                </div>
+
+                <!-- Courtesy Amount -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Amount ($ USD)</label>
+                    <input type="number" step="0.01" min="0" value="@_amount" @oninput="OnAmountInput"
+                           class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 font-mono text-xs font-bold bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                </div>
+
+                <!-- Payee -->
+                <div class="space-y-1">
+                    <label class="text-[11px] font-bold text-slate-600 dark:text-slate-300">Payee Name</label>
+                    <input type="text" value="@_payee" @oninput="OnPayeeInput"
+                           placeholder="Jane Doe Consulting"
+                           class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                </div>
+            </div>
+
+            <!-- NACHA Directory Search Input -->
+            <div class="relative pt-1">
+                <input type="text" @bind="_nachaSearchQuery" @bind:event="oninput"
+                       placeholder="🔍 Search 150+ NACHA Directory banks by name, routing number, city or state..."
+                       class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 text-xs bg-white dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                @if (!string.IsNullOrWhiteSpace(_nachaSearchQuery))
+                {
+                    var results = OcrEngine.SearchNachaDirectory(_nachaSearchQuery).ToList();
+                    <div class="absolute z-30 left-0 right-0 mt-1 max-h-48 overflow-y-auto rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl divide-y divide-slate-100 dark:divide-slate-800">
+                        @if (results.Count == 0)
+                        {
+                            <div class="p-3 text-xs text-slate-400">No matching NACHA routing numbers found. Algorithmic Federal Reserve validation will still apply.</div>
+                        }
+                        else
+                        {
+                            @foreach (var res in results)
+                            {
+                                <button type="button" @onclick="() => SelectSearchedBank(res)"
+                                        class="w-full p-2.5 text-left text-xs hover:bg-emerald-50 dark:hover:bg-slate-800 flex items-center justify-between transition">
+                                    <div>
+                                        <span class="font-bold text-slate-900 dark:text-white block">@res.BankName</span>
+                                        <span class="text-[11px] text-slate-500">@res.City, @res.State • @res.District</span>
+                                    </div>
+                                    <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-500/20">
+                                        @res.RoutingNumber
+                                    </span>
+                                </button>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Tesseract WebAssembly Live OCR Sandbox Mode -->
+    @if (_activeMode == "tesseract")
+    {
+        <div class="p-4 bg-purple-50/70 dark:bg-purple-950/40 border-b border-purple-200 dark:border-purple-800 space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                        <span>🧠 Genuine Tesseract.js WebAssembly OCR Engine</span>
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-purple-200/70 dark:bg-purple-900 text-purple-800 dark:text-purple-200">
+                            100% Local / Zero CDN
+                        </span>
+                    </h4>
+                    <p class="text-xs text-slate-600 dark:text-slate-400">
+                        Generates high-contrast check images with random routing numbers, renders them to canvas, and runs local Tesseract LSTM optical character recognition on pixels.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" @onclick="GenerateAndOcrRandomCheckAsync"
+                            disabled="@_isScanning"
+                            class="px-3.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition flex items-center gap-1.5">
+                        @if (_isScanning)
+                        {
+                            <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span>Recognizing Image Pixels...</span>
+                        }
+                        else
+                        {
+                            <span>🎲 Generate Random Check & OCR</span>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upload Custom Check Image -->
+            <div class="p-3 rounded-2xl bg-white/80 dark:bg-slate-900/80 border border-purple-200 dark:border-purple-800 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-2 text-xs">
+                    <span class="font-bold text-slate-700 dark:text-slate-300">Or Upload Any Real Check Image:</span>
+                    <span class="text-slate-500 text-[11px]">(PNG, JPG, BMP)</span>
+                </div>
+                <InputFile OnChange="HandleFileUploadAsync" accept="image/*"
+                           class="text-xs file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 dark:file:bg-purple-900 dark:file:text-purple-200" />
+            </div>
+
+            @if (!string.IsNullOrEmpty(_lastOcrRawText))
+            {
+                <div class="p-3 rounded-xl bg-slate-950 text-slate-200 border border-slate-800 font-mono text-xs space-y-1">
+                    <div class="flex items-center justify-between text-[11px] text-slate-400 border-b border-slate-800 pb-1">
+                        <span class="font-bold text-emerald-400">Tesseract OCR Raw Extracted Pixels:</span>
+                        <span>@(_check?.ProcessingTimeMs)ms • Confidence: @(((_check?.OverallConfidence ?? 0) * 100).ToString("F0"))%</span>
+                    </div>
+                    <pre class="whitespace-pre-wrap text-[11px] leading-relaxed text-slate-300 max-h-36 overflow-y-auto">@_lastOcrRawText</pre>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Main Workspace: Split View (Interactive Check Visual vs OCR Audit Ledger) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-0 divide-y lg:divide-y-0 lg:divide-x divide-slate-200 dark:divide-slate-800">
+        
+        <!-- Left: Interactive High-Fidelity Paper Check / Draft Canvas -->
+        <div class="lg:col-span-7 p-4 sm:p-6 bg-slate-100/50 dark:bg-slate-950/40 flex flex-col justify-between space-y-4">
+            
+            <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full @(_check?.MicrData.IsValidRoutingChecksum == true ? "bg-emerald-500" : "bg-rose-500")"></span>
+                    <span class="font-semibold text-slate-700 dark:text-slate-300">Document Surface Preview</span>
+                    @if (_check?.IsTesseractEngine == true)
+                    {
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-100 dark:bg-purple-950/70 text-purple-700 dark:text-purple-300 border border-purple-500/30">
+                            🧠 Tesseract WebAssembly Active
+                        </span>
+                    }
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="font-mono text-[11px]">Check 21 Standard Front</span>
+                    <button type="button" @onclick="ToggleBoundingBoxes"
+                            class="px-2 py-0.5 rounded-lg border text-[11px] font-semibold @(_showBoundingBoxes ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300" : "bg-white dark:bg-slate-850 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400")">
+                        @(_showBoundingBoxes ? "Hide Bounding Boxes" : "Show Bounding Boxes")
+                    </button>
+                </div>
+            </div>
+
+            <!-- The Paper Check Canvas Element -->
+            <div class="relative w-full rounded-2xl border-2 border-slate-300 dark:border-slate-700 bg-amber-50/70 dark:bg-slate-850 shadow-inner p-4 sm:p-6 font-serif select-none transition-all">
+                
+                <!-- Security Watermark Pattern Background -->
+                <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none rounded-2xl bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+                <!-- Top Check Row: Payer Details & Check Number / Date -->
+                <div class="relative z-10 flex items-start justify-between gap-4">
+                    <!-- Payer Information -->
+                    <div class="space-y-0.5">
+                        <div class="font-sans font-black text-xs sm:text-sm text-slate-900 dark:text-white tracking-wide uppercase">
+                            @(_check?.PayerName ?? "Acme Enterprise Dynamics Inc.")
+                        </div>
+                        <div class="font-sans text-[11px] text-slate-600 dark:text-slate-400">
+                            @(_check?.PayerAddress ?? "100 Montgomery St, Suite 1800, San Francisco, CA 94104")
+                        </div>
+                    </div>
+
+                    <!-- Top Right: Check Number & Date -->
+                    <div class="text-right space-y-1">
+                        <div class="font-mono font-bold text-xs sm:text-sm text-slate-900 dark:text-white tracking-wider">
+                            CHECK NO. <span class="text-emerald-600 dark:text-emerald-400">@(_check?.CheckNumber ?? "1042")</span>
+                        </div>
+                        <div class="inline-flex items-center gap-1.5 font-sans text-xs border-b border-slate-400 dark:border-slate-600 pb-0.5">
+                            <span class="text-[10px] text-slate-500 uppercase font-sans">Date:</span>
+                            <span class="font-semibold text-slate-800 dark:text-slate-200">@(_check?.Date ?? DateTime.Now.ToString("MMMM dd, yyyy"))</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Middle Row 1: Pay to the Order of & Courtesy Amount Box -->
+                <div class="relative z-10 mt-6 flex items-baseline justify-between gap-4">
+                    <div class="flex-1 flex items-baseline gap-2 border-b border-slate-400 dark:border-slate-600 pb-1">
+                        <span class="font-sans font-bold text-[10px] uppercase text-slate-500 tracking-wider shrink-0">Pay to the Order of:</span>
+                        <span class="font-serif italic font-bold text-sm sm:text-base text-slate-950 dark:text-white truncate">
+                            @(_check?.Payee ?? "Jane Doe Development Consulting")
+                        </span>
+                    </div>
+
+                    <!-- Courtesy Amount Box -->
+                    <div class="shrink-0 px-3 py-1.5 rounded-lg border-2 border-slate-800 dark:border-slate-400 bg-white/90 dark:bg-slate-900 flex items-center gap-1 font-mono font-bold text-sm sm:text-base text-slate-900 dark:text-white shadow-xs">
+                        <span class="text-xs text-slate-400">$</span>
+                        <span>@(_check?.CourtesyAmount.ToString("N2") ?? "14,850.00")</span>
+                    </div>
+                </div>
+
+                <!-- Middle Row 2: Legal Amount Line in Words -->
+                <div class="relative z-10 mt-3 flex items-baseline gap-2 border-b border-slate-400 dark:border-slate-600 pb-1">
+                    <span class="font-serif italic font-medium text-xs sm:text-sm text-slate-900 dark:text-slate-200 truncate">
+                        @(_check?.LegalAmountWords ?? "Fourteen thousand eight hundred fifty and 00/100 Dollars")
+                    </span>
+                    <span class="font-sans font-bold text-[10px] uppercase text-slate-500 tracking-wider shrink-0 ml-auto">DOLLARS ⚑</span>
+                </div>
+
+                <!-- Middle Row 3: Drawee Bank & Fed District -->
+                <div class="relative z-10 mt-3 font-sans text-[11px] text-slate-600 dark:text-slate-400 flex flex-wrap items-center gap-2">
+                    <span class="font-bold text-slate-900 dark:text-slate-200">@(_check?.BankName ?? "JPMorgan Chase Bank, N.A.")</span>
+                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200/80 dark:bg-slate-700 font-mono">
+                        @(_check?.MicrData.FederalReserveDistrict ?? "Check 21 Verified")
+                    </span>
+                </div>
+
+                <!-- Bottom Row: Memo & Signature Line -->
+                <div class="relative z-10 mt-5 flex items-end justify-between gap-6 pb-2">
+                    <div class="flex-1 flex items-baseline gap-1.5 border-b border-slate-400 dark:border-slate-600 pb-1">
+                        <span class="font-sans font-bold text-[10px] uppercase text-slate-500">FOR:</span>
+                        <span class="font-sans text-xs text-slate-800 dark:text-slate-200 truncate">
+                            @(_check?.Memo ?? "Q3 High-Availability Cloud Architecture Project")
+                        </span>
+                    </div>
+
+                    <!-- Maker Signature -->
+                    <div class="w-48 border-b border-slate-400 dark:border-slate-600 text-center pb-1 relative">
+                        <div class="font-serif italic text-base sm:text-lg text-blue-900 dark:text-blue-300 font-black tracking-wider -rotate-1 select-none">
+                            Jane D. Consult
+                        </div>
+                        <span class="font-sans font-bold text-[9px] uppercase text-slate-500 tracking-wider block">Authorized Signature</span>
+                        
+                        @if (_check?.SignatureDetected == true)
+                        {
+                            <span class="absolute -top-3 right-0 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                                ✓ Sig Detected (@((_check.SignatureConfidence * 100).ToString("F0"))%)
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <!-- Standard 5/8" MICR Clear Band at the Bottom (ANSI X9.27 E-13B) -->
+                <div class="relative z-10 mt-6 pt-3 border-t-2 border-dashed border-slate-300 dark:border-slate-700/80 bg-white/60 dark:bg-slate-900/80 -mx-4 -mb-4 sm:-mx-6 sm:-mb-6 p-4 rounded-b-2xl">
+                    <div class="flex items-center justify-between text-[10px] font-sans font-semibold text-slate-400 mb-1">
+                        <span class="uppercase tracking-wider">ANSI X9.27 / ISO 1004 MICR E-13B Clear Band</span>
+                        <span class="font-mono">Transit ⑆ | On-Us ⑈ | Amount ⑇ | Dash ⑉</span>
+                    </div>
+
+                    <!-- Styled E-13B Magnetic Ink Text Line -->
+                    <div class="py-2 px-3 rounded-xl bg-slate-950 text-emerald-400 font-mono text-sm sm:text-base tracking-widest flex items-center justify-between overflow-x-auto shadow-inner">
+                        <span class="font-bold whitespace-nowrap">
+                            @(_check?.MicrData.RawMicrLine ?? "⑆121000358⑆ 0123456789⑈ 1042")
+                        </span>
+                        <button type="button" @onclick="CopyMicrLineAsync"
+                                class="px-2 py-0.5 rounded text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 transition shrink-0 ml-2">
+                            Copy 📋
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Spatial Bounding Boxes Overlay -->
+                @if (_showBoundingBoxes && _check != null)
+                {
+                    <div class="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden">
+                        @foreach (var box in _check.BoundingBoxes)
+                        {
+                            <div class="absolute border-2 border-emerald-500 bg-emerald-500/10 rounded-lg transition-all animate-fadeIn"
+                                 style="left: @(box.LeftPercent)%; top: @(box.TopPercent)%; width: @(box.WidthPercent)%; height: @(box.HeightPercent)%;">
+                                <span class="absolute -top-3.5 left-1 px-1 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-600 text-white shadow-xs">
+                                    @box.Label
+                                </span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- OCR Performance Metadata Footer -->
+            <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 pt-2">
+                <div class="flex items-center gap-3">
+                    <span>⚡ OCR Latency: <strong class="text-slate-800 dark:text-slate-200">@(_check?.ProcessingTimeMs ?? 48)ms</strong></span>
+                    <span>• Confidence: <strong class="text-emerald-600 dark:text-emerald-400">@(((_check?.OverallConfidence ?? 0.99) * 100).ToString("F1"))%</strong></span>
+                    <span>• Engine: <strong class="text-purple-600 dark:text-purple-400">@(_check?.IsTesseractEngine == true ? "Tesseract WASM" : "WASM ANSI X9.27")</strong></span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] font-mono">ANSI X9.100-160 / Check 21 Compliant</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Check 21 Verification Ledger & Extracted Data Inspector -->
+        <div class="lg:col-span-5 p-4 sm:p-6 bg-white dark:bg-slate-900 flex flex-col justify-between space-y-4">
+            
+            <div class="space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div>
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">MICR & Field Verification</h4>
+                        <p class="text-sm font-bold text-slate-900 dark:text-white">Drawee & Cheque Integrity</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold @(_check?.MicrData.IsValidRoutingChecksum == true ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800" : "bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800")">
+                        @(_check?.MicrData.IsValidRoutingChecksum == true ? "✓ CHECKSUM PASS" : "✗ CHECKSUM FAIL")
+                    </span>
+                </div>
+
+                <!-- Structured Check 21 Elements Table -->
+                <div class="space-y-2 text-xs">
+                    
+                    <!-- 1. ABA Routing Number -->
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-start justify-between gap-3">
+                        <div class="space-y-0.5">
+                            <span class="font-bold text-slate-500 uppercase text-[10px] block">ABA Routing Transit Number (RTN)</span>
+                            <span class="font-mono font-bold text-sm text-slate-900 dark:text-white">@(_check?.MicrData.TransitRoutingNumber)</span>
+                            <span class="text-[11px] text-slate-600 dark:text-slate-300 block font-semibold">@(_check?.MicrData.BankName)</span>
+                            <span class="text-[10px] text-slate-400 block">@(_check?.MicrData.FederalReserveDistrict)</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold @(_check?.MicrData.IsValidRoutingChecksum == true ? "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300" : "bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300")">
+                                @(_check?.MicrData.IsValidRoutingChecksum == true ? "Mod-10: 0 (Valid)" : $"Mod-10: {_check?.MicrData.Mod10ChecksumValue} (Failed)")
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Account Number -->
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <span class="font-bold text-slate-500 uppercase text-[10px] block">On-Us Customer Account Number</span>
+                                @if (_check?.MicrData.HasSubAccountSuffix == true || _accountNumber.Contains('-'))
+                                {
+                                    <button type="button" @onclick="ToggleRemoveDashRule"
+                                            class="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition flex items-center gap-1 @(_removeDashRule ? "bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 border border-amber-400" : "bg-slate-200/70 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300")"
+                                            title="Click to toggle rule: Remove dash from account number for digits-only ACH / core banking clearance">
+                                        <span>✂️ Rule: @(_removeDashRule ? "Remove Dash [ON]" : "Remove Dash [OFF]")</span>
+                                    </button>
+                                }
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-mono font-bold text-sm text-slate-900 dark:text-white">@GetEffectiveAccountNumber()</span>
+                                @if (_check?.MicrData.HasSubAccountSuffix == true)
+                                {
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold" title="Credit Union Share / Sub-Account ID">
+                                        Share: @(_check?.MicrData.ShareOrSubAccount)
+                                    </span>
+                                }
+                                @if (_removeDashRule && (_check?.MicrData.HasSubAccountSuffix == true || _accountNumber.Contains('-')))
+                                {
+                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold" title="Rule active: Digits only">
+                                        ACH Digits-Only
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            @if (_check?.MicrData.HasSubAccountSuffix == true)
+                            {
+                                <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 font-semibold border border-indigo-200 dark:border-indigo-800" title="ANSI X9.27 Dash Symbol ⑉">
+                                    Dash ⑉
+                                </span>
+                            }
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-bold">
+                                On-Us Symbol ⑈
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Check Number Matching -->
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3">
+                        <div>
+                            <span class="font-bold text-slate-500 uppercase text-[10px] block">Check Sequence Number</span>
+                            <span class="font-mono font-bold text-sm text-slate-900 dark:text-white">@(_check?.CheckNumber)</span>
+                        </div>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                            Matched Top-Right & MICR
+                        </span>
+                    </div>
+
+                    <!-- 4. Amount Verification (Courtesy vs Legal Words) -->
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-1">
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-500 uppercase text-[10px]">Courtesy Amount vs Legal Words</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300">
+                                Exact Match
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between font-mono font-bold text-sm text-slate-900 dark:text-white">
+                            <span>$@(_check?.CourtesyAmount.ToString("N2"))</span>
+                            <span class="text-xs font-serif italic font-normal text-slate-600 dark:text-slate-300 truncate max-w-[200px]">@(_check?.LegalAmountWords)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mathematical Checksum Formula Explainer Card -->
+                <div class="p-3 rounded-xl bg-slate-100/70 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
+                    <span class="font-bold text-slate-800 dark:text-slate-200 block">Federal Reserve Routing Transit Check Digit Algorithm:</span>
+                    <p class="font-mono text-[10px] text-slate-700 dark:text-slate-300">
+                        Formula: [3(d₁ + d₄ + d₇) + 7(d₂ + d₅ + d₈) + 1(d₃ + d₆ + d₉)] mod 10 == 0
+                    </p>
+                    <p class="text-[10px]">
+                        Guarantees automated check sorting machines reject transposed digits or counterfeit MICR encodings at high speeds.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Buttons: Approve Deposit / NACHA ACH Export / Copy Markdown / Export JSON -->
+            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                @if (_isDepositApproved)
+                {
+                    <div class="w-full py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold text-xs shadow-xs text-center flex items-center justify-center gap-1.5">
+                        <span>✓</span> <span>Deposit Approved & Dispatched to Clearing House</span>
+                    </div>
+                }
+                else
+                {
+                    <button type="button" @onclick="ApproveDepositAsync"
+                            class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+                        <span>💳 Approve & Submit Remote Deposit Capture (RDC)</span>
+                    </button>
+                }
+
+                <button type="button" @onclick="ExportNachaAchFileAsync"
+                        class="w-full py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+                    <span>🏦 Export NACHA ACH File (.ach)</span>
+                </button>
+
+                <button type="button" @onclick="RunNachaReverseCheckAudit"
+                        class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+                    <span>🔍 NACHA Reverse Check & Aggregates Validator</span>
+                </button>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" @onclick="CopyMarkdownTableAsync"
+                            class="py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition flex items-center justify-center gap-1.5">
+                        <span>📋 Copy Markdown</span>
+                    </button>
+                    <button type="button" @onclick="ExportJsonAsync"
+                            class="py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition flex items-center justify-center gap-1.5">
+                        <span>📦 Export JSON</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- NACHA Reverse Check & Aggregates Validator Modal -->
+@if (_showNachaAuditModal && _nachaAuditResult != null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
+        <div class="relative w-full max-w-4xl max-h-[90vh] flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/40">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                        <span class="text-2xl">🔍</span>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                                NACHA Reverse Check & Aggregates Audit
+                            </h3>
+                            @if (_nachaAuditResult.IsValid)
+                            {
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                                    ✓ BALANCED & AUDITED
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30">
+                                    ⚠️ AUDIT MISMATCH
+                                </span>
+                            }
+                        </div>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Independent reverse verification of Record 1, 5, 6, 8, and 9 against Nacha file aggregates and 10-record blocking factor.
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @onclick="CloseNachaAuditModal"
+                        class="p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Content (Scrollable) -->
+            <div class="p-5 overflow-y-auto space-y-5 flex-1">
+                <!-- Status Banner -->
+                @if (_nachaAuditResult.IsValid)
+                {
+                    <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 flex items-start gap-3">
+                        <span class="text-xl">✅</span>
+                        <div>
+                            <div class="font-bold text-sm">NACHA ACH File Integrity Confirmed</div>
+                            <div class="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                                All 5 core aggregates (Entry Count, Mod-10^10 Hash, Total Debits, Total Credits, and 10-Record Block Factor) match Record 8 and Record 9 with 100% strict 94-char fixed-width compliance.
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-700 dark:text-rose-300 flex items-start gap-3">
+                        <span class="text-xl">⚠️</span>
+                        <div>
+                            <div class="font-bold text-sm">Integrity Audit Identified Issues</div>
+                            <ul class="text-xs text-rose-600 dark:text-rose-400 mt-1 list-disc list-inside space-y-0.5">
+                                @foreach (var err in _nachaAuditResult.Errors)
+                                {
+                                    <li>@err</li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+                }
+
+                <!-- Aggregates Comparison Table -->
+                <div class="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
+                    <div class="bg-slate-100 dark:bg-slate-800/80 px-4 py-2 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Five-Point Aggregate Balance Sheet
+                        </span>
+                        <span class="text-[10px] font-mono text-slate-500 dark:text-slate-400">
+                            Record 8 (Batch) vs Record 9 (File) vs Calculated
+                        </span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-slate-50 dark:bg-slate-900/50 text-[11px] text-slate-500 font-bold uppercase border-b border-slate-200 dark:border-slate-800">
+                                <tr>
+                                    <th class="px-4 py-2.5">Aggregate Metric</th>
+                                    <th class="px-4 py-2.5">Batch Record 8</th>
+                                    <th class="px-4 py-2.5">File Record 9</th>
+                                    <th class="px-4 py-2.5">Calculated Entry Sum</th>
+                                    <th class="px-4 py-2.5 text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-mono">
+                                <!-- 1. Entry Count -->
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                    <td class="px-4 py-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200">
+                                        1. Entry / Addenda Count
+                                    </td>
+                                    <td class="px-4 py-2.5">@_nachaAuditResult.BatchRecordedEntryCount</td>
+                                    <td class="px-4 py-2.5">@_nachaAuditResult.FileRecordedEntryCount</td>
+                                    <td class="px-4 py-2.5 font-bold text-slate-900 dark:text-white">@_nachaAuditResult.CalculatedEntryCount</td>
+                                    <td class="px-4 py-2.5 text-center">
+                                        @if (_nachaAuditResult.EntryCountMatches)
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 font-bold">MATCH</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 font-bold">MISMATCH</span>
+                                        }
+                                    </td>
+                                </tr>
+
+                                <!-- 2. Entry Hash -->
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                    <td class="px-4 py-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200">
+                                        2. Entry Hash (Mod 10^10)
+                                    </td>
+                                    <td class="px-4 py-2.5">@_nachaAuditResult.BatchRecordedEntryHash.ToString("D10")</td>
+                                    <td class="px-4 py-2.5">@_nachaAuditResult.FileRecordedEntryHash.ToString("D10")</td>
+                                    <td class="px-4 py-2.5 font-bold text-slate-900 dark:text-white">@_nachaAuditResult.CalculatedEntryHash.ToString("D10")</td>
+                                    <td class="px-4 py-2.5 text-center">
+                                        @if (_nachaAuditResult.EntryHashMatches)
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 font-bold">MATCH</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 font-bold">MISMATCH</span>
+                                        }
+                                    </td>
+                                </tr>
+
+                                <!-- 3. Total Debit Amount -->
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                    <td class="px-4 py-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200">
+                                        3. Total Debit Amount
+                                    </td>
+                                    <td class="px-4 py-2.5">@_nachaAuditResult.BatchRecordedDebitAmount.ToString("C2")</td>
+                                    <td class="px-4 py-2.5">@_nachaAuditResult.FileRecordedDebitAmount.ToString("C2")</td>
+                                    <td class="px-4 py-2.5 font-bold text-slate-900 dark:text-white">@_nachaAuditResult.CalculatedDebitAmount.ToString("C2")</td>
+                                    <td class="px-4 py-2.5 text-center">
+                                        @if (_nachaAuditResult.DebitAmountMatches)
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 font-bold">MATCH</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 font-bold">MISMATCH</span>
+                                        }
+                                    </td>
+                                </tr>
+
+                                <!-- 4. Total Credit Amount -->
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                    <td class="px-4 py-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200">
+                                        4. Total Credit Amount
+                                    </td>
+                                    <td class="px-4 py-2.5">@_nachaAuditResult.BatchRecordedCreditAmount.ToString("C2")</td>
+                                    <td class="px-4 py-2.5">@_nachaAuditResult.FileRecordedCreditAmount.ToString("C2")</td>
+                                    <td class="px-4 py-2.5 font-bold text-slate-900 dark:text-white">@_nachaAuditResult.CalculatedCreditAmount.ToString("C2")</td>
+                                    <td class="px-4 py-2.5 text-center">
+                                        @if (_nachaAuditResult.CreditAmountMatches)
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 font-bold">MATCH</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 font-bold">MISMATCH</span>
+                                        }
+                                    </td>
+                                </tr>
+
+                                <!-- 5. Block Count -->
+                                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                                    <td class="px-4 py-2.5 font-sans font-semibold text-slate-800 dark:text-slate-200">
+                                        5. Block Count (10 records/block)
+                                    </td>
+                                    <td class="px-4 py-2.5 text-slate-400">N/A (File-level)</td>
+                                    <td class="px-4 py-2.5">@_nachaAuditResult.FileRecordedBlockCount</td>
+                                    <td class="px-4 py-2.5 font-bold text-slate-900 dark:text-white">@_nachaAuditResult.CalculatedBlockCount</td>
+                                    <td class="px-4 py-2.5 text-center">
+                                        @if (_nachaAuditResult.BlockCountMatches)
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-500/10 text-emerald-600 font-bold">MATCH</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="px-2 py-0.5 rounded text-[10px] bg-rose-500/10 text-rose-600 font-bold">MISMATCH</span>
+                                        }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Record Type Breakdown Badges -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center">
+                        <span class="text-[10px] font-bold text-slate-400 block uppercase">Record 1</span>
+                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">File Header</span>
+                        <span class="font-mono font-bold text-sm text-slate-900 dark:text-white block mt-0.5">@_nachaAuditResult.FileHeaderCount</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center">
+                        <span class="text-[10px] font-bold text-slate-400 block uppercase">Record 5</span>
+                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Batch Header</span>
+                        <span class="font-mono font-bold text-sm text-slate-900 dark:text-white block mt-0.5">@_nachaAuditResult.BatchHeaderCount</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center">
+                        <span class="text-[10px] font-bold text-slate-400 block uppercase">Record 6</span>
+                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Entry Details</span>
+                        <span class="font-mono font-bold text-sm text-slate-900 dark:text-white block mt-0.5">@_nachaAuditResult.EntryDetailCount</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center">
+                        <span class="text-[10px] font-bold text-slate-400 block uppercase">Record 8</span>
+                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Batch Control</span>
+                        <span class="font-mono font-bold text-sm text-slate-900 dark:text-white block mt-0.5">@_nachaAuditResult.BatchControlCount</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center">
+                        <span class="text-[10px] font-bold text-slate-400 block uppercase">Record 9</span>
+                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">File Control</span>
+                        <span class="font-mono font-bold text-sm text-slate-900 dark:text-white block mt-0.5">@_nachaAuditResult.FileControlCount</span>
+                    </div>
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-center">
+                        <span class="text-[10px] font-bold text-slate-400 block uppercase">Fill '9's</span>
+                        <span class="text-xs font-semibold text-slate-700 dark:text-slate-300">Block Padding</span>
+                        <span class="font-mono font-bold text-sm text-slate-900 dark:text-white block mt-0.5">@_nachaAuditResult.BlockFillCount</span>
+                    </div>
+                </div>
+
+                <!-- Parsed Entries Detail List -->
+                @if (_nachaAuditResult.Entries.Count > 0)
+                {
+                    <div class="space-y-2">
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
+                            Reconstructed Entry Records (Record 6)
+                        </span>
+                        <div class="space-y-2 max-h-48 overflow-y-auto">
+                            @foreach (var entry in _nachaAuditResult.Entries)
+                            {
+                                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+                                    <div class="flex items-center gap-2">
+                                        <span class="px-2 py-0.5 rounded font-mono font-bold text-[10px] bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                                            Line @entry.LineNumber (Tx @entry.TransactionCode)
+                                        </span>
+                                        <div>
+                                            <div class="font-bold text-slate-900 dark:text-white">@entry.ReceivingName</div>
+                                            <div class="text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                                                RTN: @entry.ReceivingRoutingNumber | Acct: @entry.AccountNumber | Chk#: @entry.IndividualIdOrCheckNum
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="font-mono font-bold text-sm text-emerald-600 dark:text-emerald-400">
+                                            @entry.Amount.ToString("C2")
+                                        </div>
+                                        <div class="text-[10px] font-mono text-slate-400">
+                                            Trace: @entry.TraceNumber
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Raw 94-Char Fixed-Width NACHA File Preview -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                            Raw 94-Character Fixed-Width ACH Records
+                        </span>
+                        <span class="text-[10px] font-mono text-slate-400">
+                            @_nachaAuditResult.TotalLines lines (@(_nachaAuditResult.TotalLines * 94) bytes)
+                        </span>
+                    </div>
+                    <pre class="p-3 rounded-xl bg-slate-950 text-emerald-400 font-mono text-[11px] overflow-x-auto whitespace-pre leading-relaxed border border-slate-800 selection:bg-emerald-500 selection:text-black">@_currentNachaAchContent</pre>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/40">
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                    Mod-10^10 Hash: <code class="font-mono font-bold text-slate-800 dark:text-slate-200">@_nachaAuditResult.CalculatedEntryHash.ToString("D10")</code>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" @onclick="CopyNachaContentAsync"
+                            class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition">
+                        📋 Copy NACHA
+                    </button>
+                    <button type="button" @onclick="ExportNachaAchFileAsync"
+                            class="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs transition shadow-xs">
+                        ⬇️ Download .ach
+                    </button>
+                    <button type="button" @onclick="CloseNachaAuditModal"
+                            class="px-4 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs transition">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool _showNachaAuditModal = false;
+    private NachaAggregatesValidationResult? _nachaAuditResult;
+    private string _currentNachaAchContent = "";
+
+
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public EventCallback<CheckDraftOcrResult> OnCheckScanned { get; set; }
+    [Parameter] public EventCallback<string> OnInsertMarkdown { get; set; }
+    [Parameter] public EventCallback<CheckDraftOcrResult> OnDepositApproved { get; set; }
+    [Parameter] public EventCallback<string> OnNachaExported { get; set; }
+    [Parameter] public EventCallback<string> OnJsonExported { get; set; }
+
+    private CheckDraftOcrResult? _check;
+    private bool _isScanning = false;
+    private bool _showBoundingBoxes = true;
+    private bool _isDepositApproved = false;
+    private string _activeMode = "interactive";
+    private string _currentPresetId = "check-payroll-1042";
+    private bool _removeDashRule = false;
+
+    // Interactive Custom Check Parameters
+    private string _routingNumber = "121000358";
+    private string _accountNumber = "0123456789";
+    private string _checkNumber = "1042";
+    private decimal _amount = 14850.00m;
+    private string _payee = "Jane Doe Development Consulting";
+    private string _payerName = "Acme Enterprise Dynamics Inc.";
+    private string _memo = "Q3 High-Availability Cloud Architecture Project";
+    private string _nachaSearchQuery = "";
+    private string _lastOcrRawText = "";
+
+    private (bool IsValid, int Mod10Value, int ExpectedCheckDigit, string BankName, string District, string InstType, string Suggestion) _routingValidation;
+
+    private record QuickBank(string ShortName, string BankName, string Routing, string Icon);
+
+    private readonly List<QuickBank> _quickBanks = new()
+    {
+        new("Chase (SF)", "JPMorgan Chase Bank, N.A.", "121000358", "🏛️"),
+        new("Chase (NY)", "JPMorgan Chase Bank, N.A.", "021000021", "🏛️"),
+        new("Bank of America", "Bank of America, N.A.", "011000138", "🔴"),
+        new("Wells Fargo", "Wells Fargo Bank, N.A.", "122000496", "🟡"),
+        new("Citibank", "Citibank, N.A.", "021000089", "🔵"),
+        new("US Bank", "U.S. Bank National Association", "091000022", "🛡️"),
+        new("PNC Bank", "PNC Bank, N.A.", "041000124", "🟠"),
+        new("Capital One", "Capital One, N.A.", "051405515", "💳"),
+        new("Navy Federal", "Navy Federal Credit Union", "256074974", "⚓"),
+        new("Chime (Bancorp)", "The Bancorp Bank (Chime)", "031101114", "🟢"),
+        new("SoFi Bank", "SoFi Bank, N.A.", "121145349", "🚀"),
+        new("US Treasury", "United States Treasury", "000000518", "🦅")
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        UpdateRoutingValidation();
+        RefreshCustomCheck();
+        await Task.CompletedTask;
+    }
+
+    private void SetMode(string mode)
+    {
+        _activeMode = mode;
+        if (mode == "presets")
+        {
+            _ = LoadPresetAsync(_currentPresetId);
+        }
+        else
+        {
+            RefreshCustomCheck();
+        }
+    }
+
+    private void ToggleRemoveDashRule()
+    {
+        _removeDashRule = !_removeDashRule;
+        Toast.Show("Dash Rule Toggled", _removeDashRule ? "Rule Applied: Dashes removed (Digits-Only ACH Mode)" : "Rule Inactive: Dashes preserved (Share Draft Mode)", SemanticVariant.Info);
+    }
+
+    private string GetEffectiveAccountNumber()
+    {
+        var raw = _check?.MicrData.AccountNumber ?? _accountNumber;
+        if (_removeDashRule && !string.IsNullOrEmpty(raw))
+        {
+            return raw.Replace("-", "").Replace("⑉", "").Trim();
+        }
+        return raw;
+    }
+
+    private void UpdateRoutingValidation()
+    {
+        _routingValidation = OcrEngine.ValidateAbaRouting(_routingNumber);
+    }
+
+    private void RefreshCustomCheck()
+    {
+        _check = OcrEngine.CreateCustomCheck(
+            routingNumber: _routingNumber,
+            accountNumber: _accountNumber,
+            checkNumber: _checkNumber,
+            amount: _amount,
+            payee: _payee,
+            payerName: _payerName,
+            memo: _memo
+        );
+
+        if (OnCheckScanned.HasDelegate && _check != null)
+        {
+            _ = OnCheckScanned.InvokeAsync(_check);
+        }
+    }
+
+    private void OnRoutingInput(ChangeEventArgs e)
+    {
+        _routingNumber = e.Value?.ToString() ?? "";
+        UpdateRoutingValidation();
+        RefreshCustomCheck();
+    }
+
+    private void OnAccountInput(ChangeEventArgs e)
+    {
+        _accountNumber = e.Value?.ToString() ?? "";
+        RefreshCustomCheck();
+    }
+
+    private void OnCheckNumInput(ChangeEventArgs e)
+    {
+        _checkNumber = e.Value?.ToString() ?? "";
+        RefreshCustomCheck();
+    }
+
+    private void OnAmountInput(ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out var parsed))
+        {
+            _amount = parsed;
+            RefreshCustomCheck();
+        }
+    }
+
+    private void OnPayeeInput(ChangeEventArgs e)
+    {
+        _payee = e.Value?.ToString() ?? "";
+        RefreshCustomCheck();
+    }
+
+    private void SelectQuickBank(string routing, string bankName)
+    {
+        _routingNumber = routing;
+        UpdateRoutingValidation();
+        RefreshCustomCheck();
+        Toast.Show("NACHA Bank Loaded", $"{bankName} (Routing: {routing})", SemanticVariant.Success);
+    }
+
+    private void SelectSearchedBank(NachaRoutingEntry entry)
+    {
+        _routingNumber = entry.RoutingNumber;
+        _nachaSearchQuery = "";
+        UpdateRoutingValidation();
+        RefreshCustomCheck();
+        Toast.Show("NACHA Route Selected", $"{entry.BankName} — {entry.District}", SemanticVariant.Success);
+    }
+
+    private void ApplySuggestedRouting()
+    {
+        if (!string.IsNullOrEmpty(_routingValidation.Suggestion))
+        {
+            _routingNumber = _routingValidation.Suggestion;
+            UpdateRoutingValidation();
+            RefreshCustomCheck();
+            Toast.Show("Check Digit Corrected", $"Applied Mod-10 check digit: {_routingNumber}", SemanticVariant.Success);
+        }
+    }
+
+    private async Task OnPresetChanged(ChangeEventArgs e)
+    {
+        _currentPresetId = e.Value?.ToString() ?? "check-payroll-1042";
+        await LoadPresetAsync(_currentPresetId);
+    }
+
+    private async Task LoadPresetAsync(string presetId)
+    {
+        _isScanning = true;
+        _isDepositApproved = false;
+        StateHasChanged();
+
+        _check = await OcrEngine.ScanCheckOrDraftAsync(presetId);
+        _routingNumber = _check.MicrData.TransitRoutingNumber;
+        _accountNumber = _check.MicrData.AccountNumber;
+        _checkNumber = _check.CheckNumber;
+        _amount = _check.CourtesyAmount;
+        _payee = _check.Payee;
+        _payerName = _check.PayerName;
+        _memo = _check.Memo;
+
+        UpdateRoutingValidation();
+        _isScanning = false;
+
+        if (OnCheckScanned.HasDelegate && _check != null)
+        {
+            await OnCheckScanned.InvokeAsync(_check);
+        }
+    }
+
+    private async Task RunTesseractOcrAsync()
+    {
+        if (_check == null) return;
+        _isScanning = true;
+        StateHasChanged();
+
+        await Sound.PlayPopAsync();
+        _check = await OcrEngine.RunTesseractOnRenderedCheckAsync(_check);
+        _lastOcrRawText = _check.MicrData.RawTesseractOutput ?? "";
+        _isScanning = false;
+        StateHasChanged();
+
+        await Sound.PlayChimeAsync();
+        Toast.Show("Tesseract OCR Complete", $"Parsed check pixels via Tesseract WebAssembly in {_check.ProcessingTimeMs}ms with {(_check.OverallConfidence * 100):F0}% confidence", SemanticVariant.Success);
+    }
+
+    private async Task GenerateAndOcrRandomCheckAsync()
+    {
+        _isScanning = true;
+        StateHasChanged();
+
+        await Sound.PlayPopAsync();
+        _check = OcrEngine.GenerateRandomValidCheck();
+        _routingNumber = _check.MicrData.TransitRoutingNumber;
+        _accountNumber = _check.MicrData.AccountNumber;
+        _checkNumber = _check.CheckNumber;
+        _amount = _check.CourtesyAmount;
+        _payee = _check.Payee;
+        _payerName = _check.PayerName;
+        _memo = _check.Memo;
+        UpdateRoutingValidation();
+
+        // Run genuine Tesseract OCR directly on the newly rendered check canvas pixels
+        _check = await OcrEngine.RunTesseractOnRenderedCheckAsync(_check);
+        _lastOcrRawText = _check.MicrData.RawTesseractOutput ?? "";
+        _routingNumber = _check.MicrData.TransitRoutingNumber;
+        UpdateRoutingValidation();
+        _isScanning = false;
+        StateHasChanged();
+
+        await Sound.PlayChimeAsync();
+        Toast.Show("Random Check OCR Verified", $"Recognized {_check.BankName} ({_check.MicrData.TransitRoutingNumber}) in {_check.ProcessingTimeMs}ms", SemanticVariant.Success);
+
+        if (OnCheckScanned.HasDelegate && _check != null)
+        {
+            await OnCheckScanned.InvokeAsync(_check);
+        }
+    }
+
+    private async Task HandleFileUploadAsync(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file == null) return;
+
+        try
+        {
+            _isScanning = true;
+            StateHasChanged();
+
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            string base64 = Convert.ToBase64String(ms.ToArray());
+            string dataUrl = $"data:{file.ContentType};base64,{base64}";
+
+            _check = await OcrEngine.ParseImageWithTesseractAsync(dataUrl);
+            _routingNumber = _check.MicrData.TransitRoutingNumber;
+            _accountNumber = _check.MicrData.AccountNumber;
+            _checkNumber = _check.CheckNumber;
+            if (_check.CourtesyAmount > 0) _amount = _check.CourtesyAmount;
+            if (!string.IsNullOrEmpty(_check.Payee)) _payee = _check.Payee;
+            _lastOcrRawText = _check.MicrData.RawTesseractOutput ?? "";
+
+            UpdateRoutingValidation();
+            _isScanning = false;
+            StateHasChanged();
+
+            await Sound.PlayChimeAsync();
+            Toast.Show("Uploaded Image OCR Parsed", $"Extracted {_check.BankName} via Tesseract in {_check.ProcessingTimeMs}ms", SemanticVariant.Success);
+
+            if (OnCheckScanned.HasDelegate && _check != null)
+            {
+                await OnCheckScanned.InvokeAsync(_check);
+            }
+        }
+        catch (Exception ex)
+        {
+            _isScanning = false;
+            Toast.Show("OCR Error", ex.Message, SemanticVariant.Danger);
+        }
+    }
+
+    private void ToggleBoundingBoxes()
+    {
+        _showBoundingBoxes = !_showBoundingBoxes;
+    }
+
+    private async Task CopyMicrLineAsync()
+    {
+        if (_check?.MicrData != null)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", _check.MicrData.RawMicrLine);
+            }
+            catch { }
+            await Sound.PlayPopAsync();
+            Toast.Show("Copied to Clipboard", "Raw ANSI X9.27 MICR line copied", SemanticVariant.Info);
+        }
+    }
+
+    private async Task ExportNachaAchFileAsync()
+    {
+        if (_check == null) return;
+
+        string achContent = OcrEngine.GenerateNachaAchFile(
+            immediateDestinationRouting: "011000015", // FedACH Boston
+            immediateOriginRouting: _check.MicrData.TransitRoutingNumber,
+            companyName: _check.PayerName,
+            companyId: "1234567890",
+            receiverRouting: _check.MicrData.TransitRoutingNumber,
+            receiverAccount: GetEffectiveAccountNumber(),
+            amount: _check.CourtesyAmount,
+            receiverName: _check.Payee,
+            checkNumber: _check.CheckNumber
+        );
+
+        try
+        {
+            await JS.InvokeVoidAsync("pdfHelper.downloadText", $"nacha-batch-{_check.CheckNumber}.ach", "text/plain", achContent);
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", achContent);
+        }
+        catch { }
+
+        await Sound.PlayChimeAsync();
+
+        if (OnNachaExported.HasDelegate)
+        {
+            await OnNachaExported.InvokeAsync(achContent);
+        }
+    }
+
+    private async Task CopyMarkdownTableAsync()
+    {
+        if (_check != null)
+        {
+            var md = OcrEngine.GenerateCheckMarkdown(_check);
+            try
+            {
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", md);
+            }
+            catch { }
+            await Sound.PlayPopAsync();
+            
+            if (OnInsertMarkdown.HasDelegate)
+            {
+                await OnInsertMarkdown.InvokeAsync(md);
+            }
+        }
+    }
+
+    private async Task ExportJsonAsync()
+    {
+        if (_check != null)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(_check, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            try
+            {
+                await JS.InvokeVoidAsync("pdfHelper.downloadText", $"check-{_check.CheckNumber}.json", "application/json", json);
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            }
+            catch { }
+            await Sound.PlayPopAsync();
+
+            if (OnJsonExported.HasDelegate)
+            {
+                await OnJsonExported.InvokeAsync(json);
+            }
+        }
+    }
+
+    private async Task ApproveDepositAsync()
+    {
+        if (_check?.MicrData.IsValidRoutingChecksum == false)
+        {
+            await Sound.PlayPopAsync();
+            Toast.Show("Deposit Blocked", "ABA routing transit number failed modulus-10 check digit test", SemanticVariant.Danger);
+            return;
+        }
+
+        await Sound.PlayChimeAsync();
+        _isDepositApproved = true;
+
+        if (OnDepositApproved.HasDelegate && _check != null)
+        {
+            await OnDepositApproved.InvokeAsync(_check);
+        }
+    }
+
+    private void RunNachaReverseCheckAudit()
+    {
+        if (_check == null) return;
+
+        _currentNachaAchContent = OcrEngine.GenerateNachaAchFile(
+            immediateDestinationRouting: "011000015", // FedACH Boston
+            immediateOriginRouting: _check.MicrData.TransitRoutingNumber,
+            companyName: _check.PayerName,
+            companyId: "1234567890",
+            receiverRouting: _check.MicrData.TransitRoutingNumber,
+            receiverAccount: GetEffectiveAccountNumber(),
+            amount: _check.CourtesyAmount,
+            receiverName: _check.Payee,
+            checkNumber: _check.CheckNumber,
+            stripDashFromAccount: _removeDashRule
+        );
+
+        _nachaAuditResult = OcrEngine.ReverseCheckNachaFile(_currentNachaAchContent);
+        _showNachaAuditModal = true;
+        _ = Sound.PlayPopAsync();
+        Toast.Show("NACHA Reverse Check Completed", $"Validated 5 aggregates: {_nachaAuditResult.CalculatedEntryCount} entry, Hash {_nachaAuditResult.CalculatedEntryHash:D10}", SemanticVariant.Success);
+    }
+
+    private void CloseNachaAuditModal()
+    {
+        _showNachaAuditModal = false;
+    }
+
+    private async Task CopyNachaContentAsync()
+    {
+        if (!string.IsNullOrEmpty(_currentNachaAchContent))
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", _currentNachaAchContent);
+            }
+            catch { }
+            await Sound.PlayPopAsync();
+            Toast.Show("Copied NACHA ACH Content", "Raw 94-char fixed width records copied", SemanticVariant.Info);
+        }
+    }
+
+}

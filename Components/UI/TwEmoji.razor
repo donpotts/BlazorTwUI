@@ -1,0 +1,119 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Services
+@inject ToastService Toast
+
+<span class="@GetComputedClass()"
+      title="@GetTooltip()"
+      @onclick="HandleClick"
+      role="img"
+      aria-label="@(Shortcode ?? Glyph ?? "emoji")"
+      @attributes="AdditionalAttributes">
+    @((MarkupString)GetEmojiGlyph())
+</span>
+
+@code {
+    [Parameter] public string? Shortcode { get; set; }
+    [Parameter] public string? Glyph { get; set; }
+    [Parameter] public ComponentSize Size { get; set; } = ComponentSize.Md;
+    [Parameter] public bool AnimateOnHover { get; set; } = true;
+    [Parameter] public bool CopyOnClick { get; set; } = false;
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter(CaptureUnmatchedValues = true)] public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private string GetComputedClass()
+    {
+        var sizeClass = Size switch
+        {
+            ComponentSize.Xs => "text-xs leading-none",
+            ComponentSize.Sm => "text-sm leading-none",
+            ComponentSize.Md => "text-base leading-none",
+            ComponentSize.Lg => "text-xl leading-none",
+            ComponentSize.Xl => "text-3xl leading-none",
+            _ => "text-base leading-none"
+        };
+
+        var animClass = AnimateOnHover ? "hover:scale-125 active:scale-95 transition-transform duration-200 cursor-pointer" : "";
+        return $"inline-flex items-center justify-center select-none {sizeClass} {animClass} {Class}".Trim();
+    }
+
+    private string GetTooltip()
+    {
+        if (CopyOnClick)
+        {
+            return $"Click to copy: {Shortcode ?? Glyph}";
+        }
+        return Shortcode ?? Glyph ?? "";
+    }
+
+    private string GetEmojiGlyph()
+    {
+        if (!string.IsNullOrEmpty(Glyph))
+        {
+            return Glyph;
+        }
+
+        if (!string.IsNullOrEmpty(Shortcode))
+        {
+            var key = Shortcode.Trim().ToLowerInvariant();
+            if (!key.StartsWith(":")) key = ":" + key;
+            if (!key.EndsWith(":")) key = key + ":";
+
+            if (_shortcodeMap.TryGetValue(key, out var glyph))
+            {
+                return glyph;
+            }
+        }
+
+        return "✨";
+    }
+
+    private async Task HandleClick()
+    {
+        if (CopyOnClick)
+        {
+            var text = GetEmojiGlyph();
+            Toast.Show("Emoji Copied!", $"{text} copied to clipboard", SemanticVariant.Success);
+        }
+    }
+
+    public static IReadOnlyDictionary<string, string> AvailableShortcodes => _shortcodeMap;
+
+    private static readonly Dictionary<string, string> _shortcodeMap = new()
+    {
+        [":rocket:"] = "🚀",
+        [":fire:"] = "🔥",
+        [":sparkles:"] = "✨",
+        [":star:"] = "⭐",
+        [":star2:"] = "🌟",
+        [":tada:"] = "🎉",
+        [":100:"] = "💯",
+        [":brain:"] = "🧠",
+        [":gem:"] = "💎",
+        [":zap:"] = "⚡",
+        [":bulb:"] = "💡",
+        [":trophy:"] = "🏆",
+        [":medal:"] = "🥇",
+        [":heart:"] = "❤️",
+        [":sunglasses:"] = "😎",
+        [":eyes:"] = "👀",
+        [":smile:"] = "😊",
+        [":wave:"] = "👋",
+        [":thumbsup:"] = "👍",
+        [":check:"] = "✅",
+        [":lock:"] = "🔒",
+        [":shield:"] = "🛡️",
+        [":chart:"] = "📈",
+        [":coffee:"] = "☕",
+        [":memo:"] = "📝",
+        [":code:"] = "💻",
+        [":gear:"] = "⚙️",
+        [":package:"] = "📦",
+        [":art:"] = "🎨",
+        [":world:"] = "🌍",
+        [":money:"] = "💰",
+        [":bell:"] = "🔔",
+        [":speech:"] = "💬",
+        [":hammer:"] = "🔨",
+        [":robot:"] = "🤖"
+    };
+}

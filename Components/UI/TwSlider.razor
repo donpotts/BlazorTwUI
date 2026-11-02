@@ -1,0 +1,54 @@
+<div class="w-full space-y-2 @Class">
+    <div class="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+        @if (!string.IsNullOrWhiteSpace(Label))
+        {
+            <span>@Label</span>
+        }
+        @if (ShowValue)
+        {
+            <span class="px-2 py-0.5 rounded-lg bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 font-mono">
+                @Value@ValueUnit
+            </span>
+        }
+    </div>
+
+    <div class="relative flex items-center">
+        <input type="range"
+               min="@Min"
+               max="@Max"
+               step="@Step"
+               value="@Value"
+               disabled="@Disabled"
+               @oninput="HandleInput"
+               class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:opacity-50" />
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(HelperText))
+    {
+        <p class="text-xs text-slate-500 dark:text-slate-400">@HelperText</p>
+    }
+</div>
+
+@code {
+    [Parameter] public double Value { get; set; } = 50;
+    [Parameter] public EventCallback<double> ValueChanged { get; set; }
+    [Parameter] public double Min { get; set; } = 0;
+    [Parameter] public double Max { get; set; } = 100;
+    [Parameter] public double Step { get; set; } = 1;
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? ValueUnit { get; set; } = "%";
+    [Parameter] public bool ShowValue { get; set; } = true;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? HelperText { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private Task HandleInput(ChangeEventArgs e)
+    {
+        if (double.TryParse(e.Value?.ToString(), out var val))
+        {
+            Value = val;
+            return ValueChanged.InvokeAsync(val);
+        }
+        return Task.CompletedTask;
+    }
+}

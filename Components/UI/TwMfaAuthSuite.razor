@@ -1,0 +1,309 @@
+@namespace BlazorTwUI.Components.UI
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="space-y-6 @Class">
+    <!-- Header with Security Level Badge -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl bg-gradient-to-r from-brand-600/10 via-emerald-600/10 to-transparent border border-brand-500/20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold text-lg">
+                🔐
+            </div>
+            <div>
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">Multi-Factor Authentication (MFA)</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Protect your account with modern zero-trust verification factors</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-slate-500">Security Score:</span>
+            <TwBadge Variant="@(_isEnrolled ? SemanticVariant.Success : SemanticVariant.Warning)" ShowDot="true">
+                @(_isEnrolled ? "High Protection (2FA Active)" : "Action Recommended")
+            </TwBadge>
+        </div>
+    </div>
+
+    <!-- Method Selector Pills -->
+    <div class="flex flex-wrap gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800">
+        <button type="button" @onclick='() => _activeMethod = "totp"' class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition @(_activeMethod == "totp" ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm border border-slate-200 dark:border-slate-700" : "text-slate-600 dark:text-slate-400 hover:text-slate-900")">
+            <span>📱</span> Authenticator App (TOTP)
+        </button>
+        <button type="button" @onclick='() => _activeMethod = "otp"' class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition @(_activeMethod == "otp" ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm border border-slate-200 dark:border-slate-700" : "text-slate-600 dark:text-slate-400 hover:text-slate-900")">
+            <span>💬</span> SMS / Email OTP
+        </button>
+        <button type="button" @onclick='() => _activeMethod = "passkey"' class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition @(_activeMethod == "passkey" ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm border border-slate-200 dark:border-slate-700" : "text-slate-600 dark:text-slate-400 hover:text-slate-900")">
+            <span>🔑</span> Passkeys / FIDO2
+        </button>
+        <button type="button" @onclick='() => _activeMethod = "recovery"' class="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition @(_activeMethod == "recovery" ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm border border-slate-200 dark:border-slate-700" : "text-slate-600 dark:text-slate-400 hover:text-slate-900")">
+            <span>🛡️</span> Recovery Codes
+        </button>
+    </div>
+
+    <!-- Active Method Panel -->
+    @if (_activeMethod == "totp")
+    {
+        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+            <div class="flex flex-col md:flex-row gap-6 items-center">
+                <!-- QR Code Box -->
+                <div class="flex flex-col items-center p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800">
+                    <TwQrCode Value="@_totpUri" Size="160" DotShape="TwQrCode.QrDotShape.Rounded" />
+                    <span class="text-[10px] font-mono text-slate-400 mt-2">Scan with Authenticator</span>
+                </div>
+
+                <!-- Setup Steps -->
+                <div class="space-y-4 flex-1">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">Step 1: Scan QR or enter secret manually</h4>
+                        <p class="text-xs text-slate-500 mt-0.5">Use an authenticator app (such as Google Authenticator or Microsoft Authenticator).</p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <div class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 font-mono text-xs text-slate-700 dark:text-slate-300 font-bold tracking-wider select-all">
+                            @_secretKey
+                        </div>
+                        <TwButton Variant="ButtonVariant.Outline" Size="ComponentSize.Sm" OnClick="CopySecretKey">
+                            Copy Key
+                        </TwButton>
+                    </div>
+
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white mb-2">Step 2: Enter 6-digit confirmation code</h4>
+                        <TwOtpInput Length="6" @bind-Value="_totpInput" OnCompleted="VerifyTotp" />
+                    </div>
+
+                    @if (_isTotpVerified)
+                    {
+                        <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+                            <span>✓</span> Authenticator app linked and verified successfully!
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    else if (_activeMethod == "otp")
+    {
+        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">One-Time Password via SMS or Email</h4>
+                    <p class="text-xs text-slate-500">A verification code will be sent to your registered device</p>
+                </div>
+                <TwBadge Variant="SemanticVariant.Info">High Delivery</TwBadge>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 space-y-2">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Registered Phone</span>
+                    <p class="text-sm font-mono font-bold text-slate-900 dark:text-white">+1 (555) •••-8492</p>
+                    <TwButton Variant="ButtonVariant.Primary" Size="ComponentSize.Sm" OnClick='() => SendOtpCode("SMS")'>
+                        Send SMS PIN
+                    </TwButton>
+                </div>
+
+                <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 space-y-2">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Registered Work Email</span>
+                    <p class="text-sm font-mono font-bold text-slate-900 dark:text-white">d•••s@beverycreative.com</p>
+                    <TwButton Variant="ButtonVariant.Outline" Size="ComponentSize.Sm" OnClick='() => SendOtpCode("Email")'>
+                        Send Email PIN
+                    </TwButton>
+                </div>
+            </div>
+
+            @if (_otpSent)
+            {
+                <div class="p-4 rounded-2xl bg-brand-50/50 dark:bg-brand-950/20 border border-brand-200 dark:border-brand-800 space-y-3">
+                    <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Enter the 6-digit verification code sent via @_otpChannel:</span>
+                    <TwOtpInput Length="6" @bind-Value="_otpInput" OnCompleted="VerifyOtp" />
+                </div>
+            }
+        </div>
+    }
+    else if (_activeMethod == "passkey")
+    {
+        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">FIDO2 / WebAuthn Biometric Passkeys</h4>
+                    <p class="text-xs text-slate-500">Sign in securely using Touch ID, Windows Hello, or a YubiKey hardware key</p>
+                </div>
+                <TwBadge Variant="SemanticVariant.Success">Phishing Resistant</TwBadge>
+            </div>
+
+            <div class="p-5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-center space-y-3">
+                <div class="w-12 h-12 mx-auto rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-2xl">
+                    👆
+                </div>
+                <h5 class="text-sm font-bold text-slate-800 dark:text-slate-200">Biometric or Hardware Security Key</h5>
+                <p class="text-xs text-slate-500 max-w-md mx-auto">
+                    Passkeys replace passwords with asymmetric cryptography. Your biometric data never leaves your device.
+                </p>
+                <TwButton Variant="ButtonVariant.Primary" OnClick="RegisterPasskey">
+                    Register New Passkey
+                </TwButton>
+            </div>
+
+            @if (_registeredPasskeys.Count > 0)
+            {
+                <div class="space-y-2">
+                    <span class="text-xs font-bold text-slate-700 dark:text-slate-300">Active Passkeys:</span>
+                    @foreach (var key in _registeredPasskeys)
+                    {
+                        <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-xs">
+                            <div class="flex items-center gap-2">
+                                <span>🔑</span>
+                                <span class="font-bold text-slate-800 dark:text-slate-200">@key.Name</span>
+                                <span class="text-[10px] text-slate-400">Added @key.CreatedDate</span>
+                            </div>
+                            <span class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold uppercase text-[10px]">Active</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else if (_activeMethod == "recovery")
+    {
+        <div class="p-5 sm:p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">Emergency Backup Recovery Codes</h4>
+                    <p class="text-xs text-slate-500">Store these single-use codes safely in case you lose access to your primary device</p>
+                </div>
+                <TwBadge Variant="SemanticVariant.Warning">Single-Use</TwBadge>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 font-mono text-xs font-bold text-slate-800 dark:text-slate-200 text-center">
+                @foreach (var recCode in _recoveryCodes)
+                {
+                    <div class="p-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-750">
+                        @recCode
+                    </div>
+                }
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <TwButton Variant="ButtonVariant.Primary" Size="ComponentSize.Sm" OnClick="DownloadRecoveryCodes">
+                    Download Backup File (.txt)
+                </TwButton>
+                <TwButton Variant="ButtonVariant.Outline" Size="ComponentSize.Sm" OnClick="CopyRecoveryCodes">
+                    Copy All Codes
+                </TwButton>
+                <TwButton Variant="ButtonVariant.Secondary" Size="ComponentSize.Sm" OnClick="RegenerateRecoveryCodes">
+                    Generate New Codes
+                </TwButton>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public EventCallback<bool> OnEnrollmentChanged { get; set; }
+
+    private string _activeMethod = "totp";
+    private bool _isEnrolled = true;
+    private string _totpUri = "otpauth://totp/NexusEnterprise:donpotts?secret=JBSWY3DPEHPK3PXP&issuer=NexusEnterprise";
+    private string _secretKey = "JBSW Y3DP EHPK 3PXP";
+    private string _totpInput = "";
+    private bool _isTotpVerified = false;
+
+    private bool _otpSent = false;
+    private string _otpChannel = "";
+    private string _otpInput = "";
+
+    private record PasskeyItem(string Name, string CreatedDate);
+    private List<PasskeyItem> _registeredPasskeys = new()
+    {
+        new("MacBook Pro Touch ID", "Oct 18, 2026"),
+        new("Windows Hello PIN (Surface)", "Sep 12, 2026")
+    };
+
+    private List<string> _recoveryCodes = new()
+    {
+        "9482-1049", "3920-5819", "5820-4921", "1940-8592",
+        "7719-2041", "4920-1859", "2950-8401", "8492-3019"
+    };
+
+    private async Task CopySecretKey()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _secretKey.Replace(" ", ""));
+        }
+        catch (Exception) { }
+        Toast.Show("Secret Copied", "TOTP secret key copied to clipboard.", SemanticVariant.Success);
+    }
+
+    private async Task VerifyTotp(string code)
+    {
+        if (code.Length == 6)
+        {
+            _isTotpVerified = true;
+            _isEnrolled = true;
+            Toast.Show("TOTP Verified", "Authenticator code accepted. 2FA is active.", SemanticVariant.Success);
+            await OnEnrollmentChanged.InvokeAsync(true);
+        }
+    }
+
+    private void SendOtpCode(string channel)
+    {
+        _otpChannel = channel;
+        _otpSent = true;
+        Toast.Show("OTP Dispatched", $"A 6-digit verification PIN was sent via {channel}.", SemanticVariant.Info);
+    }
+
+    private void VerifyOtp(string code)
+    {
+        if (code.Length == 6)
+        {
+            Toast.Show("OTP Verified", $"{_otpChannel} PIN confirmed successfully.", SemanticVariant.Success);
+        }
+    }
+
+    private void RegisterPasskey()
+    {
+        var newKey = new PasskeyItem("YubiKey 5 NFC (Hardware)", DateTime.UtcNow.ToString("MMM dd, yyyy"));
+        _registeredPasskeys.Add(newKey);
+        Toast.Show("Passkey Enrolled", "FIDO2 credential registered successfully.", SemanticVariant.Success);
+    }
+
+    private async Task DownloadRecoveryCodes()
+    {
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("=================================================");
+        sb.AppendLine(" NEXUS ENTERPRISE — MFA BACKUP RECOVERY CODES");
+        sb.AppendLine($" Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+        sb.AppendLine(" Each code can be used exactly once if you lose");
+        sb.AppendLine(" access to your primary authenticator device.");
+        sb.AppendLine("=================================================");
+        sb.AppendLine();
+        for (int i = 0; i < _recoveryCodes.Count; i++)
+        {
+            sb.AppendLine($" [{i + 1}]  {_recoveryCodes[i]}");
+        }
+        sb.AppendLine();
+        sb.AppendLine("Keep this file in an encrypted, secure location.");
+        
+        await JS.InvokeVoidAsync("pdfHelper.downloadText", $"mfa_recovery_codes_{DateTime.UtcNow:yyyyMMdd}.txt", "text/plain", sb.ToString());
+        Toast.Show("Backup Codes Downloaded", "Saved recovery codes text file locally", SemanticVariant.Success);
+    }
+
+    private async Task CopyRecoveryCodes()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", string.Join("\n", _recoveryCodes));
+        }
+        catch (Exception) { }
+        Toast.Show("Recovery Codes Copied", "Saved 8 backup codes to clipboard. Store securely.", SemanticVariant.Warning);
+    }
+
+    private void RegenerateRecoveryCodes()
+    {
+        var rand = new Random();
+        _recoveryCodes = Enumerable.Range(0, 8)
+            .Select(_ => $"{rand.Next(1000, 9999)}-{rand.Next(1000, 9999)}")
+            .ToList();
+        Toast.Show("Codes Rotated", "8 new single-use recovery codes generated.", SemanticVariant.Info);
+    }
+}

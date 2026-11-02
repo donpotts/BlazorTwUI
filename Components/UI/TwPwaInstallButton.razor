@@ -1,0 +1,123 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Services
+@inject TwPwaService Pwa
+@inject TwSoundService Sound
+@inject ToastService Toast
+@implements IDisposable
+
+<div class="inline-flex items-center @Class">
+    @if (Pwa.IsInstalled)
+    {
+        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold shadow-xs cursor-default"
+             title="Running as an installed standalone Progressive Web Application (PWA)">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>💻</span>
+            <span class="hidden sm:inline">Installed PWA</span>
+        </div>
+    }
+    else
+    {
+        <button type="button"
+                @onclick="HandleInstallClick"
+                class="px-2 py-1.5 sm:px-3 rounded-xl border border-indigo-500/30 bg-gradient-to-r from-indigo-600 to-brand-600 hover:from-indigo-700 hover:to-brand-700 text-white text-xs font-bold transition flex items-center gap-1 sm:gap-1.5 shadow-md shadow-indigo-500/20 hover:shadow-indigo-500/30 active:scale-95 shrink-0"
+                title="Install BlazorTwUI as a standalone desktop or mobile app (PWA)">
+            <svg class="w-3.5 h-3.5 fill-none stroke-current shrink-0" viewBox="0 0 24 24" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span class="hidden sm:inline">Install App</span>
+            <span class="inline sm:hidden text-[10px]">App</span>
+        </button>
+    }
+
+    <!-- Help Modal for Browsers without Native Deferred Prompt (e.g., iOS Safari) -->
+    @if (_showGuideModal)
+    {
+        <div class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-zoom-in"
+             @onclick="() => _showGuideModal = false">
+            <div class="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-7 space-y-5"
+                 @onclick:stopPropagation="true">
+                
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center text-xl shadow-md">
+                            📲
+                        </div>
+                        <div>
+                            <h3 class="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">Install BlazorTwUI</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Install as a standalone Native Web App</p>
+                        </div>
+                    </div>
+                    <button type="button" @onclick="() => _showGuideModal = false" class="text-slate-400 hover:text-slate-600 text-sm">✕</button>
+                </div>
+
+                <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+                    <div class="p-3.5 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200/60 dark:border-indigo-800/60 space-y-1.5">
+                        <span class="font-bold text-indigo-700 dark:text-indigo-300 block text-xs">🚀 Why Install as a PWA?</span>
+                        <ul class="space-y-1 text-[11px] list-disc list-inside text-indigo-900/80 dark:text-indigo-200">
+                            <li><strong>Zero Browser Clutter</strong>: Launches in its own standalone window.</li>
+                            <li><strong>Offline Capability</strong>: Core WebAssembly engine cached locally.</li>
+                            <li><strong>Desktop & Mobile</strong>: Pins directly to your Windows Taskbar, macOS Dock, or Phone Home Screen.</li>
+                        </ul>
+                    </div>
+
+                    <div class="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5">
+                        <span class="font-bold text-slate-800 dark:text-slate-200 block text-xs">📱 How to Install:</span>
+                        <ol class="space-y-1.5 text-[11px] list-decimal list-inside text-slate-500 dark:text-slate-400">
+                            <li><strong>Chrome / Edge (Desktop)</strong>: Click the install icon in the right side of the address bar or select <em>Install BlazorTwUI</em> from the browser menu.</li>
+                            <li><strong>iOS (Safari)</strong>: Tap the <strong>Share</strong> button at the bottom of the screen, scroll down, and tap <strong>Add to Home Screen ⊞</strong>.</li>
+                            <li><strong>Android (Chrome)</strong>: Tap the three dots menu <strong>⋮</strong> and select <strong>Install App</strong>.</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="pt-2 flex justify-end">
+                    <button type="button"
+                            @onclick="() => _showGuideModal = false"
+                            class="px-5 py-2.5 rounded-xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-xs shadow-md transition">
+                        Got It!
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Class { get; set; } = "";
+
+    private bool _showGuideModal = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Pwa.OnStateChanged += HandleStateChanged;
+        await Pwa.InitializeAsync();
+    }
+
+    private void HandleStateChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleInstallClick()
+    {
+        if (Pwa.CanInstall)
+        {
+            var outcome = await Pwa.PromptInstallAsync();
+            if (outcome == "accepted")
+            {
+                await Sound.PlayAsync(TwSoundEffect.VictoryFanfare);
+                Toast.Show("Installed Successfully!", "BlazorTwUI added to your applications.", SemanticVariant.Success);
+            }
+        }
+        else
+        {
+            // If deferred prompt is not available, show the interactive guide
+            _showGuideModal = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Pwa.OnStateChanged -= HandleStateChanged;
+    }
+}

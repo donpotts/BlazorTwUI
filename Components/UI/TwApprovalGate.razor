@@ -1,0 +1,105 @@
+@inherits TwSessionComponentBase
+@using BlazorTwUI.Models
+
+@* The live region stays mounted so screen readers announce when a gate appears. *@
+<div class="@Class" aria-live="assertive" aria-atomic="true">
+    @foreach (var call in Session.PendingApprovals)
+    {
+        <section role="group" aria-labelledby="gate-title-@call.Id"
+                 class="rounded-2xl border-2 border-amber-400 bg-amber-50 dark:bg-amber-500/10 p-4 space-y-3"
+                 data-testid="approval-gate" data-call="@call.Id">
+            <div>
+                <h4 id="gate-title-@call.Id" class="text-sm font-bold text-amber-950 dark:text-amber-100">
+                    Approval required: <span class="font-mono">@call.Name</span>
+                </h4>
+                <p class="text-xs text-amber-900 dark:text-amber-200 mt-0.5">
+                    The agent is blocked and will not run this until you decide. Risk: @call.Risk.
+                </p>
+            </div>
+
+            <div>
+                <label for="gate-args-@call.Id" class="block text-xs font-semibold text-amber-950 dark:text-amber-100 mb-1">Arguments (editable)</label>
+                <textarea id="gate-args-@call.Id" rows="3" dir="ltr"
+                          value="@ArgsFor(call)"
+                          @oninput="e => SetEdit(call.Id, e)"
+                          class="w-full rounded-xl border border-amber-300 dark:border-amber-500/40 bg-white dark:bg-slate-950 p-2 font-mono text-xs text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"></textarea>
+                @if (_errors.TryGetValue(call.Id, out var err))
+                {
+                    <p class="text-xs font-semibold text-rose-800 dark:text-rose-300 mt-1" role="alert">@err</p>
+                }
+            </div>
+
+            <div>
+                <label for="gate-reason-@call.Id" class="block text-xs font-semibold text-amber-950 dark:text-amber-100 mb-1">Reason (used if you reject)</label>
+                <input id="gate-reason-@call.Id" type="text"
+                       @oninput="e => SetReason(call.Id, e)"
+                       class="w-full rounded-xl border border-amber-300 dark:border-amber-500/40 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" />
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                <button type="button" @onclick="() => Approve(call)" data-testid="approve"
+                        class="min-h-[44px] px-4 rounded-xl bg-emerald-700 text-white text-sm font-bold hover:bg-emerald-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-600">
+                    Approve
+                </button>
+                <button type="button" @onclick="() => Reject(call)" data-testid="reject"
+                        class="min-h-[44px] px-4 rounded-xl bg-rose-700 text-white text-sm font-bold hover:bg-rose-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-rose-600">
+                    Reject
+                </button>
+            </div>
+        </section>
+    }
+</div>
+
+@code {
+    private readonly Dictionary<string, string> _edits = new();
+    private readonly Dictionary<string, string> _reasons = new();
+    private readonly Dictionary<string, string> _errors = new();
+
+    private void SetEdit(string id, ChangeEventArgs e)
+    {
+        _edits[id] = e.Value?.ToString() ?? string.Empty;
+        _errors.Remove(id);
+    }
+
+    private void SetReason(string id, ChangeEventArgs e) => _reasons[id] = e.Value?.ToString() ?? string.Empty;
+
+    // Drafts belong to one pending decision. Forget them once it is decided, so a later call that reuses
+    // the same id (or the same call re-proposed in a new run) starts from what the agent actually sent.
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        PruneDrafts();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        PruneDrafts();
+    }
+
+    private void PruneDrafts()
+    {
+        if (_edits.Count + _reasons.Count + _errors.Count == 0) return;
+        var pending = Session.PendingApprovals.Select(c => c.Id).ToHashSet();
+        foreach (var dict in new[] { _edits, _reasons, _errors })
+            foreach (var stale in dict.Keys.Where(k => !pending.Contains(k)).ToList())
+                dict.Remove(stale);
+    }
+
+    private string ArgsFor(ToolCallRecord call) => _edits.GetValueOrDefault(call.Id, call.ArgsJson);
+
+    private void Approve(ToolCallRecord call)
+    {
+        try
+        {
+            Session.Approve(call.Id, _edits.GetValueOrDefault(call.Id));
+            _errors.Remove(call.Id);
+        }
+        catch (ArgumentException)
+        {
+            _errors[call.Id] = "Arguments must be valid JSON before you can approve.";
+        }
+    }
+
+    private void Reject(ToolCallRecord call) => Session.Reject(call.Id, _reasons.GetValueOrDefault(call.Id));
+}

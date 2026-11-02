@@ -1,0 +1,82 @@
+@* Hour / minute (/ AM-PM) time picker built from native selects, so it is fully keyboard and screen-reader accessible. *@
+<fieldset class="inline-flex items-center gap-1.5 @Class" data-testid="time-picker" disabled="@Disabled">
+    <legend class="@(string.IsNullOrEmpty(Label) ? "sr-only" : "text-xs font-semibold text-slate-800 dark:text-slate-200 mb-1")">@(string.IsNullOrEmpty(Label) ? "Time" : Label)</legend>
+    <label class="sr-only" for="@($"{_id}-h")">Hour</label>
+    <select id="@($"{_id}-h")" @onchange="OnHourAsync" data-testid="time-hour" class="@SelectClass">
+        @if (Value is null) { <option value="" selected disabled>--</option> }
+        @foreach (var h in Hours())
+        {
+            <option value="@h" selected="@(Value is not null && DisplayHour(Value.Value) == h)">@h.ToString("00")</option>
+        }
+    </select>
+    <span aria-hidden="true" class="font-bold text-slate-700 dark:text-slate-300">:</span>
+    <label class="sr-only" for="@($"{_id}-m")">Minute</label>
+    <select id="@($"{_id}-m")" @onchange="OnMinuteAsync" data-testid="time-minute" class="@SelectClass">
+        @if (Value is null) { <option value="" selected disabled>--</option> }
+        @foreach (var m in Minutes())
+        {
+            <option value="@m" selected="@(Value is not null && Value.Value.Minute == m)">@m.ToString("00")</option>
+        }
+    </select>
+    @if (!Use24Hour)
+    {
+        <label class="sr-only" for="@($"{_id}-p")">AM or PM</label>
+        <select id="@($"{_id}-p")" @onchange="OnPeriodAsync" data-testid="time-period" class="@SelectClass">
+            <option value="AM" selected="@(Value is null || Value.Value.Hour < 12)">AM</option>
+            <option value="PM" selected="@(Value is not null && Value.Value.Hour >= 12)">PM</option>
+        </select>
+    }
+</fieldset>
+
+@code {
+    private readonly string _id = "tp-" + Guid.NewGuid().ToString("N")[..6];
+    private const string SelectClass = "min-h-[40px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 text-sm text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50";
+
+    [Parameter] public TimeOnly? Value { get; set; }
+    [Parameter] public EventCallback<TimeOnly?> ValueChanged { get; set; }
+    [Parameter] public bool Use24Hour { get; set; }
+    /// <summary>Minute granularity: 1, 5, 10, 15, 30.</summary>
+    [Parameter] public int MinuteStep { get; set; } = 5;
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private IEnumerable<int> Hours() => Use24Hour ? Enumerable.Range(0, 24) : Enumerable.Range(1, 12);
+
+    private IEnumerable<int> Minutes()
+    {
+        var step = Math.Clamp(MinuteStep, 1, 30);
+        return Enumerable.Range(0, 60 / step).Select(i => i * step);
+    }
+
+    private int DisplayHour(TimeOnly t) => Use24Hour ? t.Hour : (t.Hour % 12 == 0 ? 12 : t.Hour % 12);
+
+    private async Task OnHourAsync(ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var picked)) return;
+        var current = Value ?? new TimeOnly(0, 0);
+        var hour = Use24Hour ? picked : (picked % 12) + (current.Hour >= 12 ? 12 : 0);
+        await SetAsync(new TimeOnly(hour, current.Minute));
+    }
+
+    private async Task OnMinuteAsync(ChangeEventArgs e)
+    {
+        if (!int.TryParse(e.Value?.ToString(), out var minute)) return;
+        var current = Value ?? new TimeOnly(Use24Hour ? 0 : 0, 0);
+        await SetAsync(new TimeOnly(current.Hour, minute));
+    }
+
+    private async Task OnPeriodAsync(ChangeEventArgs e)
+    {
+        var current = Value ?? new TimeOnly(0, 0);
+        var pm = e.Value?.ToString() == "PM";
+        var hour = (current.Hour % 12) + (pm ? 12 : 0);
+        await SetAsync(new TimeOnly(hour, current.Minute));
+    }
+
+    private async Task SetAsync(TimeOnly t)
+    {
+        Value = t;
+        await ValueChanged.InvokeAsync(t);
+    }
+}

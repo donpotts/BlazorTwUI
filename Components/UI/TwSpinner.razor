@@ -1,0 +1,25 @@
+@* Busy indicator. Announces its label to assistive tech; the animation stops under prefers-reduced-motion (a static ring remains). *@
+<span class="inline-flex items-center gap-2 @Class" role="status" data-testid="spinner" data-size="@Size">
+    <svg class="@SizeClass animate-spin motion-reduce:animate-none text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" class="opacity-20" />
+        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+    </svg>
+    @if (ShowLabel)
+    {
+        <span class="text-sm text-slate-800 dark:text-slate-200">@Label</span>
+    }
+    else
+    {
+        <span class="sr-only">@Label</span>
+    }
+</span>
+
+@code {
+    /// <summary>sm, md or lg.</summary>
+    [Parameter] public string Size { get; set; } = "md";
+    [Parameter] public string Label { get; set; } = "Loading";
+    [Parameter] public bool ShowLabel { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string SizeClass => Size switch { "sm" => "w-4 h-4", "lg" => "w-10 h-10", _ => "w-6 h-6" };
+}

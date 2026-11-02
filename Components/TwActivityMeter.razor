@@ -1,0 +1,53 @@
+@using BlazorTwUI.Services
+@inject TwOpenTelemetryService OtelService
+@implements IDisposable
+
+<button type="button"
+        @onclick="HandleClick"
+        title="OpenTelemetry APM Cockpit (Click to inspect spans)"
+        class="group inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-mono font-medium border transition-all shadow-sm
+               bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-700
+               text-slate-700 dark:text-slate-200">
+    <!-- Pulsing Telemetry Dot -->
+    <span class="relative flex h-2 w-2">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 @StatusPingClass"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 @StatusBgClass"></span>
+    </span>
+
+    <span class="font-bold text-purple-600 dark:text-purple-400 group-hover:underline">APM</span>
+    <span class="text-slate-300 dark:text-slate-600">|</span>
+    <span class="text-emerald-600 dark:text-emerald-400 font-semibold">@($"{OtelService.AverageRenderMs:F1}ms")</span>
+    <span class="text-slate-300 dark:text-slate-600">|</span>
+    <span class="text-slate-500 dark:text-slate-400">@($"{OtelService.CurrentFps:F0} FPS")</span>
+</button>
+
+@code {
+    [Parameter]
+    public EventCallback OnOpenCockpit { get; set; }
+
+    private string StatusBgClass => OtelService.AverageRenderMs > 33.3 ? "bg-rose-500" : (OtelService.AverageRenderMs > 16.6 ? "bg-amber-500" : "bg-emerald-500");
+    private string StatusPingClass => OtelService.AverageRenderMs > 33.3 ? "bg-rose-400" : (OtelService.AverageRenderMs > 16.6 ? "bg-amber-400" : "bg-emerald-400");
+
+    protected override void OnInitialized()
+    {
+        OtelService.OnMetricsUpdated += HandleMetricsUpdated;
+    }
+
+    private void HandleMetricsUpdated()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleClick()
+    {
+        if (OnOpenCockpit.HasDelegate)
+        {
+            await OnOpenCockpit.InvokeAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        OtelService.OnMetricsUpdated -= HandleMetricsUpdated;
+    }
+}

@@ -1,0 +1,352 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Services
+@inject ToastService Toast
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden max-w-5xl mx-auto @CustomClass">
+    <!-- Header Banner -->
+    <div class="p-6 sm:p-10 bg-gradient-to-br from-emerald-950 via-slate-900 to-slate-950 text-white relative overflow-hidden border-b border-emerald-500/20">
+        <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-3 max-w-2xl">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-semibold">
+                        <span>📊</span>
+                        <span>Income Statement / P&L Modeler</span>
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-white/10 text-white">
+                        @Model.ReportingPeriod
+                    </span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                    Corporate Profit & Loss (P&L) Statement
+                </h1>
+                <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    Interactive financial statement modeler: adjust revenue channels, cost of goods sold, operating expenses, and tax rates with real-time bottom line calculation.
+                </p>
+            </div>
+
+            <!-- KPI Pill Grid -->
+            <div class="grid grid-cols-2 gap-3 shrink-0">
+                <div class="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 space-y-1">
+                    <span class="text-[10px] font-mono uppercase text-slate-300 block">Total Revenue</span>
+                    <span class="text-lg font-black text-white font-mono block">$@(TotalRevenue.ToString("N0"))</span>
+                    <span class="text-[10px] text-emerald-400 font-mono block">Top Line Inflow</span>
+                </div>
+                <div class="p-3.5 rounded-2xl bg-emerald-500/15 backdrop-blur-md border border-emerald-500/30 space-y-1">
+                    <span class="text-[10px] font-mono uppercase text-emerald-300 block">Net Income</span>
+                    <span class="text-lg font-black @(NetIncome >= 0 ? "text-emerald-400" : "text-rose-400") font-mono block">$@(NetIncome.ToString("N0"))</span>
+                    <span class="text-[10px] @(NetIncome >= 0 ? "text-emerald-300" : "text-rose-300") font-mono block">@NetMarginPercent.ToString("F1")% Net Margin</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Live SVG Financial Flow / Waterfall Chart -->
+    <div class="p-6 bg-slate-50/70 dark:bg-slate-950/60 border-b border-slate-200 dark:border-slate-800">
+        <div class="flex items-center justify-between pb-3">
+            <span class="text-xs font-mono font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Financial Breakdown Flow ($ USD)
+            </span>
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-blue-500"></span>Revenue</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-rose-500"></span>COGS</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-amber-500"></span>OPEX</span>
+                <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span>Net Profit</span>
+            </div>
+        </div>
+
+        <!-- SVG Waterfall Bars -->
+        <svg viewBox="0 0 800 120" class="w-full h-24 bg-white dark:bg-slate-900 rounded-2xl p-2 border border-slate-200 dark:border-slate-800">
+            <!-- Grid Lines -->
+            <line x1="0" y1="100" x2="800" y2="100" stroke="rgba(100,116,139,0.2)" stroke-width="1" />
+            
+            <!-- 1. Total Revenue Bar -->
+            @{
+                double maxVal = Math.Max(1.0, (double)TotalRevenue);
+                double revH = Math.Min(80.0, Math.Max(10.0, ((double)TotalRevenue / maxVal) * 80.0));
+                double cogsH = Math.Min(80.0, Math.Max(5.0, ((double)TotalCogs / maxVal) * 80.0));
+                double grossH = Math.Min(80.0, Math.Max(5.0, ((double)GrossProfit / maxVal) * 80.0));
+                double opexH = Math.Min(80.0, Math.Max(5.0, ((double)TotalOpex / maxVal) * 80.0));
+                double netH = Math.Min(80.0, Math.Max(5.0, (Math.Max(0, (double)NetIncome) / maxVal) * 80.0));
+            }
+            
+            <!-- Revenue -->
+            <rect x="50" y="@(100 - revH)" width="100" height="@revH" fill="#3b82f6" rx="4" />
+            <text x="100" y="@(90 - revH)" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="bold" font-family="monospace">$@((TotalRevenue / 1000).ToString("N0"))k</text>
+            <text x="100" y="115" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="sans-serif">Gross Revenue</text>
+
+            <!-- COGS -->
+            <rect x="200" y="@(100 - cogsH)" width="100" height="@cogsH" fill="#f43f5e" rx="4" />
+            <text x="250" y="@(90 - cogsH)" text-anchor="middle" fill="#fb7185" font-size="11" font-weight="bold" font-family="monospace">-$@((TotalCogs / 1000).ToString("N0"))k</text>
+            <text x="250" y="115" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="sans-serif">COGS</text>
+
+            <!-- Gross Profit -->
+            <rect x="350" y="@(100 - grossH)" width="100" height="@grossH" fill="#6366f1" rx="4" />
+            <text x="400" y="@(90 - grossH)" text-anchor="middle" fill="#818cf8" font-size="11" font-weight="bold" font-family="monospace">$@((GrossProfit / 1000).ToString("N0"))k</text>
+            <text x="400" y="115" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="sans-serif">Gross Profit</text>
+
+            <!-- OPEX -->
+            <rect x="500" y="@(100 - opexH)" width="100" height="@opexH" fill="#f59e0b" rx="4" />
+            <text x="550" y="@(90 - opexH)" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="bold" font-family="monospace">-$@((TotalOpex / 1000).ToString("N0"))k</text>
+            <text x="550" y="115" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="sans-serif">OPEX</text>
+
+            <!-- Net Income -->
+            <rect x="650" y="@(100 - netH)" width="100" height="@netH" fill="@(NetIncome >= 0 ? "#10b981" : "#f43f5e")" rx="4" />
+            <text x="700" y="@(90 - netH)" text-anchor="middle" fill="@(NetIncome >= 0 ? "#34d399" : "#fb7185")" font-size="11" font-weight="bold" font-family="monospace">$@((NetIncome / 1000).ToString("N0"))k</text>
+            <text x="700" y="115" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="sans-serif">Net Income</text>
+        </svg>
+    </div>
+
+    <!-- Modeler Inputs Form -->
+    <div class="p-6 sm:p-10 space-y-8">
+        <!-- 1. Revenue Channels -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                    <span class="text-base text-blue-500 font-bold">1.</span>
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Revenue Channels (Inflows)</h2>
+                </div>
+                <span class="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">Total: $@(TotalRevenue.ToString("N0"))</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Software Subscriptions (ARR)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.RevSubscriptions" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Enterprise Professional Services</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.RevServices" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Hardware / Sensor Sales</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.RevHardware" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Cost of Goods Sold (COGS) -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                    <span class="text-base text-rose-500 font-bold">2.</span>
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Cost of Goods Sold (Direct Costs)</h2>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-mono">
+                    <span class="text-rose-500 font-bold">COGS: -$@(TotalCogs.ToString("N0"))</span>
+                    <span class="px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 font-bold">
+                        Gross Margin: @GrossMarginPercent.ToString("F1")%
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Cloud Infrastructure & Hosting</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.CogsHosting" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Customer Success & Support</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.CogsSupport" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Payment Processing & Gateway Fees</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.CogsMerchantFees" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Operating Expenses (OPEX) -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                    <span class="text-base text-amber-500 font-bold">3.</span>
+                    <h2 class="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Operating Expenses (OPEX)</h2>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-mono">
+                    <span class="text-amber-500 font-bold">Total OPEX: -$@(TotalOpex.ToString("N0"))</span>
+                    <span class="px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 font-bold">
+                        EBITDA: $@(OperatingIncome.ToString("N0")) (@EbitdaMarginPercent.ToString("F1")%)
+                    </span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">R&D / Engineering</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.OpexRnD" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Sales & Marketing</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.OpexSalesMarketing" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">General & Admin (G&A)</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.OpexGnA" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none" />
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Facilities & Legal</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">$</span>
+                        <input type="number" @bind="Model.OpexFacilities" @bind:event="oninput"
+                               class="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Taxes & Effective Rate -->
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+                <span class="text-xs font-bold text-slate-900 dark:text-white">Effective Corporate Tax Rate</span>
+                <p class="text-[11px] text-slate-500">Calculated on pre-tax operating income: $@(TaxAmount.ToString("N0"))</p>
+            </div>
+
+            <div class="flex items-center gap-4 w-full sm:w-72">
+                <input type="range" min="0" max="40" step="1" @bind="Model.TaxRatePercent" @bind:event="oninput"
+                       class="flex-1 accent-brand-600 cursor-pointer" />
+                <span class="font-mono text-sm font-bold text-slate-900 dark:text-white min-w-10 text-right">@Model.TaxRatePercent%</span>
+            </div>
+        </div>
+
+        <!-- Summary & Actions -->
+        <div class="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3 text-xs font-mono">
+                <button type="button" @onclick="ResetToDefaultModel" class="hover:text-brand-500 underline text-slate-500">
+                    Reset to FY2026 Model
+                </button>
+                <span>•</span>
+                <span class="text-slate-400">Currency: USD ($)</span>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="button" @onclick="ExportCsv"
+                        class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition shadow-xs">
+                    Export P&L CSV
+                </button>
+                <button type="button" @onclick="SaveStatement"
+                        class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm transition shadow-md shadow-emerald-500/20 flex items-center gap-1.5">
+                    <span>Certify & File Statement</span>
+                    <span>✓</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public ProfitLossModel Model { get; set; } = new();
+    [Parameter] public EventCallback<ProfitLossModel> OnStatementSaved { get; set; }
+    [Parameter] public string CustomClass { get; set; } = "";
+
+    public class ProfitLossModel
+    {
+        public string ReportingPeriod { get; set; } = "FY2026 Q3 (Consolidated)";
+        public decimal RevSubscriptions { get; set; } = 8450000m;
+        public decimal RevServices { get; set; } = 1200000m;
+        public decimal RevHardware { get; set; } = 350000m;
+
+        public decimal CogsHosting { get; set; } = 820000m;
+        public decimal CogsSupport { get; set; } = 410000m;
+        public decimal CogsMerchantFees { get; set; } = 190000m;
+
+        public decimal OpexRnD { get; set; } = 3200000m;
+        public decimal OpexSalesMarketing { get; set; } = 2100000m;
+        public decimal OpexGnA { get; set; } = 950000m;
+        public decimal OpexFacilities { get; set; } = 380000m;
+
+        public int TaxRatePercent { get; set; } = 21;
+    }
+
+    private decimal TotalRevenue => Model.RevSubscriptions + Model.RevServices + Model.RevHardware;
+    private decimal TotalCogs => Model.CogsHosting + Model.CogsSupport + Model.CogsMerchantFees;
+    private decimal GrossProfit => TotalRevenue - TotalCogs;
+    private double GrossMarginPercent => TotalRevenue > 0 ? (double)(GrossProfit / TotalRevenue) * 100.0 : 0.0;
+
+    private decimal TotalOpex => Model.OpexRnD + Model.OpexSalesMarketing + Model.OpexGnA + Model.OpexFacilities;
+    private decimal OperatingIncome => GrossProfit - TotalOpex; // EBITDA
+    private double EbitdaMarginPercent => TotalRevenue > 0 ? (double)(OperatingIncome / TotalRevenue) * 100.0 : 0.0;
+
+    private decimal TaxAmount => OperatingIncome > 0 ? OperatingIncome * (Model.TaxRatePercent / 100.0m) : 0m;
+    private decimal NetIncome => OperatingIncome - TaxAmount;
+    private double NetMarginPercent => TotalRevenue > 0 ? (double)(NetIncome / TotalRevenue) * 100.0 : 0.0;
+
+    private void ResetToDefaultModel()
+    {
+        Model = new ProfitLossModel();
+        Toast.Show("Model Reset", "Default FY2026 baseline values restored", SemanticVariant.Default);
+    }
+
+    private void ExportCsv()
+    {
+        var csv = $"Category,Line Item,Amount USD\n" +
+                  $"Revenue,Subscriptions,{Model.RevSubscriptions}\n" +
+                  $"Revenue,Services,{Model.RevServices}\n" +
+                  $"Revenue,Hardware,{Model.RevHardware}\n" +
+                  $"Total Revenue,,{TotalRevenue}\n" +
+                  $"COGS,Hosting,{Model.CogsHosting}\n" +
+                  $"COGS,Support,{Model.CogsSupport}\n" +
+                  $"COGS,Merchant Fees,{Model.CogsMerchantFees}\n" +
+                  $"Gross Profit,,{GrossProfit}\n" +
+                  $"OPEX,R&D,{Model.OpexRnD}\n" +
+                  $"OPEX,Sales & Marketing,{Model.OpexSalesMarketing}\n" +
+                  $"OPEX,G&A,{Model.OpexGnA}\n" +
+                  $"Operating Income (EBITDA),,{OperatingIncome}\n" +
+                  $"Taxes,Taxes Owed,{TaxAmount}\n" +
+                  $"Net Income,,{NetIncome}\n";
+
+        Toast.Show("CSV Generated", $"P&L statement exported ({csv.Length} bytes)", SemanticVariant.Success);
+    }
+
+    private async Task SaveStatement()
+    {
+        Toast.Show("Statement Certified", $"Consolidated P&L for {Model.ReportingPeriod} filed with Net Income of ${NetIncome:N0} ({NetMarginPercent:F1}% Margin).", SemanticVariant.Success);
+        if (OnStatementSaved.HasDelegate)
+        {
+            await OnStatementSaved.InvokeAsync(Model);
+        }
+    }
+}

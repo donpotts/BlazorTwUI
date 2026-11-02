@@ -1,0 +1,150 @@
+@namespace BlazorTwUI.Components.UI
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div @ref="_containerRef"
+     class="relative overflow-hidden rounded-2xl select-none shadow-lg cursor-ew-resize border border-slate-200 dark:border-slate-800 touch-none @Class"
+     style="--compare-pos: @($"{Position:F1}%");"
+     role="slider"
+     tabindex="0"
+     aria-label="Image comparison slider"
+     aria-valuenow="@Position"
+     aria-valuemin="0"
+     aria-valuemax="100"
+     @onkeydown="HandleKeyDown">
+
+    <!-- After Image (Background layer) -->
+    <img src="@AfterSrc"
+         alt="@AfterAlt"
+         class="w-full h-full object-cover block pointer-events-none select-none" />
+
+    <!-- Before Image (Clipped overlay layer) -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none select-none"
+         style="clip-path: polygon(0 0, var(--compare-pos, 50%) 0, var(--compare-pos, 50%) 100%, 0 100%);">
+        <img src="@BeforeSrc"
+             alt="@BeforeAlt"
+             class="w-full h-full object-cover block pointer-events-none select-none" />
+    </div>
+
+    <!-- Before Label Badge -->
+    @if (!string.IsNullOrEmpty(BeforeLabel))
+    {
+        <div class="absolute top-3 left-3 z-10 px-2.5 py-1 rounded-lg text-[11px] font-bold tracking-wider uppercase bg-black/60 backdrop-blur-md text-white border border-white/10 shadow-sm pointer-events-none select-none transition-opacity duration-200 @(Position < 15 ? "opacity-0" : "opacity-100")">
+            @BeforeLabel
+        </div>
+    }
+
+    <!-- After Label Badge -->
+    @if (!string.IsNullOrEmpty(AfterLabel))
+    {
+        <div class="absolute top-3 right-3 z-10 px-2.5 py-1 rounded-lg text-[11px] font-bold tracking-wider uppercase bg-black/60 backdrop-blur-md text-white border border-white/10 shadow-sm pointer-events-none select-none transition-opacity duration-200 @(Position > 85 ? "opacity-0" : "opacity-100")">
+            @AfterLabel
+        </div>
+    }
+
+    <!-- Divider Line -->
+    <div class="absolute top-0 bottom-0 pointer-events-none z-20 w-0.5 bg-white shadow-[0_0_8px_rgba(0,0,0,0.4)]"
+         style="left: var(--compare-pos, 50%); transform: translateX(-50%);">
+    </div>
+
+    <!-- Draggable Handle Bar Knob -->
+    <div class="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 z-30 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white dark:bg-slate-900 border-2 border-brand-500 shadow-xl flex items-center justify-center text-slate-700 dark:text-slate-200 pointer-events-none transition-transform hover:scale-105 active:scale-95"
+         style="left: var(--compare-pos, 50%);">
+        <svg class="w-4 h-4 text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="8 17 3 12 8 7"></polyline>
+            <polyline points="16 7 21 12 16 17"></polyline>
+        </svg>
+    </div>
+</div>
+
+@code {
+    private ElementReference _containerRef;
+    private DotNetObjectReference<TwImageCompare>? _dotNetRef;
+
+    [Parameter] public string BeforeSrc { get; set; } = "";
+    [Parameter] public string AfterSrc { get; set; } = "";
+    [Parameter] public string BeforeAlt { get; set; } = "Before image";
+    [Parameter] public string AfterAlt { get; set; } = "After image";
+    [Parameter] public string BeforeLabel { get; set; } = "Before";
+    [Parameter] public string AfterLabel { get; set; } = "After";
+    [Parameter] public double Position { get; set; } = 50.0;
+    [Parameter] public EventCallback<double> PositionChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("blazorImageCompare.init", _containerRef, _dotNetRef, Position);
+            }
+            catch (Exception)
+            { }
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnPositionChanged(double newPos)
+    {
+        Position = newPos;
+        if (PositionChanged.HasDelegate)
+        {
+            await PositionChanged.InvokeAsync(Position);
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        double step = e.ShiftKey ? 10.0 : 2.0;
+        double newPos = Position;
+
+        if (e.Key == "ArrowLeft" || e.Key == "ArrowDown")
+        {
+            newPos = Math.Max(0, Position - step);
+        }
+        else if (e.Key == "ArrowRight" || e.Key == "ArrowUp")
+        {
+            newPos = Math.Min(100, Position + step);
+        }
+        else if (e.Key == "Home")
+        {
+            newPos = 0;
+        }
+        else if (e.Key == "End")
+        {
+            newPos = 100;
+        }
+        else
+        {
+            return;
+        }
+
+        Position = newPos;
+        try
+        {
+            await JS.InvokeVoidAsync("blazorImageCompare.setPosition", _containerRef, Position);
+        }
+        catch (Exception)
+        { }
+        if (PositionChanged.HasDelegate)
+        {
+            await PositionChanged.InvokeAsync(Position);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_dotNetRef != null)
+            {
+                await JS.InvokeVoidAsync("blazorImageCompare.dispose", _containerRef);
+                _dotNetRef.Dispose();
+            }
+        }
+        catch
+        { }
+    }
+}

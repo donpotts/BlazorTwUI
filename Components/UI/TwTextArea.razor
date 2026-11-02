@@ -1,0 +1,62 @@
+@* Multi-line input with label, hint, error, character counter and optional auto-grow. *@
+<div class="flex flex-col gap-1 @Class" data-testid="textarea">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label for="@_id" class="text-sm font-semibold text-slate-900 dark:text-slate-100">@Label@if (Required){<span class="text-red-700 dark:text-red-300" aria-hidden="true"> *</span>}</label>
+    }
+    <textarea id="@_id" rows="@Rows" value="@Value" @oninput="OnInputAsync" placeholder="@Placeholder" maxlength="@(MaxLength > 0 ? MaxLength : null)"
+              disabled="@Disabled" readonly="@ReadOnly" required="@Required" aria-invalid="@(HasError ? "true" : null)" aria-describedby="@Described"
+              data-testid="textarea-input"
+              class="w-full rounded-xl border bg-white dark:bg-slate-950 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60 @(HasError ? "border-red-600 focus-visible:ring-red-500" : "border-slate-300 dark:border-slate-600 focus-visible:ring-brand-500") @(AutoGrow ? "resize-none overflow-hidden" : "resize-y")"></textarea>
+    <div class="flex items-start justify-between gap-3 text-xs">
+        <span>
+            @if (HasError)
+            {
+                <span id="@($"{_id}-err")" class="text-red-700 dark:text-red-300 font-semibold" role="alert" data-testid="textarea-error">@Error</span>
+            }
+            else if (!string.IsNullOrEmpty(Hint))
+            {
+                <span id="@($"{_id}-hint")" class="text-slate-700 dark:text-slate-300">@Hint</span>
+            }
+        </span>
+        @if (MaxLength > 0)
+        {
+            <span id="@($"{_id}-count")" class="tabular-nums @(Remaining <= 10 ? "text-amber-800 dark:text-amber-300 font-semibold" : "text-slate-700 dark:text-slate-300")" aria-live="polite" data-testid="textarea-count">@Remaining left</span>
+        }
+    </div>
+</div>
+
+@code {
+    private readonly string _id = "ta-" + Guid.NewGuid().ToString("N")[..6];
+
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public string? Placeholder { get; set; }
+    [Parameter] public int MaxLength { get; set; }
+    [Parameter] public int MinRows { get; set; } = 3;
+    [Parameter] public int MaxRows { get; set; } = 12;
+    /// <summary>Grows with the content between <see cref="MinRows"/> and <see cref="MaxRows"/>.</summary>
+    [Parameter] public bool AutoGrow { get; set; }
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool HasError => !string.IsNullOrEmpty(Error);
+    private int Remaining => Math.Max(0, MaxLength - (Value?.Length ?? 0));
+
+    private int Rows => AutoGrow
+        ? Math.Clamp((Value ?? "").Split('\n').Length, MinRows, MaxRows)
+        : MinRows;
+
+    private string? Described => HasError ? $"{_id}-err" : !string.IsNullOrEmpty(Hint) ? $"{_id}-hint" : null;
+
+    private async Task OnInputAsync(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString();
+        await ValueChanged.InvokeAsync(Value);
+    }
+}

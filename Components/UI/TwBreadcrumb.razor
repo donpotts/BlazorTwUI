@@ -1,0 +1,38 @@
+<nav aria-label="Breadcrumb" class="overflow-x-auto no-scrollbar @Class">
+    <ol class="flex items-center space-x-1.5 sm:space-x-2 text-xs sm:text-sm text-slate-500 dark:text-slate-400 whitespace-nowrap">
+        @for (int i = 0; i < Items.Count; i++)
+        {
+            var item = Items[i];
+            var isLast = i == Items.Count - 1;
+
+            <li class="inline-flex items-center">
+                @if (i > 0)
+                {
+                    <svg class="w-4 h-4 mx-1 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                }
+
+                @if (isLast || string.IsNullOrWhiteSpace(item.Href))
+                {
+                    <span class="font-semibold text-slate-900 dark:text-white" aria-current="page">
+                        @item.Label
+                    </span>
+                }
+                else
+                {
+                    <a href="@item.Href" class="hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
+                        @item.Label
+                    </a>
+                }
+            </li>
+        }
+    </ol>
+</nav>
+
+@code {
+    public sealed record BreadcrumbItem(string Label, string? Href = null);
+
+    [Parameter] public IReadOnlyList<BreadcrumbItem> Items { get; set; } = Array.Empty<BreadcrumbItem>();
+    [Parameter] public string? Class { get; set; }
+}

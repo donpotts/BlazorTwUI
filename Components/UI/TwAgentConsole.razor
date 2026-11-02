@@ -1,0 +1,219 @@
+@implements IDisposable
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject IAgentTransport DefaultTransport
+@inject IServiceProvider Services
+
+<div class="space-y-4 @Class" data-testid="agent-console">
+    <TwTakeoverBar Session="_session" />
+    <TwApprovalGate Session="_session" />
+
+    <div class="grid grid-cols-1 xl:grid-cols-[16rem_minmax(0,1fr)_22rem] gap-4">
+        <div class="space-y-4">
+            <TwAgentRoster Agents="_agents" SelectedId="_selected.Id" StatusText="@_session.Status.ToString()" OnSelect="a => _selected = a" />
+            @if (_threads is not null)
+            {
+                <TwThreadList Store="_threads" SelectedId="_threadId" OnSelect="SelectThread" OnDeleted="OnThreadDeleted" />
+            }
+        </div>
+
+        <section aria-label="Conversation" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 flex flex-col gap-3 min-h-[28rem]">
+            <header class="flex items-center gap-3">
+                <TwAgentOrb Name="@_selected.Name" Status="_session.Status" />
+                <div>
+                    <h2 class="text-sm font-black text-slate-900 dark:text-white">@_selected.Name</h2>
+                    <p class="text-xs text-slate-700 dark:text-slate-300" data-testid="transport-label">@TransportLabel</p>
+                </div>
+            </header>
+            <div class="flex-1 space-y-3 overflow-y-auto" role="log" aria-live="polite" aria-label="Agent conversation" data-testid="timeline">
+                @foreach (var h in HistoryMessages())
+                {
+                    <div class="flex @(h.Role == "user" ? "justify-end" : "justify-start")" data-testid="thread-history">
+                        <p class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm opacity-80 @(h.Role == "user" ? "bg-brand-700 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100")" data-role="@h.Role">@h.Text</p>
+                    </div>
+                }
+                @if (_session.Timeline.Count == 0 && !HistoryMessages().Any())
+                {
+                    <p class="text-sm text-slate-600 dark:text-slate-400">
+                        Ask <strong>@_selected.Name</strong> to do something. Risky tool calls will stop and wait for you.
+                    </p>
+                }
+                @foreach (var item in _session.Timeline)
+                {
+                    @switch (item)
+                    {
+                        case AgentMessage m:
+                            <div class="flex @(m.Role == "user" ? "justify-end" : "justify-start")">
+                                <p class="max-w-[85%] rounded-2xl px-4 py-2.5 text-sm @(m.Role == "user" ? "bg-brand-700 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100")" data-testid="message" data-role="@m.Role">
+                                    @m.Content@if (m.IsStreaming)
+                                    {<span class="inline-block w-1.5 h-4 ms-0.5 align-middle bg-current animate-pulse motion-reduce:animate-none" aria-hidden="true"></span>}
+                                </p>
+                            </div>
+                            @if (m.Role != "user" && !m.IsStreaming)
+                            {
+                                <div class="flex justify-start ps-1">
+                                    <TwFeedbackButtons Value="FeedbackFor(m.Id)" ValueChanged="v => _feedback[m.Id] = v" />
+                                </div>
+                            }
+                            break;
+                        case ToolCallRecord c:
+                            <TwToolCallCard Call="c" />
+                            break;
+                    }
+                }
+            </div>
+
+            <form class="flex gap-2" @onsubmit="RunAsync" @onsubmit:preventDefault="true">
+                <label for="agent-prompt" class="sr-only">Message to the agent</label>
+                <input id="agent-prompt" type="text" @bind="_prompt" @bind:event="oninput" disabled="@_session.IsActive" data-testid="prompt"
+                       class="flex-1 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" />
+                <button type="submit" disabled="@(_session.IsActive || string.IsNullOrWhiteSpace(_prompt))" data-testid="run"
+                        class="min-h-[44px] px-5 rounded-xl bg-brand-700 text-white text-sm font-bold hover:bg-brand-600 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-500">
+                    Run
+                </button>
+            </form>
+            <TwChatSuggestions Items="Suggestions" Disabled="_session.IsActive" OnPick="s => _prompt = s" />
+        </section>
+
+        <div class="space-y-4">
+            <TwAgentStateInspector Session="_session" />
+            <TwAuditTrail Session="_session" />
+        </div>
+    </div>
+</div>
+
+@code {
+    private static readonly IReadOnlyList<AgentProfile> DefaultAgents = new[]
+    {
+        new AgentProfile("refunds", "Refund Desk", "Support operations", "Looks up orders and issues refunds. Money movement always needs your approval.", "💳"),
+    };
+
+    private static readonly IReadOnlyList<string> Suggestions = new[]
+    {
+        "Please refund order 4821, the desk arrived with a cracked leg.",
+        "Refund order 4821 but only half, the damage is cosmetic.",
+        "Check the status of order 4821."
+    };
+
+    private AgentRunSession _session = default!;
+    private IAgentThreadStore? _threads;
+    private string? _threadId;
+    private int _historyCount;
+    private readonly Dictionary<string, TwFeedbackButtons.FeedbackRating> _feedback = new();
+    private AgentProfile _selected = DefaultAgents[0];
+    private IReadOnlyList<AgentProfile> _agents = DefaultAgents;
+    private string _prompt = "Please refund order 4821, the desk arrived with a cracked leg.";
+
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public IReadOnlyList<AgentProfile>? Agents { get; set; }
+
+    /// <summary>Use this transport instead of the one registered in DI (for example a live <see cref="SseAgentTransport"/>).</summary>
+    [Parameter] public IAgentTransport? Transport { get; set; }
+
+    /// <summary>Short description of the connected agent, shown under its name.</summary>
+    [Parameter] public string? TransportLabel { get; set; } = "Simulated agent (offline)";
+
+    /// <summary>Show a conversation thread list; each run is saved to the thread it belongs to.</summary>
+    [Parameter] public bool ShowThreads { get; set; }
+
+    /// <summary>The live session, exposed so a host page can read status or drive it.</summary>
+    public AgentRunSession Session => _session;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _session = new AgentRunSession(Transport ?? DefaultTransport);
+        _session.Changed += OnChanged;
+
+        if (ShowThreads)
+        {
+            _threads = Services.GetService(typeof(IAgentThreadStore)) as IAgentThreadStore;
+            if (_threads is AgentThreadStore persistent) await persistent.LoadAsync();
+        }
+    }
+
+    private TwFeedbackButtons.FeedbackRating FeedbackFor(string id) =>
+        _feedback.TryGetValue(id, out var v) ? v : TwFeedbackButtons.FeedbackRating.None;
+
+    private IEnumerable<ThreadMessage> HistoryMessages()
+    {
+        if (_threads is null || _threadId is null || _threads.Get(_threadId) is not { } t) return Enumerable.Empty<ThreadMessage>();
+        return _session.Timeline.Count == 0 ? t.Messages : t.Messages.Take(_historyCount);
+    }
+
+    private void SelectThread(AgentThread thread)
+    {
+        if (_session.IsActive) return;
+        _threadId = thread.Id;
+        _historyCount = thread.Messages.Count;
+        ResetSession();
+    }
+
+    private void OnThreadDeleted(AgentThread thread)
+    {
+        if (_threadId != thread.Id) return;
+        _threadId = null;
+        _historyCount = 0;
+        if (!_session.IsActive) ResetSession();
+    }
+
+    private void ResetSession()
+    {
+        _session.Changed -= OnChanged;
+        _session = new AgentRunSession(Transport ?? DefaultTransport);
+        _session.Changed += OnChanged;
+        _renderedVersion = -1;
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Agents is { Count: > 0 } supplied && !ReferenceEquals(supplied, _agents))
+        {
+            _agents = supplied;
+            _selected = supplied[0];
+        }
+    }
+
+    private bool _renderQueued;
+    private int _renderedVersion = -1;
+
+    private void OnChanged()
+    {
+        if (_renderQueued) return;
+        _renderQueued = true;
+        _ = InvokeAsync(() =>
+        {
+            _renderQueued = false;
+            if (_renderedVersion != _session.Version) StateHasChanged();
+        });
+    }
+
+    protected override void OnAfterRender(bool firstRender) => _renderedVersion = _session.Version;
+
+    private async Task RunAsync()
+    {
+        if (_session.IsActive || string.IsNullOrWhiteSpace(_prompt)) return;
+
+        var prompt = _prompt;
+        if (_threads is not null)
+        {
+            _threadId ??= _threads.Create().Id;
+            _historyCount = _threads.Get(_threadId)?.Messages.Count ?? 0;
+            _threads.Append(_threadId, "user", prompt);
+        }
+
+        await _session.RunAsync(prompt);
+
+        // Save the agent reply so the thread can be reopened later.
+        if (_threads is not null && _threadId is not null)
+        {
+            var reply = string.Join(" ", _session.Timeline.OfType<AgentMessage>().Where(m => m.Role != "user").Select(m => m.Content.Trim()).Where(c => c.Length > 0));
+            if (reply.Length > 0) _threads.Append(_threadId, "assistant", reply);
+        }
+    }
+
+    public void Dispose()
+    {
+        _session.Changed -= OnChanged;
+        _session.Cancel();
+    }
+}

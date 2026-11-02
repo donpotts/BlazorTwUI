@@ -1,0 +1,93 @@
+<div class="@TwMerge.Merge("inline-flex items-center gap-1 p-1 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs", Class)"
+     role="menubar">
+    @foreach (var menu in Menus)
+    {
+        var isOpen = _activeMenu == menu.Title;
+        <div class="relative">
+            <button type="button"
+                    role="menuitem"
+                    @onclick="() => ToggleMenu(menu.Title)"
+                    @onmouseenter="() => OnHoverMenu(menu.Title)"
+                    class="px-3 py-1.5 rounded-lg text-xs font-semibold transition select-none @(isOpen ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800/70")">
+                @menu.Title
+            </button>
+
+            @if (isOpen)
+            {
+                <div class="absolute left-0 top-full mt-1.5 w-56 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-1.5 shadow-xl z-50 space-y-0.5"
+                     role="menu">
+                    @foreach (var item in menu.Items)
+                    {
+                        if (item.IsSeparator)
+                        {
+                            <div class="my-1 h-px bg-slate-100 dark:bg-slate-800"></div>
+                        }
+                        else
+                        {
+                            <button type="button"
+                                    disabled="@item.Disabled"
+                                    @onclick="() => SelectItem(menu, item)"
+                                    class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-medium text-left transition disabled:opacity-40 disabled:pointer-events-none text-slate-700 dark:text-slate-200 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/50 dark:hover:text-brand-300">
+                                <span class="flex items-center gap-2">
+                                    @if (item.Checkable)
+                                    {
+                                        <span class="w-3.5 text-center font-bold text-brand-500">@(item.Checked ? "✓" : "")</span>
+                                    }
+                                    <span>@item.Label</span>
+                                </span>
+                                @if (!string.IsNullOrWhiteSpace(item.Shortcut))
+                                {
+                                    <span class="text-[10px] font-mono text-slate-400 dark:text-slate-500 tracking-tighter">@item.Shortcut</span>
+                                }
+                            </button>
+                        }
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    public sealed class MenubarMenu
+    {
+        public string Title { get; set; } = string.Empty;
+        public List<MenubarItem> Items { get; set; } = new();
+    }
+
+    public sealed class MenubarItem
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+        public string? Shortcut { get; set; }
+        public bool IsSeparator { get; set; }
+        public bool Disabled { get; set; }
+        public bool Checkable { get; set; }
+        public bool Checked { get; set; }
+    }
+
+    private string? _activeMenu;
+
+    [Parameter] public List<MenubarMenu> Menus { get; set; } = new();
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public EventCallback<MenubarItem> OnItemSelected { get; set; }
+
+    private void ToggleMenu(string title)
+    {
+        _activeMenu = _activeMenu == title ? null : title;
+    }
+
+    private void OnHoverMenu(string title)
+    {
+        if (!string.IsNullOrWhiteSpace(_activeMenu))
+            _activeMenu = title;
+    }
+
+    private async Task SelectItem(MenubarMenu menu, MenubarItem item)
+    {
+        if (item.Checkable)
+            item.Checked = !item.Checked;
+        _activeMenu = null;
+        await OnItemSelected.InvokeAsync(item);
+    }
+}

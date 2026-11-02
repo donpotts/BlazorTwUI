@@ -1,0 +1,190 @@
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@* Every agent-kit component working on sample data. Nothing here is a screenshot: each control changes real state. *@
+<div class="space-y-8" data-testid="agentkit-demo">
+    <header>
+        <h2 class="text-xl font-black text-slate-900 dark:text-white">Agent Kit</h2>
+        <p class="text-sm text-slate-700 dark:text-slate-300 mt-1 max-w-3xl">Generative UI, voice, threads and feedback, plus handoff, live screen, grants, memory and routines. Built natively in C# for Blazor WebAssembly and Tailwind CSS v3.4+.</p>
+    </header>
+
+    <section aria-labelledby="gen-ui" class="space-y-3">
+        <h3 id="gen-ui" class="text-base font-bold text-slate-900 dark:text-white">Generative UI: the agent describes the interface (A2UI)</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+            <TwA2uiSurface Surface="_surface" OnAction="OnA2uiAction" />
+            <div class="space-y-2">
+                <p class="text-sm text-slate-800 dark:text-slate-200">The form on the left was streamed as JSON. What it sends back:</p>
+                <TwRedactedValue Value="@_a2uiResult" Label="Action sent to the agent" />
+            </div>
+        </div>
+    </section>
+
+    <section aria-labelledby="mcp" class="space-y-3">
+        <h3 id="mcp" class="text-base font-bold text-slate-900 dark:text-white">MCP app in a sandbox</h3>
+        <div class="grid md:grid-cols-2 gap-4">
+            <TwMcpAppFrame Html="@McpHtml" Title="Order widget" Height="10rem" OnMessage="m => _mcpMessage = m" />
+            <p class="text-sm text-slate-800 dark:text-slate-200">Message received from the sandboxed app: <code data-testid="mcp-received">@(_mcpMessage ?? "none yet")</code></p>
+        </div>
+    </section>
+
+    <section aria-labelledby="handoff" class="space-y-3">
+        <h3 id="handoff" class="text-base font-bold text-slate-900 dark:text-white">Handoff and live screen</h3>
+        <div class="grid lg:grid-cols-2 gap-4">
+            <div class="space-y-3">
+                <TwHandoffPanel AgentName="Refund Desk" Reason="The refund portal is asking for a CAPTCHA." Where="portal.test/refunds"
+                                Resolved="_handedBack" OnTakeOver="() => { _driving = true; _handedBack = false; }" OnHandBack="() => { _driving = false; _handedBack = true; }" />
+                <TwDryRunChanges Changes="_dryRun" />
+            </div>
+            <TwLiveScreen Url="portal.test/refunds" ImageUrl="@ScreenImage" CursorX="0.62" CursorY="0.4" Controlling="_driving"
+                          ControllingChanged="v => _driving = v" OnScreenClick="OnScreenClick" />
+        </div>
+        <p class="text-xs text-slate-700 dark:text-slate-300">Last click while driving: <span data-testid="last-click">@(_lastClick ?? "none")</span></p>
+    </section>
+
+    <section aria-labelledby="ops" class="space-y-3">
+        <h3 id="ops" class="text-base font-bold text-slate-900 dark:text-white">Activity, command output and secrets</h3>
+        <div class="grid lg:grid-cols-2 gap-4">
+            <TwActivityLog Entries="_activity" />
+            <TwCommandOutput Command="curl -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.abc' https://api.test/orders/4821" Output="@CommandOut" ExitCode="0" />
+        </div>
+    </section>
+
+    <section aria-labelledby="control" class="space-y-3">
+        <h3 id="control" class="text-base font-bold text-slate-900 dark:text-white">What the agent may do, remembers, and runs on a schedule</h3>
+        <div class="grid xl:grid-cols-3 gap-4">
+            <TwGrantList Items="_grants" OnChanged="OnGrantChanged" OnRevoked="OnGrantRevoked" />
+            <TwMemoryList Items="_memories" />
+            <TwRoutinesList Items="_routines" />
+        </div>
+        <p class="text-xs text-slate-700 dark:text-slate-300" role="status">Last grant change: <span data-testid="grant-log">@(_grantLog ?? "none")</span></p>
+    </section>
+
+    <section aria-labelledby="chat" class="space-y-3">
+        <h3 id="chat" class="text-base font-bold text-slate-900 dark:text-white">Chat pieces</h3>
+        <div class="grid lg:grid-cols-2 gap-4">
+            <div class="space-y-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+                <TwMessageScroller Height="9rem" Label="Sample conversation">
+                    @foreach (var m in _chat)
+                    {
+                        <p class="text-sm py-1 @(m.Role == "user" ? "text-end text-brand-900 dark:text-brand-100" : "text-slate-900 dark:text-slate-100")" data-testid="chat-line">@m.Text</p>
+                    }
+                </TwMessageScroller>
+                <button type="button" @onclick="AddChat" data-testid="chat-add"
+                        class="min-h-[36px] px-3 rounded-xl border border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Add a message</button>
+                <TwChatSuggestions Items="_ideas" OnPick="s => _picked = s" />
+                <p class="text-xs text-slate-700 dark:text-slate-300">Picked: <span data-testid="picked">@(_picked ?? "none")</span></p>
+                <TwFeedbackButtons @bind-Value="_rating" />
+                <TwAttachmentQueue @bind-Items="_files" MaxFiles="3" MaxBytes="1048576" />
+                <TwVoiceInput Transcribe="FakeTranscribe" OnTranscript="t => _picked = t" />
+            </div>
+            <TwQuestionnaire Questions="_questions" OnSubmit="OnAnswers" />
+        </div>
+        <p class="text-xs text-slate-700 dark:text-slate-300" role="status">Answers sent: <span data-testid="answers">@(_answers ?? "none")</span></p>
+    </section>
+</div>
+
+@code {
+    private readonly A2uiSurface _surface = new();
+    private string _a2uiResult = "(press Send)";
+    private string? _mcpMessage;
+    private bool _driving, _handedBack;
+    private string? _lastClick, _grantLog, _picked, _answers;
+    private TwFeedbackButtons.FeedbackRating _rating;
+    private List<TwAttachmentQueue.AttachmentInfo> _files = new();
+
+    private static string ScreenImage =>
+        "data:image/svg+xml;utf8," + Uri.EscapeDataString(
+            "<svg xmlns='http://www.w3.org/2000/svg' width='960' height='540'><rect width='960' height='540' fill='#0f172a'/>" +
+            "<rect x='60' y='60' width='840' height='60' rx='12' fill='#1e293b'/><rect x='60' y='150' width='400' height='300' rx='12' fill='#1e293b'/>" +
+            "<rect x='500' y='150' width='400' height='140' rx='12' fill='#334155'/><rect x='500' y='310' width='190' height='60' rx='12' fill='#4f46e5'/>" +
+            "<text x='90' y='98' font-family='sans-serif' font-size='24' fill='#e2e8f0'>Refund portal</text></svg>");
+
+    private const string McpHtml = """
+        <div style="font-family:sans-serif;padding:12px">
+          <strong>Order 4821</strong><p style="margin:4px 0">Walnut desk, $249.00</p>
+          <button id="b" style="padding:6px 12px">Mark reviewed</button>
+          <script>document.getElementById('b').onclick=()=>parent.postMessage({type:'reviewed',order:'4821'},'*');</script>
+        </div>
+        """;
+
+    private const string CommandOut = "HTTP/2 200\n{\"orderId\":\"4821\",\"status\":\"delivered\"}\nDone in 212 ms";
+
+    private readonly List<TwDryRunChanges.DryRunChange> _dryRun = new()
+    {
+        new(TwDryRunChanges.DryRunKind.Update, "Order 4821 refund", "$0.00", "$249.00"),
+        new(TwDryRunChanges.DryRunKind.Create, "Customer email", After: "refund_confirmation"),
+    };
+
+    private readonly List<TwActivityLog.ActivityEntry> _activity = new()
+    {
+        new(DateTime.UtcNow.AddSeconds(-30), "navigate", "Opened refund portal", "portal.test/refunds"),
+        new(DateTime.UtcNow.AddSeconds(-22), "type", "Entered order number", "4821"),
+        new(DateTime.UtcNow.AddSeconds(-12), "click", "Pressed Search"),
+        new(DateTime.UtcNow.AddSeconds(-4), "error", "CAPTCHA appeared", "Waiting for a human"),
+    };
+
+    private readonly List<TwGrantList.Grant> _grants = new()
+    {
+        new() { Tool = "Gmail", Level = TwGrantList.GrantLevel.Read },
+        new() { Tool = "Stripe refunds", Level = TwGrantList.GrantLevel.Ask },
+        new() { Tool = "Calendar", Level = TwGrantList.GrantLevel.Write },
+    };
+
+    private readonly List<TwMemoryList.Memory> _memories = new()
+    {
+        new("m1", "Dana in billing approves refunds over $200", "Slack thread, Mar 3", DateTime.UtcNow.AddDays(-20)),
+        new("m2", "Customer 4821 prefers email over phone", "Support chat", DateTime.UtcNow.AddDays(-6)),
+    };
+
+    private readonly List<TwRoutinesList.Routine> _routines = new()
+    {
+        new() { Name = "Daily refund digest", Schedule = "Weekdays at 8:00", NextRunUtc = DateTime.UtcNow.AddHours(14) },
+        new() { Name = "Stale ticket sweep", Schedule = "Every Friday", Enabled = false },
+    };
+
+    private readonly List<ThreadMessage> _chat = new()
+    {
+        new("user", "Refund order 4821"), new("assistant", "Looking it up."), new("assistant", "Found it, preparing the refund."),
+    };
+
+    private readonly IReadOnlyList<string> _ideas = new[] { "Show the audit trail", "Undo the last action", "Summarize today" };
+
+    private readonly IReadOnlyList<TwQuestionnaire.Question> _questions = new[]
+    {
+        new TwQuestionnaire.Question { Id = "account", Prompt = "Refund to which account?", Description = "The agent needs this before it can continue.", Options = { "Original payment method", "Store credit" } },
+        new TwQuestionnaire.Question { Id = "notify", Prompt = "How should we tell the customer?", Multiple = true, AllowOther = true, Options = { "Email", "SMS" } },
+    };
+
+    protected override void OnInitialized()
+    {
+        _surface.Apply("""{"createSurface":{"surfaceId":"refund"}}""");
+        _surface.Apply("""
+            {"updateComponents":{"surfaceId":"refund","components":[
+              {"id":"root","component":"Card","children":["col"]},
+              {"id":"col","component":"Column","children":["title","amount","reason","notify","go"]},
+              {"id":"title","component":"Text","variant":"h3","text":"Confirm refund for order 4821"},
+              {"id":"amount","component":"TextField","label":"Amount","value":{"path":"/refund/amount"}},
+              {"id":"reason","component":"ChoicePicker","label":"Reason","options":[{"label":"Damaged","value":"damaged"},{"label":"Late","value":"late"}],"value":{"path":"/refund/reason"}},
+              {"id":"notify","component":"CheckBox","label":"Email the customer","value":{"path":"/refund/notify"}},
+              {"id":"go","component":"Button","label":"Send","action":{"name":"confirm_refund","context":{"amount":{"path":"/refund/amount"},"reason":{"path":"/refund/reason"},"notify":{"path":"/refund/notify"}}}}
+            ]}}
+            """);
+        _surface.Apply("""{"updateDataModel":{"surfaceId":"refund","path":"/refund","value":{"amount":"249.00","reason":"damaged","notify":true}}}""");
+    }
+
+    private void OnA2uiAction(A2uiUserAction a) =>
+        _a2uiResult = System.Text.Json.JsonSerializer.Serialize(new { a.Name, a.Context }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+
+    private void OnScreenClick((double X, double Y) c) =>
+        _lastClick = c.X.ToString("0.00") + ", " + c.Y.ToString("0.00");
+
+    private void OnGrantChanged(TwGrantList.Grant g) => _grantLog = g.Tool + " set to " + g.Level;
+
+    private void OnGrantRevoked(TwGrantList.Grant g) => _grantLog = g.Tool + " revoked";
+
+    private void OnAnswers(IReadOnlyDictionary<string, IReadOnlyList<string>> a) =>
+        _answers = string.Join("; ", a.Select(kv => kv.Key + "=" + string.Join(",", kv.Value)));
+
+    private void AddChat() => _chat.Add(new("assistant", $"Message {_chat.Count + 1}: still working on it."));
+
+    private static Task<string> FakeTranscribe(TwVoiceInput.VoiceClip clip) => Task.FromResult($"(transcribed {clip.Bytes.Length} bytes of {clip.Mime})");
+}

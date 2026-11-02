@@ -1,0 +1,33 @@
+@inject IJSRuntime JS
+
+<div @ref="_cardRef"
+     class="group relative rounded-3xl border border-slate-200/80 dark:border-slate-800/80 bg-white/70 dark:bg-slate-900/70 backdrop-blur-md p-6 sm:p-8 overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 @Class">
+    
+    <!-- Mouse Spotlight Radial Glow -->
+    <div class="pointer-events-none absolute -inset-px rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+         style="background: radial-gradient(350px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), @SpotlightColor, transparent 80%);"></div>
+
+    <div class="relative z-10">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string SpotlightColor { get; set; } = "rgba(99, 102, 241, 0.15)";
+    [Parameter] public string? Class { get; set; }
+
+    private ElementReference _cardRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("blazorTailwind.initSpotlightTracker", _cardRef);
+            }
+            catch { }
+        }
+    }
+}

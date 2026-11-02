@@ -1,0 +1,178 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="space-y-4 @CustomClass">
+    <!-- Drag & Drop Zone Box -->
+    <div class="relative rounded-2xl border-2 border-dashed p-6 sm:p-8 text-center transition-all duration-200 cursor-pointer @(IsDragging ? "border-brand-500 bg-brand-50/50 dark:bg-brand-950/20 ring-4 ring-brand-500/10 scale-[1.01]" : "border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/50 hover:border-brand-500/60 hover:bg-slate-50 dark:hover:bg-slate-850")"
+         @ondragover="HandleDragOver"
+         @ondragleave="HandleDragLeave"
+         @ondrop="HandleDrop">
+        
+        <input type="file"
+               multiple="@AllowMultiple"
+               accept="@AcceptedExtensions"
+               @onchange="HandleFileInput"
+               class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" />
+
+        <div class="flex flex-col items-center justify-center space-y-2 pointer-events-none">
+            <div class="p-3 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-200/80 dark:border-slate-700 text-brand-600 dark:text-brand-400">
+                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+            </div>
+
+            <div>
+                <p class="text-sm font-bold text-slate-800 dark:text-slate-200">
+                    <span class="text-brand-600 dark:text-brand-400">Click to upload</span> or drag and drop files
+                </p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    @(string.IsNullOrEmpty(AcceptedExtensions) ? "All formats supported" : AcceptedExtensions) (Up to @(MaxFileSizeMb)MB per file)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active File Queue List -->
+    @if (Files.Any())
+    {
+        <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800 text-xs">
+                <span class="font-bold text-slate-800 dark:text-slate-200">
+                    Upload Queue (@Files.Count @(Files.Count == 1 ? "file" : "files"))
+                </span>
+                <button type="button" @onclick="ClearAllFiles" class="text-slate-400 hover:text-rose-500 text-[11px] transition">
+                    Clear All
+                </button>
+            </div>
+
+            <div class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
+                @foreach (var file in Files)
+                {
+                    <div class="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-850/80 border border-slate-200/60 dark:border-slate-800">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <!-- Extension Icon Badge -->
+                            <span class="w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold font-mono uppercase tracking-tight shadow-xs @GetExtBadgeColor(file.Name)">
+                                @GetExtension(file.Name)
+                            </span>
+
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">@file.Name</p>
+                                <p class="text-[10px] text-slate-400 font-mono">@FormatBytes(file.SizeBytes)</p>
+                            </div>
+                        </div>
+
+                        <!-- Progress or Status -->
+                        <div class="flex items-center gap-3">
+                            <div class="w-24 sm:w-32 hidden sm:block">
+                                <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                    <div class="h-full @(file.Progress >= 100 ? "bg-emerald-500" : "bg-brand-500") rounded-full transition-all duration-300"
+                                         style="width: @file.Progress%"></div>
+                                </div>
+                            </div>
+
+                            <span class="text-[11px] font-mono font-semibold min-w-[32px] text-right @(file.Progress >= 100 ? "text-emerald-500" : "text-brand-500")">
+                                @(file.Progress >= 100 ? "✓" : $"{file.Progress}%")
+                            </span>
+
+                            <button type="button" @onclick="() => RemoveFile(file)" class="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Remove File">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    public class DropzoneFile
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Name { get; set; } = "";
+        public long SizeBytes { get; set; }
+        public int Progress { get; set; } = 100;
+        public bool IsError { get; set; }
+    }
+
+    [Parameter] public bool AllowMultiple { get; set; } = true;
+    [Parameter] public string AcceptedExtensions { get; set; } = ".png, .jpg, .pdf, .zip, .cs, .json";
+    [Parameter] public int MaxFileSizeMb { get; set; } = 25;
+    [Parameter] public List<DropzoneFile> Files { get; set; } = new();
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<List<DropzoneFile>> FilesChanged { get; set; }
+
+    private bool IsDragging = false;
+
+    protected override void OnInitialized()
+    {
+        if (!Files.Any())
+        {
+            Files = new List<DropzoneFile>
+            {
+                new DropzoneFile { Name = "architecture-spec.pdf", SizeBytes = 1420000, Progress = 100 },
+                new DropzoneFile { Name = "blazor-wasm-engine.cs", SizeBytes = 48200, Progress = 100 },
+                new DropzoneFile { Name = "tailwind-bundle.min.css", SizeBytes = 38400, Progress = 85 }
+            };
+        }
+    }
+
+    private void HandleDragOver() => IsDragging = true;
+    private void HandleDragLeave() => IsDragging = false;
+
+    private void HandleDrop()
+    {
+        IsDragging = false;
+        // In WebAssembly simulated drop action
+    }
+
+    private void HandleFileInput(ChangeEventArgs e)
+    {
+        Files.Add(new DropzoneFile
+        {
+            Name = $"uploaded-package-{Files.Count + 1}.zip",
+            SizeBytes = 2840000,
+            Progress = 100
+        });
+        FilesChanged.InvokeAsync(Files);
+    }
+
+    private void RemoveFile(DropzoneFile file)
+    {
+        Files.Remove(file);
+        FilesChanged.InvokeAsync(Files);
+    }
+
+    private void ClearAllFiles()
+    {
+        Files.Clear();
+        FilesChanged.InvokeAsync(Files);
+    }
+
+    private string GetExtension(string name)
+    {
+        var ext = Path.GetExtension(name).TrimStart('.');
+        return string.IsNullOrEmpty(ext) ? "FILE" : ext.ToUpperInvariant();
+    }
+
+    private string GetExtBadgeColor(string name)
+    {
+        var ext = Path.GetExtension(name).ToLowerInvariant();
+        return ext switch
+        {
+            ".pdf" => "bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400",
+            ".png" or ".jpg" or ".jpeg" or ".webp" => "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400",
+            ".zip" or ".tar" or ".gz" => "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400",
+            ".cs" or ".razor" => "bg-brand-100 text-brand-700 dark:bg-brand-950/60 dark:text-brand-400",
+            _ => "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+        };
+    }
+
+    private string FormatBytes(long bytes)
+    {
+        if (bytes >= 1048576) return $"{(bytes / 1048576.0):F1} MB";
+        if (bytes >= 1024) return $"{(bytes / 1024.0):F0} KB";
+        return $"{bytes} B";
+    }
+}

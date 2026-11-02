@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="wallGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#8b5cf6" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#ec4899" stop-opacity="0.7" />
+    </linearGradient>
+    <linearGradient id="tableGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#78350f" />
+      <stop offset="100%" stop-color="#451a03" />
+    </linearGradient>
+    <linearGradient id="cupGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9" />
+      <stop offset="50%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000" flood-opacity="0.45" />
+    </filter>
+  </defs>
+
+  <!-- Cluttered Studio Background -->
+  <rect width="800" height="320" fill="url(#wallGrad)" />
+  <circle cx="140" cy="90" r="65" fill="#ffffff" opacity="0.15" />
+  <circle cx="240" cy="180" r="45" fill="#fef08a" opacity="0.12" />
+  <circle cx="660" cy="80" r="80" fill="#ffffff" opacity="0.12" />
+  <circle cx="720" cy="220" r="55" fill="#67e8f9" opacity="0.15" />
+  <circle cx="100" cy="250" r="40" fill="#f472b6" opacity="0.18" />
+
+  <!-- Wooden Tabletop -->
+  <rect y="320" width="800" height="130" fill="url(#tableGrad)" />
+  <line x1="0" y1="320" x2="800" y2="320" stroke="#b45309" stroke-width="3" opacity="0.4" />
+
+  <!-- Studio Subject: Premium Pro Wireless Headphones -->
+  <g transform="translate(400, 240)" filter="url(#dropShadow)">
+    <path d="M-140,0 C-140,-130 140,-130 140,0" fill="none" stroke="#0f172a" stroke-width="22" stroke-linecap="round" />
+    <path d="M-140,0 C-140,-130 140,-130 140,0" fill="none" stroke="#38bdf8" stroke-width="4" stroke-linecap="round" opacity="0.6" />
+    <path d="M-75,-100 C-30,-120 30,-120 75,-100" fill="none" stroke="#1e293b" stroke-width="28" stroke-linecap="round" />
+    <ellipse cx="-140" cy="20" rx="34" ry="58" fill="url(#cupGrad)" stroke="#1e293b" stroke-width="8" />
+    <ellipse cx="-140" cy="20" rx="20" ry="38" fill="#0f172a" />
+    <circle cx="-140" cy="20" r="10" fill="#38bdf8" opacity="0.8" />
+    <ellipse cx="140" cy="20" rx="34" ry="58" fill="url(#cupGrad)" stroke="#1e293b" stroke-width="8" />
+    <ellipse cx="140" cy="20" rx="20" ry="38" fill="#0f172a" />
+    <circle cx="140" cy="20" r="10" fill="#38bdf8" opacity="0.8" />
+  </g>
+</svg>

@@ -1,0 +1,26 @@
+@inject ThemeService Theme
+@implements IDisposable
+
+<CascadingValue Value="Theme">
+    @ChildContent
+</CascadingValue>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Theme.OnChange += HandleThemeChanged;
+            await Theme.InitializeAsync();
+        }
+    }
+
+    private void HandleThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Theme.OnChange -= HandleThemeChanged;
+    }
+}

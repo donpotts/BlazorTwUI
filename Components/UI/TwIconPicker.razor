@@ -1,0 +1,221 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Services
+@inject ToastService Toast
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-6 @CustomClass">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-xl">
+                🎨
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
+                        @FilteredItemsCount Items
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Mode & Filter Tabs -->
+        <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl text-xs font-semibold">
+            <button type="button" @onclick='() => _activeCategory = "all"'
+                    class="px-3 py-1.5 rounded-xl transition @(_activeCategory == "all" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold" : "text-slate-500 hover:text-slate-900 dark:hover:text-white")">
+                All (@(TwIcon.AllIconNames.Count + TwEmoji.AvailableShortcodes.Count))
+            </button>
+            <button type="button" @onclick='() => _activeCategory = "icons"'
+                    class="px-3 py-1.5 rounded-xl transition @(_activeCategory == "icons" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold" : "text-slate-500 hover:text-slate-900 dark:hover:text-white")">
+                SVG Icons (@TwIcon.AllIconNames.Count)
+            </button>
+            <button type="button" @onclick='() => _activeCategory = "emojis"'
+                    class="px-3 py-1.5 rounded-xl transition @(_activeCategory == "emojis" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold" : "text-slate-500 hover:text-slate-900 dark:hover:text-white")">
+                Emojis (@TwEmoji.AvailableShortcodes.Count)
+            </button>
+        </div>
+    </div>
+
+    <!-- Search & Live Controls Toolbar -->
+    <div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+        <!-- Search Input -->
+        <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <TwIcon Name="search" Size="ComponentSize.Sm" />
+            </span>
+            <input type="text" @bind="_search" @bind:event="oninput"
+                   placeholder="Search icons & emojis (e.g. search, rocket, fire, check, shield)..."
+                   class="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition shadow-inner" />
+            @if (!string.IsNullOrEmpty(_search))
+            {
+                <button type="button" @onclick="() => _search = string.Empty"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-mono">
+                    ✕
+                </button>
+            }
+        </div>
+
+        <!-- Customization Options -->
+        <div class="flex items-center gap-3">
+            <!-- Icon Style (Outline vs Solid) -->
+            @if (_activeCategory != "emojis")
+            {
+                <button type="button" @onclick="() => _isSolid = !_isSolid"
+                        class="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:border-brand-500 transition flex items-center gap-1.5 shadow-xs">
+                    <TwIcon Name="@(_isSolid ? "sparkles" : "grid")" Size="ComponentSize.Sm" />
+                    <span>@(_isSolid ? "Solid" : "Outline")</span>
+                </button>
+            }
+
+            <!-- Size Selector -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-mono">
+                @foreach (var sz in new[] { ComponentSize.Sm, ComponentSize.Md, ComponentSize.Lg, ComponentSize.Xl })
+                {
+                    <button type="button" @onclick="() => _selectedSize = sz"
+                            class="px-2 py-1 rounded-lg transition @(_selectedSize == sz ? "bg-white dark:bg-slate-700 font-bold text-brand-600 dark:text-brand-400 shadow-xs" : "text-slate-500 hover:text-slate-900 dark:hover:text-white")">
+                        @sz.ToString()
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Selection Inspector / Code Output Bar -->
+    @if (!string.IsNullOrEmpty(_selectedItem))
+    {
+        <div class="p-4 rounded-2xl bg-brand-50/60 dark:bg-slate-950/70 border border-brand-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
+            <div class="flex items-center gap-3">
+                <div class="p-3 rounded-2xl bg-white dark:bg-slate-850 shadow-sm border border-slate-200 dark:border-slate-700 flex items-center justify-center">
+                    @if (_isEmojiSelected)
+                    {
+                        <TwEmoji Shortcode="@_selectedItem" Size="ComponentSize.Xl" />
+                    }
+                    else
+                    {
+                        <TwIcon Name="@_selectedItem" Size="ComponentSize.Xl" IsSolid="@_isSolid" />
+                    }
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-black text-slate-900 dark:text-white font-mono">@_selectedItem</span>
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-brand-500/20 text-brand-600 dark:text-brand-400">
+                            @(_isEmojiSelected ? "Emoji Shortcode" : "Vector SVG Icon")
+                        </span>
+                    </div>
+                    <code class="text-xs text-brand-600 dark:text-brand-400 font-mono block mt-0.5">
+                        @GetRazorSnippet()
+                    </code>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-end sm:self-center">
+                <button type="button" @onclick="CopyRazorSnippet"
+                        class="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs transition shadow-sm flex items-center gap-1.5">
+                    <TwIcon Name="copy" Size="ComponentSize.Sm" />
+                    <span>Copy Razor Snippet</span>
+                </button>
+                <button type="button" @onclick="() => _selectedItem = null"
+                        class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-slate-500 hover:text-slate-700 text-xs transition">
+                    ✕
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Grid of Icons & Emojis -->
+    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 max-h-96 overflow-y-auto p-1 custom-scrollbar">
+        <!-- SVG Icons -->
+        @if (_activeCategory != "emojis")
+        {
+            @foreach (var icon in FilteredIcons)
+            {
+                var isSelected = _selectedItem == icon && !_isEmojiSelected;
+                <button type="button" @onclick="() => SelectIcon(icon)"
+                        class="group p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-2 text-center @(isSelected ? "border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 ring-2 ring-brand-500/20" : "border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-850/50 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300")">
+                    <div class="p-1.5 rounded-xl group-hover:scale-110 transition-transform">
+                        <TwIcon Name="@icon" Size="@_selectedSize" IsSolid="@_isSolid" />
+                    </div>
+                    <span class="text-[11px] font-mono truncate max-w-full block text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white transition">
+                        @icon
+                    </span>
+                </button>
+            }
+        }
+
+        <!-- Emojis -->
+        @if (_activeCategory != "icons")
+        {
+            @foreach (var emoji in FilteredEmojis)
+            {
+                var isSelected = _selectedItem == emoji.Key && _isEmojiSelected;
+                <button type="button" @onclick="() => SelectEmoji(emoji.Key)"
+                        class="group p-3 rounded-2xl border transition flex flex-col items-center justify-center gap-2 text-center @(isSelected ? "border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 ring-2 ring-brand-500/20" : "border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-850/50 hover:bg-white dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300")">
+                    <div class="p-1.5 rounded-xl group-hover:scale-125 transition-transform text-2xl">
+                        @emoji.Value
+                    </div>
+                    <span class="text-[10px] font-mono truncate max-w-full block text-slate-400 group-hover:text-slate-900 dark:group-hover:text-white transition">
+                        @emoji.Key
+                    </span>
+                </button>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Open Source Vector Icons & Emoji Studio";
+    [Parameter] public string Subtitle { get; set; } = "Zero-dependency pure C# WASM vector icons and emojis for enterprise dashboards and forms";
+    [Parameter] public string CustomClass { get; set; } = "";
+
+    private string _search = "";
+    private string _activeCategory = "all"; // all | icons | emojis
+    private bool _isSolid = false;
+    private ComponentSize _selectedSize = ComponentSize.Md;
+    private string? _selectedItem = "sparkles";
+    private bool _isEmojiSelected = false;
+
+    private IEnumerable<string> FilteredIcons =>
+        string.IsNullOrWhiteSpace(_search)
+            ? TwIcon.AllIconNames
+            : TwIcon.AllIconNames.Where(n => n.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<KeyValuePair<string, string>> FilteredEmojis =>
+        string.IsNullOrWhiteSpace(_search)
+            ? TwEmoji.AvailableShortcodes
+            : TwEmoji.AvailableShortcodes.Where(e => e.Key.Contains(_search.Trim(), StringComparison.OrdinalIgnoreCase));
+
+    private int FilteredItemsCount =>
+        (_activeCategory == "emojis" ? 0 : FilteredIcons.Count()) +
+        (_activeCategory == "icons" ? 0 : FilteredEmojis.Count());
+
+    private void SelectIcon(string icon)
+    {
+        _selectedItem = icon;
+        _isEmojiSelected = false;
+    }
+
+    private void SelectEmoji(string shortcode)
+    {
+        _selectedItem = shortcode;
+        _isEmojiSelected = true;
+    }
+
+    private string GetRazorSnippet()
+    {
+        if (_isEmojiSelected)
+        {
+            return $"<TwEmoji Shortcode=\"{_selectedItem}\" Size=\"ComponentSize.{_selectedSize}\" />";
+        }
+        else
+        {
+            var solidProp = _isSolid ? " IsSolid=\"true\"" : "";
+            return $"<TwIcon Name=\"{_selectedItem}\" Size=\"ComponentSize.{_selectedSize}\"{solidProp} />";
+        }
+    }
+
+    private void CopyRazorSnippet()
+    {
+        Toast.Show("Snippet Ready!", GetRazorSnippet(), SemanticVariant.Success);
+    }
+}

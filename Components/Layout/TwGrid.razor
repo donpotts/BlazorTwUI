@@ -1,0 +1,27 @@
+<div class="grid @ColsClass @GapClass @Class">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    /// <summary>Mobile-first responsive column preset: 1-2-3, 1-2-4, 1-2, 2-4, etc.</summary>
+    [Parameter] public string Preset { get; set; } = "1-2-3";
+    [Parameter] public string Gap { get; set; } = "md";
+    [Parameter] public string? Class { get; set; }
+
+    private string ColsClass => Preset switch
+    {
+        "1-2" => "grid-cols-1 sm:grid-cols-2",
+        "1-3" => "grid-cols-1 md:grid-cols-3",
+        "1-2-4" => "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4",
+        "2-4" => "grid-cols-2 lg:grid-cols-4",
+        _ => "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+    };
+
+    private string GapClass => Gap switch
+    {
+        "sm" => "gap-3 sm:gap-4",
+        "lg" => "gap-6 sm:gap-8",
+        _ => "gap-4 sm:gap-6"
+    };
+}

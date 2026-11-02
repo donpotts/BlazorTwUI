@@ -1,0 +1,47 @@
+<div class="w-full space-y-1.5 @Class">
+    @if (ShowLabel || !string.IsNullOrWhiteSpace(Label))
+    {
+        <div class="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300">
+            <span>@(string.IsNullOrWhiteSpace(Label) ? "Progress" : Label)</span>
+            <span>@ClampedValue%</span>
+        </div>
+    }
+
+    <div class="w-full @HeightClass bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+        <div class="h-full rounded-full transition-all duration-300 ease-out @BarColorClass @(Animated ? "animate-pulse" : "")"
+             style="width: @ClampedValue%"
+             role="progressbar"
+             aria-valuenow="@ClampedValue"
+             aria-valuemin="0"
+             aria-valuemax="100"></div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Value { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool ShowLabel { get; set; } = true;
+    [Parameter] public bool Animated { get; set; }
+    [Parameter] public SemanticVariant Variant { get; set; } = SemanticVariant.Primary;
+    [Parameter] public ComponentSize Size { get; set; } = ComponentSize.Md;
+    [Parameter] public string? Class { get; set; }
+
+    private int ClampedValue => Math.Clamp(Value, 0, 100);
+
+    private string HeightClass => Size switch
+    {
+        ComponentSize.Xs => "h-1.5",
+        ComponentSize.Sm => "h-2",
+        ComponentSize.Lg => "h-4",
+        _ => "h-2.5"
+    };
+
+    private string BarColorClass => Variant switch
+    {
+        SemanticVariant.Success => "bg-emerald-500",
+        SemanticVariant.Warning => "bg-amber-500",
+        SemanticVariant.Danger => "bg-rose-500",
+        SemanticVariant.Info => "bg-sky-500",
+        _ => "bg-brand-600"
+    };
+}

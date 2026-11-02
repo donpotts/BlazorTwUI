@@ -1,0 +1,97 @@
+@inject ThemeService Theme
+@implements IDisposable
+
+<div class="inline-flex items-center gap-1.5 @Class">
+    <!-- Segmented Light / Dark / System Pill -->
+    <div class="inline-flex items-center rounded-xl bg-slate-100 dark:bg-slate-800/90 p-1 border border-slate-200/80 dark:border-slate-700/80" role="group" aria-label="Theme Mode">
+        <button type="button"
+                @onclick="() => Theme.SetModeAsync(ThemeMode.Light)"
+                title="Light Mode"
+                aria-pressed="@(Theme.CurrentMode == ThemeMode.Light)"
+                class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150 @(Theme.CurrentMode == ThemeMode.Light ? "bg-white dark:bg-slate-900 text-brand-600 shadow-sm" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            @if (!Compact)
+            {
+                <span class="hidden sm:inline">Light</span>
+            }
+        </button>
+
+        <button type="button"
+                @onclick="() => Theme.SetModeAsync(ThemeMode.Dark)"
+                title="Dark Mode"
+                aria-pressed="@(Theme.CurrentMode == ThemeMode.Dark)"
+                class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150 @(Theme.CurrentMode == ThemeMode.Dark ? "bg-white dark:bg-slate-900 text-brand-500 shadow-sm" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+            </svg>
+            @if (!Compact)
+            {
+                <span class="hidden sm:inline">Dark</span>
+            }
+        </button>
+
+        <button type="button"
+                @onclick="() => Theme.SetModeAsync(ThemeMode.System)"
+                title="System Preference"
+                aria-pressed="@(Theme.CurrentMode == ThemeMode.System)"
+                class="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150 @(Theme.CurrentMode == ThemeMode.System ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-500 shadow-sm" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            @if (!Compact)
+            {
+                <span class="hidden sm:inline">System</span>
+            }
+        </button>
+    </div>
+
+    @if (ShowAccentPicker)
+    {
+        <div class="hidden xs:inline-flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 px-2 py-1.5 border border-slate-200/80 dark:border-slate-700/80" role="group" aria-label="Accent Color">
+            @foreach (var accent in Enum.GetValues<AccentTheme>())
+            {
+                <button type="button"
+                        @onclick="() => Theme.SetAccentAsync(accent)"
+                        title="@($"{accent} Accent")"
+                        aria-label="@($"{accent} Accent")"
+                        class="w-4 h-4 rounded-full transition-transform @(GetSwatchColor(accent)) @(Theme.CurrentAccent == accent ? "ring-2 ring-offset-2 ring-slate-900 dark:ring-white dark:ring-offset-slate-900 scale-110" : "opacity-70 hover:opacity-100")" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Compact { get; set; }
+    [Parameter] public bool ShowAccentPicker { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Theme.OnChange += HandleChange;
+    }
+
+    private void HandleChange() => InvokeAsync(StateHasChanged);
+
+    private static string GetSwatchColor(AccentTheme accent) => accent switch
+    {
+        AccentTheme.Emerald => "bg-emerald-500",
+        AccentTheme.Rose => "bg-rose-500",
+        AccentTheme.Amber => "bg-amber-500",
+        AccentTheme.Violet => "bg-violet-500",
+        AccentTheme.Sky => "bg-sky-500",
+        AccentTheme.Cyan => "bg-cyan-500",
+        AccentTheme.Teal => "bg-teal-500",
+        AccentTheme.Fuchsia => "bg-fuchsia-500",
+        AccentTheme.Pink => "bg-pink-500",
+        AccentTheme.Orange => "bg-orange-500",
+        AccentTheme.Slate => "bg-slate-500",
+        _ => "bg-indigo-500"
+    };
+
+    public void Dispose()
+    {
+        Theme.OnChange -= HandleChange;
+    }
+}

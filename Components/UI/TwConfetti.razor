@@ -1,0 +1,92 @@
+@namespace BlazorTwUI.Components.UI
+@inject IJSRuntime JS
+
+<canvas @ref="_canvasRef"
+        class="@(FullScreen ? "fixed inset-0 pointer-events-none z-50 w-full h-full" : "absolute inset-0 pointer-events-none z-20 w-full h-full") @Class">
+</canvas>
+
+@code {
+    private ElementReference _canvasRef;
+
+    public enum CelebrationStyle
+    {
+        Confetti,
+        Fireworks,
+        Emojis,
+        Coins,
+        Stars,
+        Streamers
+    }
+
+    [Parameter] public bool FullScreen { get; set; } = false;
+    [Parameter] public bool AutoFire { get; set; } = false;
+    [Parameter] public CelebrationStyle Style { get; set; } = CelebrationStyle.Confetti;
+    [Parameter] public int ParticleCount { get; set; } = 85;
+    [Parameter] public double Speed { get; set; } = 1.0;
+    [Parameter] public bool EnableSound { get; set; } = true;
+    [Parameter] public double SoundVolume { get; set; } = 1.0;
+    [Parameter] public string? Class { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && AutoFire)
+        {
+            await FireStyleAsync(Style, 0.5, 0.4, ParticleCount, Speed, EnableSound, SoundVolume);
+        }
+    }
+
+    public async Task FireAsync(double originX = 0.5, double originY = 0.5, int? count = null, double? speed = null, bool? sound = null, double? soundVolume = null)
+    {
+        await FireStyleAsync(Style, originX, originY, count, speed, sound, soundVolume);
+    }
+
+    public async Task FireStyleAsync(CelebrationStyle style, double originX = 0.5, double originY = 0.5, int? count = null, double? speed = null, bool? sound = null, double? soundVolume = null)
+    {
+        var styleName = style switch
+        {
+            CelebrationStyle.Fireworks => "fireworks",
+            CelebrationStyle.Emojis => "emojis",
+            CelebrationStyle.Coins => "coins",
+            CelebrationStyle.Stars => "stars",
+            CelebrationStyle.Streamers => "streamers",
+            _ => "confetti"
+        };
+
+        try
+        {
+            await JS.InvokeVoidAsync("blazorCelebration.fire", _canvasRef, new
+            {
+                style = styleName,
+                count = count ?? ParticleCount,
+                x = originX,
+                y = originY,
+                speed = speed ?? Speed,
+                sound = sound ?? EnableSound,
+                soundVolume = soundVolume ?? SoundVolume,
+                fullscreen = FullScreen
+            });
+        }
+        catch
+        { }
+    }
+
+    public async Task FireCustomAsync(string styleName, double originX = 0.5, double originY = 0.5, int? count = null, double? speed = null, bool? sound = null, double? soundVolume = null)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("blazorCelebration.fire", _canvasRef, new
+            {
+                style = styleName,
+                count = count ?? ParticleCount,
+                x = originX,
+                y = originY,
+                speed = speed ?? Speed,
+                sound = sound ?? EnableSound,
+                soundVolume = soundVolume ?? SoundVolume,
+                fullscreen = FullScreen
+            });
+        }
+        catch
+        { }
+    }
+}

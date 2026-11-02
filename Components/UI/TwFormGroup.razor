@@ -1,0 +1,34 @@
+@* A titled section of a form, optionally collapsible. Spans the full width of the parent TwFormLayout. *@
+<fieldset class="col-span-full rounded-2xl border border-slate-200 dark:border-slate-800 p-4 @Class" data-testid="form-group" data-open="@_open.ToString().ToLowerInvariant()">
+    <legend class="px-2">
+        @if (Collapsible)
+        {
+            <button type="button" @onclick="() => _open = !_open" aria-expanded="@_open.ToString().ToLowerInvariant()" aria-controls="@_id" data-testid="form-group-toggle"
+                    class="inline-flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                <span aria-hidden="true" class="inline-block transition-transform motion-reduce:transition-none @(_open ? "rotate-90 rtl:-rotate-90" : "rtl:rotate-180")">›</span>
+                @Title
+            </button>
+        }
+        else
+        {
+            <span class="text-sm font-black text-slate-900 dark:text-white">@Title</span>
+        }
+    </legend>
+    <div id="@_id" class="@(_open ? "" : "hidden")">
+        <TwFormLayout Columns="Columns">@ChildContent</TwFormLayout>
+    </div>
+</fieldset>
+
+@code {
+    private readonly string _id = "fg-" + Guid.NewGuid().ToString("N")[..6];
+    private bool _open = true;
+
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public bool Collapsible { get; set; }
+    [Parameter] public bool InitiallyCollapsed { get; set; }
+    [Parameter] public int Columns { get; set; } = 2;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    protected override void OnInitialized() => _open = !InitiallyCollapsed;
+}

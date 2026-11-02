@@ -1,0 +1,25 @@
+@* Wraps a region and covers it with a busy overlay while Visible. The region is marked aria-busy and the overlay announces its message. *@
+<div class="relative @Class" aria-busy="@Visible.ToString().ToLowerInvariant()" data-testid="loading-panel" data-visible="@Visible.ToString().ToLowerInvariant()">
+    <div class="@(Visible && Blur ? "blur-[1px] select-none" : "")" inert="@(Visible ? true : null)">
+        @ChildContent
+    </div>
+    @if (Visible)
+    {
+        <div class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 rounded-[inherit] bg-white/70 dark:bg-slate-950/70" role="status" data-testid="loading-overlay">
+            <svg class="w-8 h-8 animate-spin motion-reduce:animate-none text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" class="opacity-20" />
+                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+            </svg>
+            <span class="text-sm font-semibold text-slate-900 dark:text-slate-100" data-testid="loading-message">@Message</span>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public bool Visible { get; set; }
+    [Parameter] public string Message { get; set; } = "Loading…";
+    /// <summary>Slightly blur the covered content.</summary>
+    [Parameter] public bool Blur { get; set; } = true;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+}

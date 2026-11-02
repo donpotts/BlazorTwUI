@@ -1,0 +1,51 @@
+@namespace BlazorTwUI.Components
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject TwHydrationService Hydration
+
+<div class="relative transition-all duration-300 @Class">
+    @if (ShowHydrationBadge)
+    {
+        <div class="absolute -top-3 right-3 z-10 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase shadow-xs border @BadgeCss">
+            <span class="w-1.5 h-1.5 rounded-full @DotCss"></span>
+            <span>@(IsRestored ? "Hydrated (0ms SSR Cache)" : "Cold Fetch (Prerender)")</span>
+        </div>
+    }
+
+    @if (IsLoading)
+    {
+        @if (SkeletonTemplate != null)
+        {
+            @SkeletonTemplate
+        }
+        else
+        {
+            <div class="animate-pulse space-y-3 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xs">
+                <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+                <div class="space-y-2">
+                    <div class="h-3 bg-slate-200 dark:bg-slate-700/60 rounded"></div>
+                    <div class="h-3 bg-slate-200 dark:bg-slate-700/60 rounded w-5/6"></div>
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        @ChildContent
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? SkeletonTemplate { get; set; }
+    [Parameter] public bool IsLoading { get; set; }
+    [Parameter] public bool IsRestored { get; set; }
+    [Parameter] public bool ShowHydrationBadge { get; set; } = true;
+    [Parameter] public string Class { get; set; } = "";
+
+    private string BadgeCss => IsRestored
+        ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+        : "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800";
+
+    private string DotCss => IsRestored ? "bg-emerald-500 animate-ping" : "bg-amber-500";
+}

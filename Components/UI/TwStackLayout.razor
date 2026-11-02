@@ -1,0 +1,33 @@
+@* One-dimensional flex layout with named gap, alignment and wrapping. Classes are looked up from fixed tables so Tailwind keeps them. *@
+<div class="flex @(Horizontal ? (Reverse ? "flex-row-reverse" : "flex-row") : (Reverse ? "flex-col-reverse" : "flex-col")) @GapClass @AlignClass @JustifyClass @(Wrap ? "flex-wrap" : "") @Class"
+     data-testid="stack-layout" data-orientation="@(Horizontal ? "horizontal" : "vertical")">
+    @ChildContent
+</div>
+
+@code {
+    private static readonly string[] Gaps = { "gap-0", "gap-1", "gap-2", "gap-3", "gap-4", "gap-6", "gap-8" };
+
+    [Parameter] public bool Horizontal { get; set; }
+    [Parameter] public bool Reverse { get; set; }
+    [Parameter] public bool Wrap { get; set; }
+    /// <summary>Gap step 0 to 6 (0, 4, 8, 12, 16, 24, 32 px).</summary>
+    [Parameter] public int Gap { get; set; } = 3;
+    /// <summary>start, center, end, stretch or baseline (cross axis).</summary>
+    [Parameter] public string Align { get; set; } = "stretch";
+    /// <summary>start, center, end, between, around or evenly (main axis).</summary>
+    [Parameter] public string Justify { get; set; } = "start";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string GapClass => Gaps[Math.Clamp(Gap, 0, Gaps.Length - 1)];
+
+    private string AlignClass => Align switch
+    {
+        "start" => "items-start", "center" => "items-center", "end" => "items-end", "baseline" => "items-baseline", _ => "items-stretch"
+    };
+
+    private string JustifyClass => Justify switch
+    {
+        "center" => "justify-center", "end" => "justify-end", "between" => "justify-between", "around" => "justify-around", "evenly" => "justify-evenly", _ => "justify-start"
+    };
+}

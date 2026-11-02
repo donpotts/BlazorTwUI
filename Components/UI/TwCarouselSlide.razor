@@ -1,0 +1,19 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="w-full h-full shrink-0 flex-none relative @Class">
+    @if (ChildContent is not null)
+    {
+        @ChildContent
+    }
+</div>
+
+@code {
+    [CascadingParameter] public TwCarousel? Carousel { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Carousel?.RegisterSlide();
+    }
+}

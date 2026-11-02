@@ -1,0 +1,258 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden select-none @CustomClass">
+    <!-- Quick Access Toolbar (QAT) + Tab Header -->
+    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 px-3 py-1 text-xs">
+        <!-- Tabs & QAT Left -->
+        <div class="flex items-center gap-1 overflow-x-auto">
+            <!-- QAT Shortcuts -->
+            <div class="flex items-center gap-0.5 pr-2 mr-2 border-r border-slate-200 dark:border-slate-700">
+                <button type="button" @onclick='() => OnQatAction("save")' class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors" title="Save (Ctrl+S)">
+                    <svg class="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                    </svg>
+                </button>
+                <button type="button" @onclick='() => OnQatAction("undo")' class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors" title="Undo (Ctrl+Z)">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a5 5 0 015 5v2m0 0l-3-3m3 3l3-3M3 6h18M3 14h6m-6 4h6" />
+                    </svg>
+                </button>
+                <button type="button" @onclick='() => OnQatAction("refresh")' class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors" title="Reload (F5)">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Ribbon Tabs -->
+            @for (int i = 0; i < Tabs.Count; i++)
+            {
+                var tabIndex = i;
+                var tab = Tabs[tabIndex];
+                var isActive = ActiveTabIndex == tabIndex;
+                <button type="button"
+                        @onclick="() => SelectTab(tabIndex)"
+                        class="px-3 py-1.5 rounded-t-lg font-medium text-xs transition-colors relative @(isActive ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 font-semibold border-t-2 border-brand-500 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200")">
+                    @tab.Title
+                </button>
+            }
+        </div>
+
+        <!-- Right Controls: Minimize / Expand -->
+        <div class="flex items-center gap-1">
+            <button type="button"
+                    @onclick="ToggleCollapse"
+                    class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors"
+                    title="@(IsCollapsed ? "Expand Ribbon" : "Collapse Ribbon")">
+                <svg class="w-4 h-4 transform transition-transform duration-200 @(IsCollapsed ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Ribbon Content Bar -->
+    @if (!IsCollapsed && ActiveTab != null)
+    {
+        <div class="p-2.5 bg-white dark:bg-slate-900 flex items-stretch gap-4 overflow-x-auto min-h-[92px]">
+            @foreach (var group in ActiveTab.Groups)
+            {
+                <div class="flex flex-col justify-between pr-4 border-r border-slate-200 dark:border-slate-800 last:border-none">
+                    <!-- Actions Row -->
+                    <div class="flex items-center gap-1.5 flex-1 pb-1">
+                        @foreach (var action in group.Actions)
+                        {
+                            @if (action.IsLarge)
+                            {
+                                <!-- Large Action Button (Stacked) -->
+                                <button type="button"
+                                        @onclick="() => TriggerAction(action.Id)"
+                                        class="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors group min-w-[56px] text-center"
+                                        title="@action.Tooltip">
+                                    <span class="text-xl mb-1 group-hover:scale-110 transition-transform">@action.Icon</span>
+                                    <span class="text-[11px] font-medium leading-tight whitespace-nowrap">@action.Label</span>
+                                </button>
+                            }
+                            else
+                            {
+                                <!-- Small Action Button (Row) -->
+                                <button type="button"
+                                        @onclick="() => TriggerAction(action.Id)"
+                                        class="flex items-center gap-1.5 px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-colors text-xs whitespace-nowrap"
+                                        title="@action.Tooltip">
+                                    <span class="text-sm">@action.Icon</span>
+                                    <span class="text-[11px] font-medium">@action.Label</span>
+                                </button>
+                            }
+                        }
+                    </div>
+
+                    <!-- Group Title Label -->
+                    <div class="text-[10px] text-center uppercase tracking-wider font-semibold text-slate-400 dark:text-slate-500 pt-1 border-t border-slate-100 dark:border-slate-800/60">
+                        @group.Title
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    public class RibbonAction
+    {
+        public string Id { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string Icon { get; set; } = "★";
+        public string? Tooltip { get; set; }
+        public bool IsLarge { get; set; } = true;
+    }
+
+    public class RibbonGroup
+    {
+        public string Title { get; set; } = "";
+        public List<RibbonAction> Actions { get; set; } = new();
+    }
+
+    public class RibbonTab
+    {
+        public string Title { get; set; } = "";
+        public List<RibbonGroup> Groups { get; set; } = new();
+    }
+
+    [Parameter] public List<RibbonTab> Tabs { get; set; } = new();
+    [Parameter] public int ActiveTabIndex { get; set; } = 0;
+    [Parameter] public bool IsCollapsed { get; set; } = false;
+    [Parameter] public string CustomClass { get; set; } = "";
+
+    [Parameter] public EventCallback<string> OnActionClicked { get; set; }
+    [Parameter] public EventCallback<int> ActiveTabIndexChanged { get; set; }
+
+    private RibbonTab? ActiveTab => Tabs.Count > ActiveTabIndex && ActiveTabIndex >= 0 ? Tabs[ActiveTabIndex] : null;
+
+    protected override void OnInitialized()
+    {
+        if (!Tabs.Any())
+        {
+            Tabs = GetDefaultEnterpriseRibbonTabs();
+        }
+    }
+
+    private async Task SelectTab(int index)
+    {
+        ActiveTabIndex = index;
+        if (IsCollapsed) IsCollapsed = false;
+        await ActiveTabIndexChanged.InvokeAsync(ActiveTabIndex);
+    }
+
+    private void ToggleCollapse()
+    {
+        IsCollapsed = !IsCollapsed;
+    }
+
+    private async Task TriggerAction(string actionId)
+    {
+        if (OnActionClicked.HasDelegate)
+        {
+            await OnActionClicked.InvokeAsync(actionId);
+        }
+    }
+
+    private async Task OnQatAction(string action)
+    {
+        await TriggerAction($"qat:{action}");
+    }
+
+    public static List<RibbonTab> GetDefaultEnterpriseRibbonTabs()
+    {
+        return new List<RibbonTab>
+        {
+            new RibbonTab
+            {
+                Title = "Home",
+                Groups = new List<RibbonGroup>
+                {
+                    new RibbonGroup
+                    {
+                        Title = "Clipboard",
+                        Actions = new List<RibbonAction>
+                        {
+                            new RibbonAction { Id = "paste", Label = "Paste", Icon = "📋", IsLarge = true },
+                            new RibbonAction { Id = "copy", Label = "Copy", Icon = "📑", IsLarge = false },
+                            new RibbonAction { Id = "cut", Label = "Cut", Icon = "✂️", IsLarge = false }
+                        }
+                    },
+                    new RibbonGroup
+                    {
+                        Title = "Font & Syntax",
+                        Actions = new List<RibbonAction>
+                        {
+                            new RibbonAction { Id = "font-size", Label = "Size A+", Icon = "🔤", IsLarge = true },
+                            new RibbonAction { Id = "format", Label = "Prettify", Icon = "✨", IsLarge = true },
+                            new RibbonAction { Id = "wrap", Label = "Wrap", Icon = "↩️", IsLarge = false },
+                            new RibbonAction { Id = "ligatures", Label = "Ligatures", Icon = "⚡", IsLarge = false }
+                        }
+                    },
+                    new RibbonGroup
+                    {
+                        Title = "Data Grid Tools",
+                        Actions = new List<RibbonAction>
+                        {
+                            new RibbonAction { Id = "filter-builder", Label = "Filter", Icon = "🔍", IsLarge = true },
+                            new RibbonAction { Id = "grouping", Label = "Group By", Icon = "📊", IsLarge = true },
+                            new RibbonAction { Id = "export-excel", Label = "Export", Icon = "📥", IsLarge = true }
+                        }
+                    }
+                }
+            },
+            new RibbonTab
+            {
+                Title = "Dev & Code Studio",
+                Groups = new List<RibbonGroup>
+                {
+                    new RibbonGroup
+                    {
+                        Title = "Diff & Merge",
+                        Actions = new List<RibbonAction>
+                        {
+                            new RibbonAction { Id = "git-diff", Label = "Code Diff", Icon = "⚖️", IsLarge = true },
+                            new RibbonAction { Id = "tabs-view", Label = "Code Tabs", Icon = "🗂️", IsLarge = true }
+                        }
+                    },
+                    new RibbonGroup
+                    {
+                        Title = "Security & Auth",
+                        Actions = new List<RibbonAction>
+                        {
+                            new RibbonAction { Id = "otp-gen", Label = "OTP Pin", Icon = "🔢", IsLarge = true },
+                            new RibbonAction { Id = "pwd-meter", Label = "Strength", Icon = "🛡️", IsLarge = true }
+                        }
+                    }
+                }
+            },
+            new RibbonTab
+            {
+                Title = "Layout & View",
+                Groups = new List<RibbonGroup>
+                {
+                    new RibbonGroup
+                    {
+                        Title = "Panels",
+                        Actions = new List<RibbonAction>
+                        {
+                            new RibbonAction { Id = "splitter", Label = "Split View", Icon = "🪟", IsLarge = true },
+                            new RibbonAction { Id = "dock", Label = "Floating Dock", Icon = "⚓", IsLarge = true }
+                        }
+                    },
+                    new RibbonGroup
+                    {
+                        Title = "Dark Mode",
+                        Actions = new List<RibbonAction>
+                        {
+                            new RibbonAction { Id = "theme-toggle", Label = "Theme", Icon = "🌓", IsLarge = true }
+                        }
+                    }
+                }
+            }
+        };
+    }
+}

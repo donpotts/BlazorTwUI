@@ -1,0 +1,76 @@
+@using BlazorTwUI.Models
+
+<div class="rounded-2xl border bg-white dark:bg-slate-900 @BorderClass @Class" data-testid="tool-call" data-tool="@Call.Name" data-status="@Call.Status">
+    <button type="button"
+            @onclick="() => _open = !_open"
+            aria-expanded="@(_open ? "true" : "false")"
+            aria-controls="@_bodyId"
+            class="w-full flex items-center gap-3 px-4 py-3 text-start rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+        <span class="font-mono text-sm font-semibold text-slate-900 dark:text-white truncate">@Call.Name</span>
+        <span class="ms-auto flex items-center gap-2 shrink-0">
+            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full border @RiskClass">@Call.Risk risk</span>
+            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full @StatusClass" data-testid="tool-status">@StatusLabel</span>
+            <svg class="w-4 h-4 text-slate-500 transition-transform @(_open ? "rotate-180" : "")" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+        </span>
+    </button>
+
+    @if (_open)
+    {
+        <div id="@_bodyId" class="px-4 pb-4 space-y-3 text-xs">
+            <div>
+                <div class="font-semibold text-slate-600 dark:text-slate-300 mb-1">Arguments</div>
+                <pre class="rounded-xl bg-slate-100 dark:bg-slate-950 p-3 overflow-x-auto font-mono text-slate-800 dark:text-slate-200" dir="ltr">@(string.IsNullOrEmpty(Call.ArgsJson) ? "…" : Call.ArgsJson)</pre>
+            </div>
+            @if (Call.Result is not null)
+            {
+                <div>
+                    <div class="font-semibold text-slate-600 dark:text-slate-300 mb-1">Result</div>
+                    <p class="rounded-xl bg-slate-100 dark:bg-slate-950 p-3 text-slate-800 dark:text-slate-200" data-testid="tool-result">@Call.Result</p>
+                </div>
+            }
+            @if (Call.Duration is { } d)
+            {
+                <div class="text-slate-600 dark:text-slate-400">Took @d.TotalMilliseconds.ToString("0") ms</div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private readonly string _bodyId = "toolcall-" + Guid.NewGuid().ToString("N")[..8];
+    private bool _open = true;
+
+    [Parameter, EditorRequired] public ToolCallRecord Call { get; set; } = default!;
+    [Parameter] public string? Class { get; set; }
+
+    private string StatusLabel => Call.Status switch
+    {
+        ToolCallStatus.Streaming => "Streaming",
+        ToolCallStatus.AwaitingApproval => "Needs approval",
+        ToolCallStatus.Approved => "Approved",
+        ToolCallStatus.Rejected => "Rejected",
+        ToolCallStatus.Completed => "Done",
+        _ => "Failed"
+    };
+
+    private string StatusClass => Call.Status switch
+    {
+        ToolCallStatus.AwaitingApproval => "bg-amber-100 text-amber-900 dark:bg-amber-500/20 dark:text-amber-200",
+        ToolCallStatus.Rejected or ToolCallStatus.Failed => "bg-rose-100 text-rose-900 dark:bg-rose-500/20 dark:text-rose-200",
+        ToolCallStatus.Completed or ToolCallStatus.Approved => "bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-200",
+        _ => "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+    };
+
+    private string RiskClass => Call.Risk switch
+    {
+        ToolRisk.High => "border-rose-300 text-rose-800 dark:border-rose-500/40 dark:text-rose-200",
+        ToolRisk.Medium => "border-amber-300 text-amber-900 dark:border-amber-500/40 dark:text-amber-200",
+        _ => "border-slate-300 text-slate-700 dark:border-slate-600 dark:text-slate-300"
+    };
+
+    private string BorderClass => Call.Status == ToolCallStatus.AwaitingApproval
+        ? "border-amber-400 ring-2 ring-amber-400/40"
+        : "border-slate-200 dark:border-slate-800";
+}

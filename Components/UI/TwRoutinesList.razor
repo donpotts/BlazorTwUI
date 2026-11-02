@@ -1,0 +1,48 @@
+@* Recurring jobs an agent owns, with an on/off switch each routines; own implementation). The host persists changes via callbacks. *@
+<section aria-label="Routines" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 @Class" data-testid="routines">
+    <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+        @foreach (var r in Items)
+        {
+            <li class="flex items-center gap-3 px-4 py-3" data-testid="routine" data-routine="@r.Id" data-enabled="@r.Enabled.ToString().ToLowerInvariant()">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-slate-900 dark:text-white truncate">@r.Name</p>
+                    <p class="text-xs text-slate-700 dark:text-slate-300"><span data-testid="routine-schedule">@r.Schedule</span>@if (r.NextRunUtc is { } next && r.Enabled){<span> · next <time datetime="@next.ToString("O")">@next.ToLocalTime().ToString("MMM d, HH:mm")</time></span>}</p>
+                </div>
+                <button type="button" @onclick="() => RunNowAsync(r)" disabled="@(!r.Enabled)" data-testid="routine-run"
+                        class="px-3 min-h-[36px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Run now</button>
+                <button type="button" role="switch" aria-checked="@r.Enabled.ToString().ToLowerInvariant()" aria-label="@($"{r.Name} enabled")" @onclick="() => ToggleAsync(r)" data-testid="routine-toggle"
+                        class="relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-900 @(r.Enabled ? "bg-brand-700" : "bg-slate-400 dark:bg-slate-600")">
+                    <span aria-hidden="true" class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition-transform motion-reduce:transition-none @(r.Enabled ? "translate-x-5 rtl:-translate-x-5" : "translate-x-0")"></span>
+                </button>
+            </li>
+        }
+        @if (Items.Count == 0)
+        {
+            <li class="px-4 py-6 text-sm text-slate-600 dark:text-slate-400">No routines yet.</li>
+        }
+    </ul>
+</section>
+
+@code {
+    public sealed class Routine
+    {
+        public string Id { get; init; } = Guid.NewGuid().ToString("N")[..6];
+        public string Name { get; set; } = "";
+        public string Schedule { get; set; } = "";
+        public bool Enabled { get; set; } = true;
+        public DateTime? NextRunUtc { get; set; }
+    }
+
+    [Parameter, EditorRequired] public List<Routine> Items { get; set; } = new();
+    [Parameter] public EventCallback<Routine> OnToggled { get; set; }
+    [Parameter] public EventCallback<Routine> OnRunNow { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private async Task ToggleAsync(Routine r)
+    {
+        r.Enabled = !r.Enabled;
+        await OnToggled.InvokeAsync(r);
+    }
+
+    private Task RunNowAsync(Routine r) => OnRunNow.InvokeAsync(r);
+}

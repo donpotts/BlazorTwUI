@@ -1,0 +1,113 @@
+<nav aria-label="Pagination" class="flex items-center justify-between gap-3 select-none @Class">
+    <!-- Mobile: Simple Previous / Page info / Next -->
+    <div class="flex items-center justify-between w-full sm:hidden">
+        <button type="button"
+                disabled="@(CurrentPage <= 1)"
+                @onclick="() => ChangePage(CurrentPage - 1)"
+                class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:pointer-events-none active:scale-95">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Prev</span>
+        </button>
+
+        <span class="text-xs font-semibold text-slate-600 dark:text-slate-400">
+            Page @CurrentPage of @TotalPages
+        </span>
+
+        <button type="button"
+                disabled="@(CurrentPage >= TotalPages)"
+                @onclick="() => ChangePage(CurrentPage + 1)"
+                class="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 disabled:opacity-40 disabled:pointer-events-none active:scale-95">
+            <span>Next</span>
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Tablet / Desktop: Full pagination controls with numbered pills -->
+    <div class="hidden sm:flex items-center justify-between w-full">
+        <div class="text-xs text-slate-500 dark:text-slate-400">
+            Showing page <span class="font-semibold text-slate-800 dark:text-slate-200">@CurrentPage</span> of <span class="font-semibold text-slate-800 dark:text-slate-200">@TotalPages</span>
+        </div>
+
+        <div class="inline-flex items-center gap-1">
+            <button type="button"
+                    disabled="@(CurrentPage <= 1)"
+                    @onclick="() => ChangePage(CurrentPage - 1)"
+                    aria-label="Previous Page"
+                    class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+            </button>
+
+            @foreach (var pageNumber in GetVisiblePages())
+            {
+                if (pageNumber == -1)
+                {
+                    <span class="px-2 text-slate-400">…</span>
+                }
+                else
+                {
+                    var isCurrent = pageNumber == CurrentPage;
+                    <button type="button"
+                            @onclick="() => ChangePage(pageNumber)"
+                            class="min-w-[36px] h-9 px-3 rounded-xl text-xs font-medium transition-all @(isCurrent ? "bg-brand-600 text-white shadow-xs font-semibold" : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800")">
+                        @pageNumber
+                    </button>
+                }
+            }
+
+            <button type="button"
+                    disabled="@(CurrentPage >= TotalPages)"
+                    @onclick="() => ChangePage(CurrentPage + 1)"
+                    aria-label="Next Page"
+                    class="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 disabled:pointer-events-none transition">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+            </button>
+        </div>
+    </div>
+</nav>
+
+@code {
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public int TotalPages { get; set; } = 1;
+    [Parameter] public EventCallback<int> CurrentPageChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private async Task ChangePage(int page)
+    {
+        if (page >= 1 && page <= TotalPages && page != CurrentPage)
+        {
+            CurrentPage = page;
+            await CurrentPageChanged.InvokeAsync(page);
+        }
+    }
+
+    private IEnumerable<int> GetVisiblePages()
+    {
+        var list = new List<int>();
+        if (TotalPages <= 7)
+        {
+            for (var i = 1; i <= TotalPages; i++) list.Add(i);
+            return list;
+        }
+
+        list.Add(1);
+        if (CurrentPage > 3) list.Add(-1);
+
+        var start = Math.Max(2, CurrentPage - 1);
+        var end = Math.Min(TotalPages - 1, CurrentPage + 1);
+
+        for (var i = start; i <= end; i++) list.Add(i);
+
+        if (CurrentPage < TotalPages - 2) list.Add(-1);
+        list.Add(TotalPages);
+
+        return list;
+    }
+}

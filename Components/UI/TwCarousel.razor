@@ -1,0 +1,128 @@
+@namespace BlazorTwUI.Components.UI
+@implements IAsyncDisposable
+
+<div class="relative w-full overflow-hidden rounded-2xl group select-none shadow-md border border-slate-200/80 dark:border-slate-800 @Class"
+     @onmouseenter="() => _isHovered = true"
+     @onmouseleave="() => _isHovered = false">
+    
+    <!-- Slides Viewport -->
+    <div class="relative w-full h-64 sm:h-80 md:h-96 flex transition-transform duration-500 ease-out"
+         style="transform: translateX(-@(ActiveIndex * 100)%);">
+        <CascadingValue Value="this" IsFixed="true">
+            @ChildContent
+        </CascadingValue>
+    </div>
+
+    <!-- Prev / Next Navigation Arrows -->
+    @if (ShowArrows && TotalSlides > 1)
+    {
+        <button type="button"
+                @onclick="PrevSlide"
+                class="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none"
+                aria-label="Previous slide">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+
+        <button type="button"
+                @onclick="NextSlide"
+                class="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/40 hover:bg-black/60 text-white backdrop-blur-md flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none"
+                aria-label="Next slide">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+    }
+
+    <!-- Slide Indicators Bottom Dots -->
+    @if (ShowIndicators && TotalSlides > 1)
+    {
+        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/30 backdrop-blur-md">
+            @for (int i = 0; i < TotalSlides; i++)
+            {
+                var idx = i;
+                <button type="button"
+                        @onclick="() => GoToSlide(idx)"
+                        class="h-2 rounded-full transition-all focus:outline-none @(idx == ActiveIndex ? "w-6 bg-white shadow-sm" : "w-2 bg-white/50 hover:bg-white/80")"
+                        aria-label="@($"Go to slide {idx + 1}")"></button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public int ActiveIndex { get; set; }
+    [Parameter] public EventCallback<int> ActiveIndexChanged { get; set; }
+    [Parameter] public bool AutoCycle { get; set; } = true;
+    [Parameter] public int IntervalSeconds { get; set; } = 4;
+    [Parameter] public bool ShowArrows { get; set; } = true;
+    [Parameter] public bool ShowIndicators { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    public int TotalSlides { get; private set; }
+    private bool _isHovered;
+    private PeriodicTimer? _timer;
+    private CancellationTokenSource? _cts;
+
+    public void RegisterSlide()
+    {
+        TotalSlides++;
+        StateHasChanged();
+    }
+
+    protected override void OnInitialized()
+    {
+        if (AutoCycle)
+        {
+            _cts = new CancellationTokenSource();
+            _timer = new PeriodicTimer(TimeSpan.FromSeconds(IntervalSeconds));
+            _ = RunAutoCycleAsync(_cts.Token);
+        }
+    }
+
+    private async Task RunAutoCycleAsync(CancellationToken token)
+    {
+        try
+        {
+            while (await _timer!.WaitForNextTickAsync(token))
+            {
+                if (!_isHovered && TotalSlides > 1)
+                {
+                    await NextSlide();
+                    await InvokeAsync(StateHasChanged);
+                }
+            }
+        }
+        catch (OperationCanceledException) { }
+    }
+
+    public async Task NextSlide()
+    {
+        if (TotalSlides == 0) return;
+        ActiveIndex = (ActiveIndex + 1) % TotalSlides;
+        await ActiveIndexChanged.InvokeAsync(ActiveIndex);
+    }
+
+    public async Task PrevSlide()
+    {
+        if (TotalSlides == 0) return;
+        ActiveIndex = (ActiveIndex - 1 + TotalSlides) % TotalSlides;
+        await ActiveIndexChanged.InvokeAsync(ActiveIndex);
+    }
+
+    public async Task GoToSlide(int index)
+    {
+        ActiveIndex = Math.Clamp(index, 0, Math.Max(0, TotalSlides - 1));
+        await ActiveIndexChanged.InvokeAsync(ActiveIndex);
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _cts?.Cancel();
+        _cts?.Dispose();
+        _timer?.Dispose();
+        return ValueTask.CompletedTask;
+    }
+}

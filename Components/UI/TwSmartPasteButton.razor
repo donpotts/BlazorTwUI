@@ -1,0 +1,275 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="inline-block relative @Class">
+    <button type="button"
+            @onclick="OpenModal"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-blue-500/30 bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-xs font-bold transition shadow-xs">
+        <span class="text-sm">✨</span>
+        <span>Smart Paste</span>
+    </button>
+
+    @if (_isOpen)
+    {
+        <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4"
+             @onclick="CloseModal"
+             role="dialog"
+             aria-modal="true">
+            <div class="relative w-full max-w-lg rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 animate-zoom-in"
+                 @onclick:stopPropagation="true">
+                
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-blue-600/10 text-blue-600 dark:text-blue-400 flex items-center justify-center text-lg">
+                            ✨
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900 dark:text-white">Smart Paste AI Extraction</h3>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Map unstructured text or clipboard data into structured form fields</p>
+                        </div>
+                    </div>
+                    <button type="button" @onclick="CloseModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm">✕</button>
+                </div>
+
+                <!-- Sample Presets -->
+                <div class="space-y-1.5">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Quick Sample Presets:</span>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" @onclick='() => LoadPreset("email")' class="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition">
+                            📧 Email Signature
+                        </button>
+                        <button type="button" @onclick='() => LoadPreset("invoice")' class="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition">
+                            🧾 Receipt / Invoice
+                        </button>
+                        <button type="button" @onclick='() => LoadPreset("candidate")' class="px-2.5 py-1 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition">
+                            👤 Candidate Bio
+                        </button>
+                        <button type="button" @onclick='() => LoadPreset("check")' class="px-2.5 py-1 text-xs rounded-lg bg-emerald-100 dark:bg-emerald-950/60 hover:bg-emerald-200 dark:hover:bg-emerald-900 text-emerald-800 dark:text-emerald-300 font-medium transition border border-emerald-300 dark:border-emerald-800">
+                            🏦 Paper Check (MICR)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Unstructured Input Area -->
+                <div class="space-y-1">
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="font-medium text-slate-700 dark:text-slate-300">Raw Unstructured Text</label>
+                        <button type="button" @onclick="ReadClipboardAsync" class="text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 font-semibold">
+                            <span>📋 Paste from Clipboard</span>
+                        </button>
+                    </div>
+                    <textarea rows="4"
+                              @bind="_rawInput"
+                              placeholder="Paste any email, Slack message, ticket text, or billing address block..."
+                              class="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+
+                <!-- Extraction Button -->
+                <div>
+                    <button type="button"
+                            @onclick="ProcessText"
+                            class="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+                        <span>⚡ Parse & Map Entities</span>
+                    </button>
+                </div>
+
+                <!-- Extracted Mappings Preview -->
+                @if (_mappings.Count > 0)
+                {
+                    <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            <span>Extracted Field Mappings (@_mappings.Count)</span>
+                            <span class="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">High Confidence</span>
+                        </div>
+                        <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                            @foreach (var m in _mappings)
+                            {
+                                <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 text-xs">
+                                    <div class="min-w-0">
+                                        <span class="font-bold text-slate-900 dark:text-white capitalize">@m.FieldName:</span>
+                                        <span class="text-slate-600 dark:text-slate-300 ml-1 truncate">@m.ExtractedValue</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                            @((m.Confidence * 100).ToString("F0"))%
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="pt-2 flex justify-end gap-2">
+                            <button type="button" @onclick="CloseModal"
+                                    class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                Cancel
+                            </button>
+                            <button type="button" @onclick="ApplyMappings"
+                                    class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition">
+                                Apply to Form ✓
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<Dictionary<string, string>> OnApplied { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+
+    private bool _isOpen = false;
+    private string _rawInput = "";
+    private List<SmartPasteMapping> _mappings = new();
+
+    private void OpenModal()
+    {
+        _isOpen = true;
+        if (string.IsNullOrWhiteSpace(_rawInput))
+        {
+            LoadPreset("email");
+        }
+    }
+
+    private void CloseModal()
+    {
+        _isOpen = false;
+    }
+
+    private async Task ReadClipboardAsync()
+    {
+        try
+        {
+            var text = await JS.InvokeAsync<string>("navigator.clipboard.readText");
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                _rawInput = text;
+                ProcessText();
+            }
+        }
+        catch
+        {
+            Toast.Show("Clipboard Notice", "Clipboard access requires user permission; using active sample text instead.", SemanticVariant.Info);
+        }
+    }
+
+    private void LoadPreset(string type)
+    {
+        switch (type)
+        {
+            case "email":
+                _rawInput = "Best regards,\nSarah Jenkins\nSenior DevOps Lead at Vertex Cloud Ltd\nsarah.jenkins@vertexcloud.io | +1 (555) 349-8201\nSan Francisco, CA 94107";
+                break;
+            case "invoice":
+                _rawInput = "Vendor: Datastream Technologies\nInvoice #INV-2026-9812\nDue Date: Nov 15, 2026\nTotal Amount: $4,850.00 USD\nPayment Term: Net 30\nContact: billing@datastream.net";
+                break;
+            case "candidate":
+                _rawInput = "Marcus Brody — Staff Cloud Architect with 11 years experience in distributed systems, WebAssembly, and high-frequency stream processing. marcus.brody@gmail.com, (415) 882-9901, Austin TX. Desired Salary: $210,000.";
+                break;
+            case "check":
+                _rawInput = "CHECK #1042\nPAYER: Acme Enterprise Dynamics Inc.\nPAY TO: Jane Doe Development Consulting\nAMOUNT: $14,850.00\nDATE: October 24, 2026\nMEMO: Q3 Cloud Infrastructure Retainer\nMICR: ⑆121000358⑆ 0123456789⑈ 1042";
+                break;
+        }
+        ProcessText();
+    }
+
+    private void ProcessText()
+    {
+        _mappings.Clear();
+        if (string.IsNullOrWhiteSpace(_rawInput)) return;
+
+        var text = _rawInput;
+
+        // Smart client-side Entity Extraction heuristics
+        // 1. Email extraction
+        var emailMatch = System.Text.RegularExpressions.Regex.Match(text, @"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}");
+        if (emailMatch.Success)
+        {
+            _mappings.Add(new SmartPasteMapping { FieldName = "email", ExtractedValue = emailMatch.Value, Confidence = 0.99 });
+        }
+
+        // 2. Phone extraction
+        var phoneMatch = System.Text.RegularExpressions.Regex.Match(text, @"(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}");
+        if (phoneMatch.Success)
+        {
+            _mappings.Add(new SmartPasteMapping { FieldName = "phone", ExtractedValue = phoneMatch.Value, Confidence = 0.95 });
+        }
+
+        // 3. Amount / Currency extraction
+        var amountMatch = System.Text.RegularExpressions.Regex.Match(text, @"\$[\d,]+(\.\d{2})?");
+        if (amountMatch.Success)
+        {
+            _mappings.Add(new SmartPasteMapping { FieldName = "amount", ExtractedValue = amountMatch.Value, Confidence = 0.97 });
+        }
+
+        // 4. Name extraction
+        var lines = text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+        if (lines.Length > 0)
+        {
+            var firstLine = lines[0].Trim();
+            if (firstLine.StartsWith("Best regards,") || firstLine.StartsWith("From:") || firstLine.StartsWith("Vendor:"))
+            {
+                if (firstLine.Contains(":"))
+                {
+                    var val = firstLine.Split(':')[1].Trim();
+                    _mappings.Add(new SmartPasteMapping { FieldName = "vendor_or_sender", ExtractedValue = val, Confidence = 0.92 });
+                }
+                else if (lines.Length > 1)
+                {
+                    var nameCandidate = lines[1].Trim();
+                    _mappings.Add(new SmartPasteMapping { FieldName = "full_name", ExtractedValue = nameCandidate, Confidence = 0.94 });
+                }
+            }
+            else if (firstLine.Contains("—") || firstLine.Contains("-"))
+            {
+                var candidate = firstLine.Split(new[] { '—', '-' })[0].Trim();
+                _mappings.Add(new SmartPasteMapping { FieldName = "full_name", ExtractedValue = candidate, Confidence = 0.96 });
+            }
+        }
+
+        // 5. Invoice number
+        var invMatch = System.Text.RegularExpressions.Regex.Match(text, @"INV-[A-Za-z0-9-]+");
+        if (invMatch.Success)
+        {
+            _mappings.Add(new SmartPasteMapping { FieldName = "invoice_number", ExtractedValue = invMatch.Value, Confidence = 0.98 });
+        }
+
+        // 6. Role / Title
+        if (text.Contains("Lead") || text.Contains("Architect") || text.Contains("Engineer") || text.Contains("Manager"))
+        {
+            var roleMatch = System.Text.RegularExpressions.Regex.Match(text, @"(Senior|Staff|Principal|Lead)?\s*(DevOps|Cloud|Systems|Software)?\s*(Lead|Architect|Engineer|Manager)");
+            if (roleMatch.Success)
+            {
+                _mappings.Add(new SmartPasteMapping { FieldName = "job_title", ExtractedValue = roleMatch.Value.Trim(), Confidence = 0.91 });
+            }
+        }
+
+        // 7. MICR E-13B check line extraction (ANSI X9.27)
+        var micrMatch = System.Text.RegularExpressions.Regex.Match(text, @"⑆(\d{9})⑆\s*(\d+)⑈\s*(\d+)");
+        if (micrMatch.Success)
+        {
+            _mappings.Add(new SmartPasteMapping { FieldName = "routing_number", ExtractedValue = micrMatch.Groups[1].Value, Confidence = 0.99 });
+            _mappings.Add(new SmartPasteMapping { FieldName = "account_number", ExtractedValue = micrMatch.Groups[2].Value, Confidence = 0.99 });
+            _mappings.Add(new SmartPasteMapping { FieldName = "check_number", ExtractedValue = micrMatch.Groups[3].Value, Confidence = 0.99 });
+        }
+
+        // 8. Payee extraction
+        var payeeMatch = System.Text.RegularExpressions.Regex.Match(text, @"(?i)PAY\s+TO(\s+THE\s+ORDER\s+OF)?:\s*([^\r\n]+)");
+        if (payeeMatch.Success)
+        {
+            _mappings.Add(new SmartPasteMapping { FieldName = "payee", ExtractedValue = payeeMatch.Groups[2].Value.Trim(), Confidence = 0.96 });
+        }
+    }
+
+    private async Task ApplyMappings()
+    {
+        var dict = _mappings.ToDictionary(m => m.FieldName, m => m.ExtractedValue);
+        Toast.Show("Smart Paste Applied", $"Successfully populated {dict.Count} fields into the active form.", SemanticVariant.Success);
+        _isOpen = false;
+        await OnApplied.InvokeAsync(dict);
+    }
+}

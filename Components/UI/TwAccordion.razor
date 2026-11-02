@@ -1,0 +1,32 @@
+<div class="space-y-3 @Class">
+    <CascadingValue Value="this">
+        @ChildContent
+    </CascadingValue>
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool AllowMultiple { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private readonly HashSet<string> _openItems = new();
+
+    public bool IsOpen(string id) => _openItems.Contains(id);
+
+    public void ToggleItem(string id)
+    {
+        if (_openItems.Contains(id))
+        {
+            _openItems.Remove(id);
+        }
+        else
+        {
+            if (!AllowMultiple)
+            {
+                _openItems.Clear();
+            }
+            _openItems.Add(id);
+        }
+        StateHasChanged();
+    }
+}

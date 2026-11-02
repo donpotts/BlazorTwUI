@@ -1,0 +1,212 @@
+@using System.Text
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="inline-flex flex-col items-center p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none transition-all @Class">
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <div class="mb-2 text-center">
+            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100">@Title</h4>
+            @if (!string.IsNullOrWhiteSpace(Subtitle))
+            {
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            }
+        </div>
+    }
+
+    <!-- Barcode SVG Container -->
+    <div class="relative p-3 rounded-2xl bg-white border border-slate-100 shadow-inner flex flex-col items-center justify-center overflow-hidden">
+        @if (!string.IsNullOrEmpty(_binaryPattern))
+        {
+            var totalWidth = _binaryPattern.Length * BarWidthMultiplier + (QuietZone ? 20 : 0);
+            var contentHeight = BarHeight + (ShowText ? 22 : 0);
+
+            <svg viewBox="0 0 @totalWidth @contentHeight"
+                 width="@totalWidth"
+                 height="@contentHeight"
+                 class="block select-none"
+                 shape-rendering="crispEdges">
+                <!-- Background -->
+                @if (BackgroundColor != "transparent")
+                {
+                    <rect width="@totalWidth" height="@contentHeight" fill="@BackgroundColor" />
+                }
+
+                @{
+                    var startX = QuietZone ? 10 : 0;
+                    for (int i = 0; i < _binaryPattern.Length; i++)
+                    {
+                        if (_binaryPattern[i] == '1')
+                        {
+                            <rect x="@(startX + i * BarWidthMultiplier)"
+                                  y="0"
+                                  width="@BarWidthMultiplier"
+                                  height="@BarHeight"
+                                  fill="@ForegroundColor" />
+                        }
+                    }
+                }
+
+                @if (ShowText)
+                {
+                    @((MarkupString)$"<text x=\"{totalWidth / 2.0}\" y=\"{BarHeight + 15}\" text-anchor=\"middle\" fill=\"{ForegroundColor}\" font-family=\"ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace\" font-size=\"12\" font-weight=\"600\" letter-spacing=\"2\">{Value}</text>")
+                }
+            </svg>
+        }
+        else
+        {
+            <div class="p-4 text-xs text-slate-400 font-mono">Invalid barcode input</div>
+        }
+    </div>
+
+    <!-- Actions -->
+    @if (ShowActions)
+    {
+        <div class="mt-3 flex items-center gap-2">
+            <button type="button"
+                    @onclick="CopyValueAsync"
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5"
+                    title="Copy value">
+                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="8" y="8" width="12" height="12" rx="2" />
+                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                </svg>
+                Copy
+            </button>
+
+            <button type="button"
+                    @onclick="DownloadSvgAsync"
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-white transition-colors flex items-center gap-1.5 shadow-md shadow-brand-500/20"
+                    title="Download SVG">
+                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                SVG
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = "SKU-984210";
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public int BarHeight { get; set; } = 64;
+    [Parameter] public int BarWidthMultiplier { get; set; } = 2;
+    [Parameter] public bool ShowText { get; set; } = true;
+    [Parameter] public bool QuietZone { get; set; } = true;
+    [Parameter] public string ForegroundColor { get; set; } = "#0f172a";
+    [Parameter] public string BackgroundColor { get; set; } = "#ffffff";
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    private string _binaryPattern = string.Empty;
+    private string? _cachedValue;
+
+    protected override void OnParametersSet()
+    {
+        if (_cachedValue != Value || string.IsNullOrEmpty(_binaryPattern))
+        {
+            _binaryPattern = EncodeCode128B(Value);
+            _cachedValue = Value;
+        }
+    }
+
+    public async Task CopyValueAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Value);
+            Toast.Show("Copied to Clipboard", Value, SemanticVariant.Success);
+        }
+        catch { }
+    }
+
+    public async Task DownloadSvgAsync()
+    {
+        try
+        {
+            var totalWidth = _binaryPattern.Length * BarWidthMultiplier + (QuietZone ? 20 : 0);
+            var contentHeight = BarHeight + (ShowText ? 22 : 0);
+            var sb = new StringBuilder();
+            sb.Append($"<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 {totalWidth} {contentHeight}\" width=\"{totalWidth}\" height=\"{contentHeight}\">");
+            if (BackgroundColor != "transparent")
+            {
+                sb.Append($"<rect width=\"{totalWidth}\" height=\"{contentHeight}\" fill=\"{BackgroundColor}\"/>");
+            }
+            var startX = QuietZone ? 10 : 0;
+            for (int i = 0; i < _binaryPattern.Length; i++)
+            {
+                if (_binaryPattern[i] == '1')
+                {
+                    sb.Append($"<rect x=\"{startX + i * BarWidthMultiplier}\" y=\"0\" width=\"{BarWidthMultiplier}\" height=\"{BarHeight}\" fill=\"{ForegroundColor}\"/>");
+                }
+            }
+            if (ShowText)
+            {
+                sb.Append($"<text x=\"{totalWidth / 2.0}\" y=\"{BarHeight + 15}\" text-anchor=\"middle\" fill=\"{ForegroundColor}\" font-family=\"monospace\" font-size=\"12\" font-weight=\"600\" letter-spacing=\"2\">{Value}</text>");
+            }
+            sb.Append("</svg>");
+
+            var filename = $"barcode-{DateTime.Now:yyyyMMddHHmmss}.svg";
+            await JS.InvokeVoidAsync("blazorBarcodeScanner.downloadFile", filename, sb.ToString(), "image/svg+xml");
+            Toast.Show("SVG Downloaded", filename, SemanticVariant.Success);
+        }
+        catch (Exception ex)
+        {
+            Toast.Show("Download failed", ex.Message, SemanticVariant.Danger);
+        }
+    }
+
+    // Code 128 Set B Standard Patterns
+    private static readonly string[] Patterns = new string[]
+    {
+        "212222", "222122", "222221", "121223", "121322", "131222", "122213", "122312", "132212", "221213", // 0-9
+        "221312", "231212", "112232", "122132", "122231", "113222", "123122", "123221", "223211", "221132", // 10-19
+        "221231", "213212", "223112", "312131", "311222", "321122", "321221", "312212", "322112", "322211", // 20-29
+        "212123", "212321", "232121", "111323", "131123", "131321", "112313", "132113", "132311", "211313", // 30-39
+        "231113", "231311", "112133", "112331", "132131", "113123", "113321", "133121", "313121", "211331", // 40-49
+        "231131", "213113", "213311", "213131", "311123", "311321", "331121", "312113", "312311", "332111", // 50-59
+        "314111", "221411", "431111", "111224", "111422", "121124", "121421", "141122", "141221", "112214", // 60-69
+        "112412", "122114", "122411", "142112", "142211", "241211", "221114", "413111", "241112", "134111", // 70-79
+        "111242", "121142", "121241", "114212", "124112", "124211", "411212", "421112", "421211", "212141", // 80-89
+        "214121", "412121", "111143", "111341", "131141", "114113", "114311", "411113", "411311", "113141", // 90-99
+        "114131", "311141", "411131", "211412", "211214", "211232", "2331112" // 100-106 (104=Start B, 106=Stop)
+    };
+
+    private string EncodeCode128B(string text)
+    {
+        if (string.IsNullOrEmpty(text)) return string.Empty;
+
+        var charIndices = new List<int> { 104 }; // Start B
+        long checksum = 104;
+
+        for (int i = 0; i < text.Length; i++)
+        {
+            int ascii = (int)text[i];
+            int val = ascii - 32;
+            if (val < 0 || val > 95) val = 0; // fallback to space
+            charIndices.Add(val);
+            checksum += (long)val * (i + 1);
+        }
+
+        var checkValue = (int)(checksum % 103);
+        charIndices.Add(checkValue);
+        charIndices.Add(106); // Stop
+
+        var sb = new StringBuilder();
+        foreach (var idx in charIndices)
+        {
+            var p = Patterns[idx];
+            bool bar = true;
+            foreach (var ch in p)
+            {
+                int width = ch - '0';
+                sb.Append(new string(bar ? '1' : '0', width));
+                bar = !bar;
+            }
+        }
+        return sb.ToString();
+    }
+}

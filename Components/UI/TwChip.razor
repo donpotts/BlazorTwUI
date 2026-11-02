@@ -1,0 +1,127 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="inline-flex items-center gap-1.5 transition-all duration-150 select-none @SizeClass @ShapeClass @VariantClass @InteractiveClass @Class"
+     @onclick="HandleClickAsync">
+    @if (AvatarContent is not null)
+    {
+        <span class="shrink-0 -ml-1">
+            @AvatarContent
+        </span>
+    }
+    else if (LeadingIcon is not null)
+    {
+        <span class="shrink-0 -ml-0.5">
+            @LeadingIcon
+        </span>
+    }
+
+    <span class="truncate">
+        @if (ChildContent is not null)
+        {
+            @ChildContent
+        }
+        else
+        {
+            @Text
+        }
+    </span>
+
+    @if (Removable)
+    {
+        <button type="button"
+                @onclick="HandleRemoveAsync"
+                @onclick:stopPropagation="true"
+                class="shrink-0 -mr-1 p-0.5 rounded-full hover:bg-black/10 dark:hover:bg-white/20 transition-colors focus:outline-none"
+                aria-label="Remove chip">
+            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? LeadingIcon { get; set; }
+    [Parameter] public RenderFragment? AvatarContent { get; set; }
+    [Parameter] public SemanticVariant Variant { get; set; } = SemanticVariant.Default;
+    [Parameter] public ComponentSize Size { get; set; } = ComponentSize.Sm;
+    [Parameter] public bool Outlined { get; set; }
+    [Parameter] public bool Selectable { get; set; }
+    [Parameter] public bool Selected { get; set; }
+    [Parameter] public EventCallback<bool> SelectedChanged { get; set; }
+    [Parameter] public bool Removable { get; set; }
+    [Parameter] public EventCallback OnRemove { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string SizeClass => Size switch
+    {
+        ComponentSize.Xs => "text-[11px] px-2 py-0.5 font-medium",
+        ComponentSize.Sm => "text-xs px-2.5 py-1 font-medium",
+        ComponentSize.Md => "text-sm px-3.5 py-1.5 font-semibold",
+        _ => "text-xs px-2.5 py-1 font-medium"
+    };
+
+    private string ShapeClass => "rounded-full";
+
+    private string InteractiveClass => (Selectable || OnClick.HasDelegate)
+        ? "cursor-pointer active:scale-95"
+        : "";
+
+    private string VariantClass
+    {
+        get
+        {
+            if (Selectable && Selected)
+            {
+                return "bg-brand-600 text-white shadow-sm shadow-brand-500/30 ring-2 ring-brand-500 ring-offset-1 dark:ring-offset-slate-900";
+            }
+
+            if (Outlined)
+            {
+                return Variant switch
+                {
+                    SemanticVariant.Primary => "border border-brand-500 text-brand-700 dark:text-brand-300 bg-brand-50/30 dark:bg-brand-950/20",
+                    SemanticVariant.Success => "border border-emerald-500 text-emerald-700 dark:text-emerald-300 bg-emerald-50/30 dark:bg-emerald-950/20",
+                    SemanticVariant.Warning => "border border-amber-500 text-amber-700 dark:text-amber-300 bg-amber-50/30 dark:bg-amber-950/20",
+                    SemanticVariant.Danger => "border border-rose-500 text-rose-700 dark:text-rose-300 bg-rose-50/30 dark:bg-rose-950/20",
+                    SemanticVariant.Info => "border border-sky-500 text-sky-700 dark:text-sky-300 bg-sky-50/30 dark:bg-sky-950/20",
+                    _ => "border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+                };
+            }
+
+            return Variant switch
+            {
+                SemanticVariant.Primary => "bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-300",
+                SemanticVariant.Success => "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300",
+                SemanticVariant.Warning => "bg-amber-100 dark:bg-amber-500/20 text-amber-800 dark:text-amber-300",
+                SemanticVariant.Danger => "bg-rose-100 dark:bg-rose-500/20 text-rose-800 dark:text-rose-300",
+                SemanticVariant.Info => "bg-sky-100 dark:bg-sky-500/20 text-sky-800 dark:text-sky-300",
+                _ => "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700"
+            };
+        }
+    }
+
+    private async Task HandleClickAsync()
+    {
+        if (Selectable)
+        {
+            Selected = !Selected;
+            await SelectedChanged.InvokeAsync(Selected);
+        }
+        if (OnClick.HasDelegate)
+        {
+            await OnClick.InvokeAsync();
+        }
+    }
+
+    private async Task HandleRemoveAsync()
+    {
+        if (OnRemove.HasDelegate)
+        {
+            await OnRemove.InvokeAsync();
+        }
+    }
+}

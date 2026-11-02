@@ -1,0 +1,284 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-5 @CustomClass">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-base">
+                📊
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        OLAP Cross-Tab
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Field Selector Toggle & Aggregation Mode -->
+        <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5 text-xs">
+                <span class="text-slate-400 font-mono">Aggregator:</span>
+                <select @bind="_activeAggregator"
+                        class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none">
+                    <option value="Sum">Sum (∑)</option>
+                    <option value="Average">Average (Avg)</option>
+                    <option value="Count">Count (#)</option>
+                    <option value="Max">Maximum</option>
+                    <option value="Min">Minimum</option>
+                </select>
+            </div>
+
+            <button type="button" @onclick="() => _showFieldSelector = !_showFieldSelector"
+                    class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold transition">
+                @(_showFieldSelector ? "Hide Field List ▲" : "Field List ▼")
+            </button>
+        </div>
+    </div>
+
+    <!-- Interactive Field Slicer Drawer (Rows / Columns / Values) -->
+    @if (_showFieldSelector)
+    {
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/70 border border-slate-200 dark:border-slate-800 grid grid-cols-1 sm:grid-cols-4 gap-4 animate-fadeIn text-xs">
+            <!-- 1. Available Fields -->
+            <div class="space-y-1.5">
+                <span class="font-bold text-slate-900 dark:text-white block uppercase tracking-wider text-[11px]">Dimensions</span>
+                <div class="space-y-1">
+                    @foreach (var field in _availableFields)
+                    {
+                        <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between shadow-xs">
+                            <span class="font-semibold text-slate-700 dark:text-slate-200">@field</span>
+                            <div class="flex gap-1 text-[10px]">
+                                <button type="button" @onclick='() => SetRowField(field)' class="hover:text-brand-500" title="Set as Row">↳Row</button>
+                                <button type="button" @onclick='() => SetColField(field)' class="hover:text-indigo-500" title="Set as Column">↳Col</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- 2. Active Row Dimension -->
+            <div class="space-y-1.5">
+                <span class="font-bold text-brand-600 dark:text-brand-400 block uppercase tracking-wider text-[11px]">Row Field (Group)</span>
+                <div class="p-3 rounded-xl bg-brand-500/10 border border-brand-500/20 text-brand-800 dark:text-brand-300 font-bold flex items-center justify-between">
+                    <span>@_rowField</span>
+                    <span class="text-[10px]">Active</span>
+                </div>
+            </div>
+
+            <!-- 3. Active Column Dimension -->
+            <div class="space-y-1.5">
+                <span class="font-bold text-indigo-600 dark:text-indigo-400 block uppercase tracking-wider text-[11px]">Column Field</span>
+                <div class="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-800 dark:text-indigo-300 font-bold flex items-center justify-between">
+                    <span>@_colField</span>
+                    <span class="text-[10px]">Active</span>
+                </div>
+            </div>
+
+            <!-- 4. Value Field -->
+            <div class="space-y-1.5">
+                <span class="font-bold text-emerald-600 dark:text-emerald-400 block uppercase tracking-wider text-[11px]">Value Measure</span>
+                <div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-bold flex items-center justify-between">
+                    <span>Revenue (USD)</span>
+                    <span class="text-[10px] font-mono">@_activeAggregator</span>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Pivot Matrix Data Table -->
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <table class="w-full text-left text-xs">
+            <!-- Header Row with Column Values -->
+            <thead class="bg-slate-100 dark:bg-slate-850 font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                    <th class="p-3.5 bg-slate-200/70 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 font-mono uppercase text-[11px]">
+                        @_rowField \ @_colField
+                    </th>
+                    @foreach (var colVal in _distinctColValues)
+                    {
+                        <th class="p-3.5 text-right font-mono uppercase text-[11px]">
+                            @colVal
+                        </th>
+                    }
+                    <th class="p-3.5 text-right font-mono uppercase text-[11px] bg-slate-200/50 dark:bg-slate-900 text-brand-600 dark:text-brand-400 border-l border-slate-200 dark:border-slate-700">
+                        Grand Total
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                @foreach (var rowVal in _distinctRowValues)
+                {
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                        <!-- Row Header -->
+                        <td class="p-3.5 font-bold text-slate-900 dark:text-white bg-slate-50/50 dark:bg-slate-900/40 border-r border-slate-200 dark:border-slate-800 flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+                            <span>@rowVal</span>
+                        </td>
+
+                        <!-- Cell Values -->
+                        @foreach (var colVal in _distinctColValues)
+                        {
+                            var cellVal = ComputeCellValue(rowVal, colVal);
+                            <td class="p-3.5 text-right font-mono">
+                                @(cellVal > 0 ? FormatCurrency(cellVal) : "—")
+                            </td>
+                        }
+
+                        <!-- Row Total -->
+                        <td class="p-3.5 text-right font-mono font-bold text-slate-900 dark:text-white bg-slate-50/70 dark:bg-slate-900/60 border-l border-slate-200 dark:border-slate-800">
+                            @FormatCurrency(ComputeRowTotal(rowVal))
+                        </td>
+                    </tr>
+                }
+            </tbody>
+
+            <!-- Grand Total Footer Row -->
+            <tfoot class="bg-slate-100 dark:bg-slate-850 font-bold text-slate-900 dark:text-white border-t-2 border-slate-200 dark:border-slate-700 font-mono">
+                <tr>
+                    <td class="p-3.5 uppercase text-[11px] bg-slate-200/70 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">
+                        Grand Total (∑)
+                    </td>
+                    @foreach (var colVal in _distinctColValues)
+                    {
+                        <td class="p-3.5 text-right text-brand-600 dark:text-brand-400">
+                            @FormatCurrency(ComputeColTotal(colVal))
+                        </td>
+                    }
+                    <td class="p-3.5 text-right text-emerald-600 dark:text-emerald-400 text-sm bg-slate-200/70 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700">
+                        @FormatCurrency(ComputeGrandTotal())
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@code {
+    public class PivotRecord
+    {
+        public string Region { get; set; } = "North America";
+        public string Department { get; set; } = "Enterprise Platform";
+        public string Quarter { get; set; } = "Q1";
+        public string ProductLine { get; set; } = "WebAssembly Core";
+        public decimal Revenue { get; set; }
+    }
+
+    [Parameter] public string Title { get; set; } = "Enterprise Financial Pivot Grid";
+    [Parameter] public string Subtitle { get; set; } = "Multi-dimensional cross-tabulation matrix with real-time grouping & aggregation";
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public List<PivotRecord>? Records { get; set; }
+
+    private List<PivotRecord> _records = new();
+    private readonly string[] _availableFields = new[] { "Region", "Department", "Quarter", "ProductLine" };
+    private string _rowField = "Department";
+    private string _colField = "Quarter";
+    private string _activeAggregator = "Sum";
+    private bool _showFieldSelector = false;
+
+    private List<string> _distinctRowValues = new();
+    private List<string> _distinctColValues = new();
+
+    protected override void OnInitialized()
+    {
+        _records = Records ?? GenerateSampleRecords();
+        RefreshDimensions();
+    }
+
+    private void SetRowField(string field)
+    {
+        if (field == _colField) _colField = _rowField;
+        _rowField = field;
+        RefreshDimensions();
+    }
+
+    private void SetColField(string field)
+    {
+        if (field == _rowField) _rowField = _colField;
+        _colField = field;
+        RefreshDimensions();
+    }
+
+    private void RefreshDimensions()
+    {
+        _distinctRowValues = _records.Select(r => GetFieldValue(r, _rowField)).Distinct().OrderBy(x => x).ToList();
+        _distinctColValues = _records.Select(r => GetFieldValue(r, _colField)).Distinct().OrderBy(x => x).ToList();
+    }
+
+    private string GetFieldValue(PivotRecord r, string field) => field switch
+    {
+        "Region" => r.Region,
+        "Department" => r.Department,
+        "Quarter" => r.Quarter,
+        "ProductLine" => r.ProductLine,
+        _ => "Other"
+    };
+
+    private decimal ComputeCellValue(string rowVal, string colVal)
+    {
+        var subset = _records.Where(r => GetFieldValue(r, _rowField) == rowVal && GetFieldValue(r, _colField) == colVal).ToList();
+        return Aggregate(subset);
+    }
+
+    private decimal ComputeRowTotal(string rowVal)
+    {
+        var subset = _records.Where(r => GetFieldValue(r, _rowField) == rowVal).ToList();
+        return Aggregate(subset);
+    }
+
+    private decimal ComputeColTotal(string colVal)
+    {
+        var subset = _records.Where(r => GetFieldValue(r, _colField) == colVal).ToList();
+        return Aggregate(subset);
+    }
+
+    private decimal ComputeGrandTotal()
+    {
+        return Aggregate(_records);
+    }
+
+    private decimal Aggregate(List<PivotRecord> subset)
+    {
+        if (!subset.Any()) return 0;
+        return _activeAggregator switch
+        {
+            "Average" => subset.Average(r => r.Revenue),
+            "Count" => subset.Count,
+            "Max" => subset.Max(r => r.Revenue),
+            "Min" => subset.Min(r => r.Revenue),
+            _ => subset.Sum(r => r.Revenue)
+        };
+    }
+
+    private string FormatCurrency(decimal val)
+    {
+        if (_activeAggregator == "Count") return val.ToString("N0");
+        return $"${val:N0}";
+    }
+
+    private List<PivotRecord> GenerateSampleRecords() => new()
+    {
+        new PivotRecord { Region = "North America", Department = "Platform Core", Quarter = "Q1", ProductLine = "WASM UI", Revenue = 240000 },
+        new PivotRecord { Region = "North America", Department = "Platform Core", Quarter = "Q2", ProductLine = "WASM UI", Revenue = 285000 },
+        new PivotRecord { Region = "North America", Department = "Platform Core", Quarter = "Q3", ProductLine = "WASM UI", Revenue = 310000 },
+        new PivotRecord { Region = "North America", Department = "Platform Core", Quarter = "Q4", ProductLine = "WASM UI", Revenue = 390000 },
+
+        new PivotRecord { Region = "Europe", Department = "Security & SOC", Quarter = "Q1", ProductLine = "Air-Gapped Pack", Revenue = 145000 },
+        new PivotRecord { Region = "Europe", Department = "Security & SOC", Quarter = "Q2", ProductLine = "Air-Gapped Pack", Revenue = 160000 },
+        new PivotRecord { Region = "Europe", Department = "Security & SOC", Quarter = "Q3", ProductLine = "Air-Gapped Pack", Revenue = 210000 },
+        new PivotRecord { Region = "Europe", Department = "Security & SOC", Quarter = "Q4", ProductLine = "Air-Gapped Pack", Revenue = 275000 },
+
+        new PivotRecord { Region = "Asia-Pacific", Department = "Cloud Infrastructure", Quarter = "Q1", ProductLine = "Runtime Hub", Revenue = 180000 },
+        new PivotRecord { Region = "Asia-Pacific", Department = "Cloud Infrastructure", Quarter = "Q2", ProductLine = "Runtime Hub", Revenue = 195000 },
+        new PivotRecord { Region = "Asia-Pacific", Department = "Cloud Infrastructure", Quarter = "Q3", ProductLine = "Runtime Hub", Revenue = 220000 },
+        new PivotRecord { Region = "Asia-Pacific", Department = "Cloud Infrastructure", Quarter = "Q4", ProductLine = "Runtime Hub", Revenue = 260000 },
+
+        new PivotRecord { Region = "Global", Department = "Design Systems", Quarter = "Q1", ProductLine = "Tailwind Studio", Revenue = 95000 },
+        new PivotRecord { Region = "Global", Department = "Design Systems", Quarter = "Q2", ProductLine = "Tailwind Studio", Revenue = 115000 },
+        new PivotRecord { Region = "Global", Department = "Design Systems", Quarter = "Q3", ProductLine = "Tailwind Studio", Revenue = 135000 },
+        new PivotRecord { Region = "Global", Department = "Design Systems", Quarter = "Q4", ProductLine = "Tailwind Studio", Revenue = 180000 }
+    };
+}

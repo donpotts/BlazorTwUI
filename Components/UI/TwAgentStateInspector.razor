@@ -1,0 +1,47 @@
+@inherits TwSessionComponentBase
+
+<section aria-labelledby="@_titleId" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 @Class" data-testid="state-inspector">
+    <div class="flex items-center justify-between gap-2 mb-3">
+        <h4 id="@_titleId" class="text-sm font-bold text-slate-900 dark:text-white">Shared agent state</h4>
+        <span class="text-[11px] font-semibold px-2 py-0.5 rounded-full @(Session.CanEditState ? "bg-sky-100 text-sky-900 dark:bg-sky-500/20 dark:text-sky-200" : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300")">
+            @(Session.CanEditState ? "Editable: you have control" : "Read only")
+        </span>
+    </div>
+
+    @if (Session.State.Count == 0)
+    {
+        <p class="text-xs text-slate-600 dark:text-slate-400">The agent has not shared any state yet.</p>
+    }
+    else
+    {
+        <dl class="space-y-2">
+            @foreach (var (key, value) in Session.State.OrderBy(kv => kv.Key, StringComparer.Ordinal))
+            {
+                var changed = Session.RecentlyChangedKeys.Contains(key);
+                <div class="flex items-center gap-3 rounded-xl px-3 py-2 @(changed ? "bg-brand-50 dark:bg-brand-500/10 ring-1 ring-brand-400/50" : "bg-slate-50 dark:bg-slate-950/50")" data-testid="state-row" data-key="@key">
+                    <dt class="font-mono text-xs text-slate-700 dark:text-slate-300 shrink-0 w-32 truncate" title="@key">@key</dt>
+                    <dd class="flex-1 min-w-0 flex items-center gap-2">
+                        @if (Session.CanEditState)
+                        {
+                            <input type="text" value="@value" aria-label="Value of @key" dir="ltr"
+                                   @onchange="e => Session.EditState(key, e.Value?.ToString() ?? string.Empty)"
+                                   class="flex-1 min-w-0 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1 font-mono text-xs text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" />
+                        }
+                        else
+                        {
+                            <span class="flex-1 min-w-0 font-mono text-xs text-slate-900 dark:text-white break-all" dir="ltr" data-testid="state-value">@value</span>
+                        }
+                        @if (changed)
+                        {
+                            <span class="shrink-0 text-[10px] font-bold uppercase tracking-wide text-brand-800 dark:text-brand-200">changed</span>
+                        }
+                    </dd>
+                </div>
+            }
+        </dl>
+    }
+</section>
+
+@code {
+    private readonly string _titleId = "state-title-" + Guid.NewGuid().ToString("N")[..8];
+}

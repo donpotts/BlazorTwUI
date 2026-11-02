@@ -1,0 +1,65 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="flex flex-wrap items-center gap-2 @CustomClass" role="group">
+    @if (Items != null && Items.Any())
+    {
+        @foreach (var item in Items)
+        {
+            var isSelected = SelectedValues.Contains(item.Value);
+            <button type="button"
+                    @onclick="() => ToggleItem(item.Value)"
+                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all duration-150 select-none border @(isSelected ? "bg-brand-600 text-white border-brand-600 shadow-xs" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600")">
+                @if (!string.IsNullOrEmpty(item.Icon))
+                {
+                    <span class="text-xs">@item.Icon</span>
+                }
+                <span>@item.Label</span>
+                @if (item.Count.HasValue)
+                {
+                    <span class="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full text-[10px] font-mono @(isSelected ? "bg-white/20 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300")">
+                        @item.Count.Value
+                    </span>
+                }
+            </button>
+        }
+    }
+    else if (ChildContent != null)
+    {
+        @ChildContent
+    }
+</div>
+
+@code {
+    public class PillItem
+    {
+        public string Value { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string? Icon { get; set; }
+        public int? Count { get; set; }
+    }
+
+    [Parameter] public List<PillItem> Items { get; set; } = new();
+    [Parameter] public List<string> SelectedValues { get; set; } = new();
+    [Parameter] public EventCallback<List<string>> SelectedValuesChanged { get; set; }
+    [Parameter] public bool MultiSelect { get; set; } = false;
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private async Task ToggleItem(string val)
+    {
+        if (MultiSelect)
+        {
+            if (SelectedValues.Contains(val))
+                SelectedValues.Remove(val);
+            else
+                SelectedValues.Add(val);
+        }
+        else
+        {
+            SelectedValues.Clear();
+            SelectedValues.Add(val);
+        }
+
+        await SelectedValuesChanged.InvokeAsync(SelectedValues);
+    }
+}

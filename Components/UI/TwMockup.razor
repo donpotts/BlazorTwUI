@@ -1,0 +1,106 @@
+@if (Kind == MockupKind.Browser)
+{
+    <div class="@TwMerge.Merge("rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg overflow-hidden", Class)">
+        <div class="flex items-center justify-between gap-3 px-4 py-2.5 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-1.5 shrink-0">
+                <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            </div>
+            <div class="flex-1 max-w-md mx-auto px-3 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-[11px] font-mono text-slate-500 dark:text-slate-400 flex items-center justify-between truncate">
+                <span class="flex items-center gap-1.5 truncate">
+                    <span class="text-emerald-500">🔒</span>
+                    <span class="truncate">@Url</span>
+                </span>
+                <span class="text-[10px] opacity-60">↻</span>
+            </div>
+            <div class="text-[10px] font-mono text-slate-400 hidden sm:block">Device Mockup</div>
+        </div>
+        <div class="p-5">
+            @ChildContent
+        </div>
+    </div>
+}
+else if (Kind == MockupKind.Phone)
+{
+    <div class="@TwMerge.Merge("mx-auto w-[280px] rounded-[38px] border-[6px] border-slate-900 dark:border-slate-700 bg-slate-950 p-2 shadow-2xl", Class)">
+        <div class="relative rounded-[30px] bg-white dark:bg-slate-900 overflow-hidden min-h-[380px] flex flex-col justify-between">
+            <!-- Dynamic Island -->
+            <div class="pt-2 pb-1 flex justify-center">
+                <div class="w-24 h-5 rounded-full bg-slate-950 flex items-center justify-end pr-2">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500/60"></span>
+                </div>
+            </div>
+            <div class="flex-1 p-4">
+                @ChildContent
+            </div>
+            <!-- Home Bar Indicator -->
+            <div class="py-2 flex justify-center">
+                <div class="w-24 h-1 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+            </div>
+        </div>
+    </div>
+}
+else if (Kind == MockupKind.Code)
+{
+    <div class="@TwMerge.Merge("rounded-2xl bg-slate-950 text-slate-100 border border-slate-800 shadow-xl overflow-hidden font-mono text-xs", Class)">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-slate-900/90 border-b border-slate-800">
+            <div class="flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="ml-2 text-[11px] text-slate-400">@Title</span>
+            </div>
+            <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-300">zsh • 80×24</span>
+        </div>
+        <div class="p-4 space-y-1.5 leading-relaxed">
+            @if (CodeLines is not null && CodeLines.Count > 0)
+            {
+                @foreach (var line in CodeLines)
+                {
+                    <div class="flex items-start gap-3 px-2 py-0.5 rounded @(line.HighlightClass ?? "")">
+                        <span class="select-none opacity-50 w-4 text-right shrink-0">@line.Prefix</span>
+                        <code class="break-all">@line.Text</code>
+                    </div>
+                }
+            }
+            else
+            {
+                @ChildContent
+            }
+        </div>
+    </div>
+}
+else
+{
+    <div class="@TwMerge.Merge("rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg overflow-hidden", Class)">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-slate-100 dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800">
+            <div class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full bg-rose-500"></span>
+                <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            </div>
+            <span class="text-xs font-bold text-slate-600 dark:text-slate-300">@Title</span>
+            <span class="w-8"></span>
+        </div>
+        <div class="p-5">
+            @ChildContent
+        </div>
+    </div>
+}
+
+@code {
+    public sealed class MockupCodeLine
+    {
+        public string Prefix { get; set; } = "$";
+        public string Text { get; set; } = string.Empty;
+        public string? HighlightClass { get; set; }
+    }
+
+    [Parameter] public MockupKind Kind { get; set; } = MockupKind.Browser;
+    [Parameter] public string Url { get; set; } = "https://blazortwui.dev/studio";
+    [Parameter] public string Title { get; set; } = "BlazorTwUI Window";
+    [Parameter] public List<MockupCodeLine>? CodeLines { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+}

@@ -1,0 +1,137 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject ToastService Toast
+
+<div class="space-y-2 @Class">
+    <div class="flex items-center justify-between text-xs">
+        <label class="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+            <span>✨</span>
+            <span>@(Label ?? "Smart AI Textarea")</span>
+        </label>
+        
+        <!-- Tone Switcher Pills -->
+        <div class="flex items-center gap-1">
+            <span class="text-[10px] text-slate-400 mr-1 hidden sm:inline">Tone:</span>
+            @foreach (var tone in Enum.GetValues<SmartTone>())
+            {
+                var isSelected = _activeTone == tone;
+                <button type="button"
+                        @onclick="() => SetTone(tone)"
+                        class="px-2 py-0.5 rounded-md text-[11px] font-semibold transition-colors @(isSelected ? "bg-blue-600 text-white shadow-xs" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700")">
+                    @tone
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Textarea with Ghost Prediction Slot -->
+    <div class="relative rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 transition-all overflow-hidden">
+        <textarea rows="@Rows"
+                  @bind="Value"
+                  @bind:event="oninput"
+                  placeholder="@Placeholder"
+                  class="w-full p-3.5 bg-transparent text-sm text-slate-900 dark:text-slate-100 focus:outline-none resize-y leading-relaxed font-sans"></textarea>
+
+        <!-- Inline Ghost Auto-Completion Hint -->
+        @if (!string.IsNullOrEmpty(_ghostSuggestion))
+        {
+            <div class="px-3.5 py-1.5 bg-blue-50/70 dark:bg-blue-950/40 border-t border-blue-100 dark:border-blue-900/40 flex items-center justify-between text-xs">
+                <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 truncate">
+                    <span class="text-blue-600 dark:text-blue-400 font-bold">✨ Suggestion:</span>
+                    <span class="italic text-slate-700 dark:text-slate-300 truncate">"...@_ghostSuggestion"</span>
+                </div>
+                <button type="button" @onclick="AcceptGhostSuggestion"
+                        class="px-2.5 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[11px] shrink-0 shadow-xs transition">
+                    Accept (Tab)
+                </button>
+            </div>
+        }
+    </div>
+
+    <!-- Footer Tooling & Stats -->
+    <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400 px-1">
+        <div class="flex items-center gap-3">
+            <span>@(WordCount) words</span>
+            <span>•</span>
+            <span>@(Value?.Length ?? 0) characters</span>
+            <span>•</span>
+            <span>~@(Math.Max(1, WordCount / 200)) min read</span>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" @onclick="RephraseForTone"
+                    class="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition inline-flex items-center gap-1.5">
+                <span>🪄 Enhance for @_activeTone</span>
+            </button>
+            <button type="button" @onclick="ClearText"
+                    class="px-2 py-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs transition">
+                Clear
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string Value { get; set; } = "We are thrilled to announce our next-generation WebAssembly architecture which reduces client latency by over 80 percent across all devices.";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Start typing and watch smart completions appear...";
+    [Parameter] public int Rows { get; set; } = 4;
+    [Parameter] public string Class { get; set; } = "";
+
+    private SmartTone _activeTone = SmartTone.Professional;
+    private string? _ghostSuggestion = "delivering unmatched responsiveness and sub-millisecond execution times.";
+
+    private int WordCount => string.IsNullOrWhiteSpace(Value)
+        ? 0
+        : Value.Split(new[] { ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries).Length;
+
+    private void SetTone(SmartTone tone)
+    {
+        _activeTone = tone;
+    }
+
+    private void AcceptGhostSuggestion()
+    {
+        if (!string.IsNullOrEmpty(_ghostSuggestion))
+        {
+            Value = (Value.TrimEnd() + " " + _ghostSuggestion).Trim();
+            _ghostSuggestion = null;
+            ValueChanged.InvokeAsync(Value);
+            Toast.Show("Suggestion Accepted", "Completion token appended to textarea.", SemanticVariant.Info);
+        }
+    }
+
+    private void RephraseForTone()
+    {
+        switch (_activeTone)
+        {
+            case SmartTone.Executive:
+                Value = "Strategic initiative delivered 80% latency compression, unlocking immediate enterprise ROI and sub-millisecond user responsiveness.";
+                break;
+            case SmartTone.Technical:
+                Value = "Engineered zero-copy WebAssembly SIMD routines, trimming compute overhead by 80% and enforcing deterministic 16ms frame timing.";
+                break;
+            case SmartTone.Concise:
+                Value = "Our new WebAssembly stack cuts latency by 80% across all client hardware.";
+                break;
+            case SmartTone.Casual:
+                Value = "Super pumped to ship our new WASM engine! Everything feels snappy and runs 80% faster on every screen!";
+                break;
+            case SmartTone.Professional:
+                Value = "We are pleased to introduce our upgraded WebAssembly framework, achieving an 80% reduction in client-side latency while preserving cross-browser reliability.";
+                break;
+        }
+        _ghostSuggestion = null;
+        ValueChanged.InvokeAsync(Value);
+        Toast.Show("Tone Adjusted", $"Text rephrased for {_activeTone} tone.", SemanticVariant.Success);
+    }
+
+    private void ClearText()
+    {
+        Value = "";
+        _ghostSuggestion = null;
+        ValueChanged.InvokeAsync(Value);
+    }
+}

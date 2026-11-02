@@ -1,0 +1,61 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@* Chat transcript container that follows new content, and shows "Jump to latest" once you scroll up ui/message-scroller; own implementation). *@
+<div class="relative @Class" data-testid="message-scroller">
+    <div @ref="_el" role="log" aria-live="polite" aria-label="@Label" tabindex="0" data-testid="scroller-body"
+         class="overflow-y-auto @BodyClass focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 rounded-xl" style="@(Height is null ? null : $"max-height:{Height}")">
+        @ChildContent
+    </div>
+    @if (!_following)
+    {
+        <button type="button" @onclick="JumpAsync" data-testid="scroller-jump"
+                class="absolute bottom-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2 rounded-full bg-brand-700 text-white text-xs font-bold px-4 min-h-[36px] shadow-lg hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-500">
+            Jump to latest
+        </button>
+    }
+</div>
+
+@code {
+    private ElementReference _el;
+    private DotNetObjectReference<TwMessageScroller>? _self;
+    private bool _following = true;
+    private bool _attached;
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Label { get; set; } = "Conversation";
+    /// <summary>CSS length, e.g. "28rem". Without it the parent must constrain the height.</summary>
+    [Parameter] public string? Height { get; set; }
+    [Parameter] public string? BodyClass { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _attached) return;
+        _attached = true;
+        _self = DotNetObjectReference.Create(this);
+        try { await JS.InvokeVoidAsync("twAgentKit.observeTail", _el, _self); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
+    [JSInvokable]
+    public Task OnStickChanged(bool following)
+    {
+        _following = following;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private async Task JumpAsync()
+    {
+        try { await JS.InvokeVoidAsync("twAgentKit.scrollToEnd", _el); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+        _following = true;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { if (_attached) await JS.InvokeVoidAsync("twAgentKit.disposeTail", _el); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+        _self?.Dispose();
+    }
+}

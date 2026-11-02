@@ -1,0 +1,46 @@
+@* What the agent is doing on its machine, newest last computer/activity-log; own implementation). Announces politely; auto-follows the tail. *@
+<section aria-label="@Label" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 @Class" data-testid="activity-log">
+    <header class="flex items-center justify-between px-4 py-2 border-b border-slate-200 dark:border-slate-800">
+        <h3 class="text-sm font-black text-slate-900 dark:text-white">@Label</h3>
+        <span class="text-xs text-slate-600 dark:text-slate-400" data-testid="activity-count">@Entries.Count event@(Entries.Count == 1 ? "" : "s")</span>
+    </header>
+    <div class="max-h-64 overflow-y-auto" role="log" aria-live="polite" aria-label="@Label entries" tabindex="0" data-testid="activity-entries">
+    <ol class="divide-y divide-slate-100 dark:divide-slate-800">
+        @if (Entries.Count == 0)
+        {
+            <li class="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">Nothing yet.</li>
+        }
+        @foreach (var e in Entries)
+        {
+            <li class="px-4 py-2 flex items-start gap-3 text-sm" data-testid="activity-entry" data-kind="@e.Kind">
+                <span class="mt-0.5 text-[10px] font-bold uppercase px-1.5 py-0.5 rounded shrink-0 @KindClass(e.Kind)">@e.Kind</span>
+                <span class="flex-1 min-w-0">
+                    <span class="block text-slate-900 dark:text-slate-100 break-words">@e.Text</span>
+                    @if (!string.IsNullOrEmpty(e.Detail))
+                    {
+                        <span class="block text-xs text-slate-600 dark:text-slate-400 break-words">@e.Detail</span>
+                    }
+                </span>
+                <time class="text-xs text-slate-600 dark:text-slate-400 tabular-nums shrink-0" datetime="@e.AtUtc.ToString("O")">@e.AtUtc.ToLocalTime().ToString("HH:mm:ss")</time>
+            </li>
+        }
+    </ol>
+    </div>
+</section>
+
+@code {
+    public sealed record ActivityEntry(DateTime AtUtc, string Kind, string Text, string? Detail = null);
+
+    [Parameter, EditorRequired] public IReadOnlyList<ActivityEntry> Entries { get; set; } = Array.Empty<ActivityEntry>();
+    [Parameter] public string Label { get; set; } = "Agent activity";
+    [Parameter] public string? Class { get; set; }
+
+    private static string KindClass(string kind) => kind.ToLowerInvariant() switch
+    {
+        "click" or "type" or "key" => "bg-sky-100 text-sky-900 dark:bg-sky-500/20 dark:text-sky-100",
+        "navigate" or "open" => "bg-indigo-100 text-indigo-900 dark:bg-indigo-500/20 dark:text-indigo-100",
+        "command" or "shell" => "bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-slate-100",
+        "error" => "bg-red-100 text-red-900 dark:bg-red-500/20 dark:text-red-100",
+        _ => "bg-emerald-100 text-emerald-900 dark:bg-emerald-500/20 dark:text-emerald-100"
+    };
+}

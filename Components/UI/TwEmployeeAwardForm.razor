@@ -1,0 +1,488 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Services
+@using System.Security.Cryptography
+@using System.Text
+@inject ToastService Toast
+@inject IJSRuntime JS
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden max-w-5xl mx-auto @CustomClass">
+    <!-- Header Banner -->
+    <div class="p-6 sm:p-10 bg-gradient-to-br from-amber-950 via-slate-900 to-amber-900 text-white relative overflow-hidden border-b border-amber-500/20">
+        <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-amber-500/15 blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-3 max-w-2xl">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold">
+                        <span>🏆</span>
+                        <span>Employee Excellence & Recognition</span>
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-white/10 text-white">
+                        Nomination Cycle Active
+                    </span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                    Employee Recognition & Spot Bonus Nomination
+                </h1>
+                <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    Nominate exceptional peers and leaders for peer awards, spot monetary bonuses, extra PTO, and public honors on the corporate Wall of Fame.
+                </p>
+            </div>
+
+            <!-- Award Certificate Mini Preview Badge & Quick Actions -->
+            <div class="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-amber-500/30 shrink-0 text-center space-y-2 min-w-48">
+                <span class="text-3xl block">🥇</span>
+                <span class="text-xs font-black text-amber-300 font-serif block">@Model.AwardCategory</span>
+                <span class="text-xs font-mono font-bold text-white block">@Model.GrantAmountFormatted</span>
+                <div class="pt-1 flex flex-col gap-1.5">
+                    <button type="button" @onclick="DownloadCertificateSvg"
+                            class="w-full px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-[10px] font-mono font-bold text-amber-200 transition flex items-center justify-center gap-1">
+                        <span>📜</span>
+                        <span>Export SVG Cert</span>
+                    </button>
+                    <button type="button" @onclick="DownloadGrantLetterTxt"
+                            class="w-full px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 border border-white/20 text-[10px] font-mono font-bold text-white transition flex items-center justify-center gap-1">
+                        <span>📄</span>
+                        <span>Export Grant Letter</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Award Confirmation Banner (if submitted) -->
+    @if (_lastAwardSubmitted)
+    {
+        <div class="m-6 sm:m-10 p-5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-700 space-y-3 animate-fadeIn">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-emerald-800 dark:text-emerald-200 font-bold text-sm">
+                    <span class="text-xl">✅</span>
+                    <span>Excellence Award Successfully Authorized & Disbursed!</span>
+                </div>
+                <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold">
+                    ID: @_lastAwardId
+                </span>
+            </div>
+            <p class="text-xs text-emerald-700 dark:text-emerald-300 leading-relaxed">
+                Honors conferred upon <strong>@Model.NomineeName</strong> (@Model.NomineeTitle) in recognition of <em>@Model.AwardCategory</em>. Real certificate and grant letters have been generated and are ready for official archive or employee presentation.
+            </p>
+            <div class="flex flex-wrap items-center gap-3 pt-1">
+                <button type="button" @onclick="DownloadCertificateSvg"
+                        class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-sm flex items-center gap-1.5">
+                    <span>📜</span>
+                    <span>Download Vector Certificate (.svg)</span>
+                </button>
+                <button type="button" @onclick="DownloadGrantLetterTxt"
+                        class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition shadow-sm flex items-center gap-1.5">
+                    <span>📄</span>
+                    <span>Download Official Grant Memo (.txt)</span>
+                </button>
+                <span class="text-[11px] font-mono text-emerald-600 dark:text-emerald-400">
+                    Hash: @_lastAwardHash.Substring(0, 16)...
+                </span>
+            </div>
+        </div>
+    }
+
+    <!-- Form Content -->
+    <form @onsubmit="HandleSubmit" class="p-6 sm:p-10 space-y-8">
+        <!-- 1. Award Category Selector -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span class="text-base">🎖️</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">1. Select Recognition Category</h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                @foreach (var cat in _awardCategories)
+                {
+                    var isSelected = Model.AwardCategory == cat.Name;
+                    <button type="button" @onclick="() => Model.AwardCategory = cat.Name"
+                            class="p-4 rounded-2xl border text-left transition space-y-1.5 @(isSelected ? "border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/20 shadow-sm" : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300")">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl">@cat.Icon</span>
+                            <span class="text-xs font-mono font-bold @(isSelected ? "text-amber-600 dark:text-amber-400" : "text-slate-400")">
+                                @(isSelected ? "Selected ✓" : "Select")
+                            </span>
+                        </div>
+                        <h3 class="text-xs font-bold block pt-1">@cat.Name</h3>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-tight">@cat.Description</p>
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- 2. Nominee & Nominator Profile -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span class="text-base">👤</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">2. Nominee & Nominator Identification</h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <!-- Nominee -->
+                <div class="p-4 rounded-2xl bg-slate-50/60 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <span class="text-xs font-mono uppercase text-brand-600 dark:text-brand-400 font-bold block">Nominee (Recipient)</span>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Full Name</label>
+                        <input type="text" @bind="Model.NomineeName" required placeholder="e.g. Elena Rostova"
+                               class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Department</label>
+                            <input type="text" @bind="Model.NomineeDepartment" placeholder="e.g. Distributed Core"
+                                   class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Job Title</label>
+                            <input type="text" @bind="Model.NomineeTitle" placeholder="e.g. Principal Architect"
+                                   class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Nominator -->
+                <div class="p-4 rounded-2xl bg-slate-50/60 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 space-y-3">
+                    <span class="text-xs font-mono uppercase text-amber-600 dark:text-amber-400 font-bold block">Nominator (You)</span>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Your Full Name</label>
+                        <input type="text" @bind="Model.NominatorName" required placeholder="e.g. David Kim"
+                               class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Relationship to Nominee</label>
+                        <select @bind="Model.Relationship" class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none">
+                            <option value="Direct Manager">Direct Manager / Supervisor</option>
+                            <option value="Cross-Functional Peer">Cross-Functional Peer Collaborator</option>
+                            <option value="Direct Report">Direct Report / Mentee</option>
+                            <option value="Department Head">Department Head / VP</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Contribution Narrative & Values -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span class="text-base">📜</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">3. Impact Narrative & Demonstrated Values</h2>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Reason for Nomination & Specific Impact</label>
+                <textarea @bind="Model.ImpactNarrative" rows="3" required placeholder="Describe the concrete milestone, breakthrough, or team enablement delivered by the nominee..."
+                          class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:outline-none"></textarea>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">Plaque / Certificate Inscription Quote</label>
+                <input type="text" @bind="Model.InscriptionText" placeholder="e.g. For exemplary dedication to zero-downtime resilience and inspiring mentorship."
+                       class="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none font-serif italic" />
+            </div>
+        </div>
+
+        <!-- 4. Recognition & Reward Package -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span class="text-base">🎁</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">4. Reward Package Allocation</h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <!-- Spot Cash Bonus -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Spot Bonus Grant</label>
+                    <select @bind="Model.GrantAmount" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono font-bold text-slate-900 dark:text-white focus:outline-none">
+                        <option value="0">$0 (Recognition Plaque Only)</option>
+                        <option value="500">$500 USD (Kudos Bonus)</option>
+                        <option value="1500">$1,500 USD (Star Performer)</option>
+                        <option value="3000">$3,000 USD (Milestone Breaker)</option>
+                        <option value="5000">$5,000 USD (Founders Laureate)</option>
+                    </select>
+                </div>
+
+                <!-- Extra PTO Days -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Extra Paid Time Off (PTO)</label>
+                    <div class="flex items-center gap-3">
+                        <button type="button" @onclick="() => AdjustPto(-1)" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition">-1</button>
+                        <span class="flex-1 text-center font-mono font-bold text-sm text-slate-900 dark:text-white">@Model.ExtraPtoDays Days</span>
+                        <button type="button" @onclick="() => AdjustPto(1)" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition">+1</button>
+                    </div>
+                </div>
+
+                <!-- Wall of Fame Public Feed -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+                    <div class="space-y-0.5">
+                        <span class="text-xs font-bold text-slate-900 dark:text-white block">Wall of Fame</span>
+                        <span class="text-[10px] text-slate-500 block">Broadcast to corporate Slack</span>
+                    </div>
+                    <input type="checkbox" @bind="Model.PublishToWallOfFame" class="w-5 h-5 rounded text-amber-500 focus:ring-amber-400 cursor-pointer" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Golden Certificate Live Preview -->
+        <div class="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-amber-50/80 to-amber-100/40 dark:from-slate-950 dark:to-slate-900 border-2 border-amber-300 dark:border-amber-500/40 shadow-inner text-center space-y-4 relative overflow-hidden">
+            <div class="text-xs font-mono uppercase tracking-widest text-amber-700 dark:text-amber-400 font-bold">
+                Certificate of Enterprise Excellence
+            </div>
+            <h3 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-serif">
+                @Model.NomineeName
+            </h3>
+            <p class="text-xs text-slate-600 dark:text-slate-300 font-medium">
+                is hereby presented with the <strong class="text-amber-600 dark:text-amber-400">@Model.AwardCategory</strong>
+            </p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 font-serif italic max-w-lg mx-auto">
+                "@Model.InscriptionText"
+            </p>
+            <div class="pt-2 flex items-center justify-center gap-6 text-[11px] font-mono text-slate-500 dark:text-slate-400">
+                <span>Grant: <strong class="text-emerald-600 dark:text-emerald-400">@Model.GrantAmountFormatted</strong></span>
+                <span>•</span>
+                <span>PTO: <strong class="text-slate-700 dark:text-slate-300">+@Model.ExtraPtoDays Days</strong></span>
+                <span>•</span>
+                <span>Nominator: <strong class="text-slate-700 dark:text-slate-300">@Model.NominatorName</strong></span>
+            </div>
+
+            <div class="pt-2 flex items-center justify-center gap-3">
+                <button type="button" @onclick="DownloadCertificateSvg"
+                        class="px-4 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-800 dark:text-amber-200 text-xs font-bold transition flex items-center gap-1.5">
+                    <span>📜</span>
+                    <span>Download SVG Certificate</span>
+                </button>
+                <button type="button" @onclick="DownloadGrantLetterTxt"
+                        class="px-4 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1.5">
+                    <span>📄</span>
+                    <span>Download Grant Memo</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Action Bar -->
+        <div class="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <span class="text-xs font-mono text-slate-400">
+                Cycle: Q4-2026 • Verified via Client Cryptographic Hash
+            </span>
+            <div class="flex items-center gap-3">
+                <button type="button" @onclick="DownloadCertificateSvg"
+                        class="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 font-bold text-xs sm:text-sm transition flex items-center gap-2">
+                    <span>📜</span>
+                    <span>Export Certificate</span>
+                </button>
+                <button type="submit"
+                        class="px-6 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs sm:text-sm transition shadow-md shadow-amber-500/20 flex items-center gap-2">
+                    <span>Award Honors & Disburse Grant</span>
+                    <span>🎉</span>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@code {
+    [Parameter] public EmployeeAwardModel Model { get; set; } = new();
+    [Parameter] public EventCallback<EmployeeAwardModel> OnAwardNominated { get; set; }
+    [Parameter] public string CustomClass { get; set; } = "";
+
+    public record AwardCategoryMeta(string Name, string Icon, string Description);
+
+    private bool _lastAwardSubmitted = false;
+    private string _lastAwardId = "";
+    private string _lastAwardHash = "";
+
+    private readonly List<AwardCategoryMeta> _awardCategories = new()
+    {
+        new("Founders' Innovation Award", "🏆", "Radical technical breakthroughs, patentable discoveries, or visionary solutions."),
+        new("Customer Obsession Champion", "⭐", "Unprecedented customer delight, critical save, or flawless enterprise support."),
+        new("Engineering Velocity Master", "⚡", "Exceptional shipping velocity, code craftsmanship, and latency optimization."),
+        new("Zero-Downtime Guardian", "🛡️", "Heroic reliability, ironclad security vigilance, and 99.999% uptime safeguarding."),
+        new("Cultural Torchbearer", "🤝", "Fostering inclusive collaboration, mentoring talent, and team enablement."),
+        new("Unsung Hero Recognition", "💎", "Quiet, tireless behind-the-scenes mastery keeping infrastructure flawless.")
+    };
+
+    public class EmployeeAwardModel
+    {
+        public string AwardCategory { get; set; } = "Engineering Velocity Master";
+        public string NomineeName { get; set; } = "Elena Rostova";
+        public string NomineeDepartment { get; set; } = "Distributed Architecture";
+        public string NomineeTitle { get; set; } = "Principal WASM Systems Engineer";
+        public string NominatorName { get; set; } = "David Kim";
+        public string Relationship { get; set; } = "Direct Manager";
+        public string ImpactNarrative { get; set; } = "Engineered sub-millisecond sorting routines for 50,000 in-memory rows and authored 7 flagship WebAssembly studio components under tight enterprise milestones.";
+        public string InscriptionText { get; set; } = "For unrelenting passion in advancing client-side WebAssembly performance and architectural excellence.";
+        public int GrantAmount { get; set; } = 3000;
+        public int ExtraPtoDays { get; set; } = 2;
+        public bool PublishToWallOfFame { get; set; } = true;
+
+        public string GrantAmountFormatted => GrantAmount > 0 ? $"${GrantAmount:N0} USD" : "Honorary Plaque";
+    }
+
+    private void AdjustPto(int delta)
+    {
+        Model.ExtraPtoDays = Math.Clamp(Model.ExtraPtoDays + delta, 0, 10);
+    }
+
+    private async Task HandleSubmit()
+    {
+        _lastAwardId = $"AWARD-{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}";
+        var rawData = $"{Model.NomineeName}|{Model.AwardCategory}|{Model.GrantAmount}|{Model.NominatorName}|{DateTime.UtcNow:O}";
+        _lastAwardHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(rawData)));
+        _lastAwardSubmitted = true;
+
+        Toast.Show("Excellence Award Nominated!", $"Honors conferred upon {Model.NomineeName} ({Model.AwardCategory}) with a grant of {Model.GrantAmountFormatted}.", SemanticVariant.Success);
+        
+        if (OnAwardNominated.HasDelegate)
+        {
+            await OnAwardNominated.InvokeAsync(Model);
+        }
+    }
+
+    public async Task DownloadCertificateSvg()
+    {
+        var svg = GenerateSvgCertificate();
+        var safeNominee = SanitizeFileName(Model.NomineeName);
+        var filename = $"Award-Certificate-{safeNominee}.svg";
+        await JS.InvokeVoidAsync("pdfHelper.downloadText", filename, "image/svg+xml;charset=utf-8", svg);
+        Toast.Show("Certificate Exported", $"Downloaded {filename} vector certificate.", SemanticVariant.Success);
+    }
+
+    public async Task DownloadGrantLetterTxt()
+    {
+        var memo = GenerateGrantLetter();
+        var safeNominee = SanitizeFileName(Model.NomineeName);
+        var filename = $"Grant-Authorization-Letter-{safeNominee}.txt";
+        await JS.InvokeVoidAsync("pdfHelper.downloadText", filename, "text/plain;charset=utf-8", memo);
+        Toast.Show("Grant Memo Exported", $"Downloaded {filename} executive memorandum.", SemanticVariant.Success);
+    }
+
+    private string SanitizeFileName(string name)
+    {
+        var cleaned = new string(name.Where(c => char.IsLetterOrDigit(c) || c == '_' || c == '-').ToArray());
+        return string.IsNullOrWhiteSpace(cleaned) ? "Recipient" : cleaned;
+    }
+
+    public string GenerateSvgCertificate()
+    {
+        var safeNominee = System.Security.SecurityElement.Escape(Model.NomineeName);
+        var safeCategory = System.Security.SecurityElement.Escape(Model.AwardCategory);
+        var safeDept = System.Security.SecurityElement.Escape(Model.NomineeDepartment);
+        var safeTitle = System.Security.SecurityElement.Escape(Model.NomineeTitle);
+        var safeNominator = System.Security.SecurityElement.Escape(Model.NominatorName);
+        var safeCitation = System.Security.SecurityElement.Escape(Model.InscriptionText);
+        var dateFormatted = DateTime.UtcNow.ToString("MMMM dd, yyyy");
+        var awardId = string.IsNullOrEmpty(_lastAwardId) ? "AWARD-" + DateTime.UtcNow.ToString("yyyyMMdd") : _lastAwardId;
+
+        return $@"<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 1000 700"" width=""1000"" height=""700"">
+  <defs>
+    <linearGradient id=""bgGrad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" stop-color=""#0f172a"" />
+      <stop offset=""50%"" stop-color=""#1e293b"" />
+      <stop offset=""100%"" stop-color=""#0f172a"" />
+    </linearGradient>
+    <linearGradient id=""goldGrad"" x1=""0%"" y1=""0%"" x2=""100%"" y2=""100%"">
+      <stop offset=""0%"" stop-color=""#f59e0b"" />
+      <stop offset=""50%"" stop-color=""#fbbf24"" />
+      <stop offset=""100%"" stop-color=""#d97706"" />
+    </linearGradient>
+    <filter id=""glow"" x=""-20%"" y=""-20%"" width=""140%"" height=""140%"">
+      <feGaussianBlur stdDeviation=""4"" result=""blur"" />
+      <feComposite in=""SourceGraphic"" in2=""blur"" operator=""over"" />
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width=""1000"" height=""700"" fill=""url(#bgGrad)"" />
+
+  <!-- Outer Double Gold Border -->
+  <rect x=""30"" y=""30"" width=""940"" height=""640"" rx=""16"" fill=""none"" stroke=""url(#goldGrad)"" stroke-width=""3"" />
+  <rect x=""42"" y=""42"" width=""916"" height=""616"" rx=""10"" fill=""none"" stroke=""#fbbf24"" stroke-width=""1"" stroke-opacity=""0.4"" stroke-dasharray=""6 4"" />
+
+  <!-- Header Medallion Wreath -->
+  <circle cx=""500"" cy=""100"" r=""36"" fill=""#1e293b"" stroke=""url(#goldGrad)"" stroke-width=""2"" />
+  <text x=""500"" y=""112"" font-family=""serif"" font-size=""32"" text-anchor=""middle"" fill=""#fbbf24"">🏆</text>
+
+  <!-- Institution Title -->
+  <text x=""500"" y=""165"" font-family=""sans-serif"" font-size=""13"" font-weight=""bold"" letter-spacing=""6"" text-anchor=""middle"" fill=""#fbbf24"">HIGH-PERFORMANCE ENTERPRISE MERIT AWARDS</text>
+  <text x=""500"" y=""200"" font-family=""serif"" font-size=""34"" font-weight=""900"" text-anchor=""middle"" fill=""#ffffff"">Certificate of Excellence</text>
+
+  <text x=""500"" y=""235"" font-family=""serif"" font-size=""14"" font-style=""italic"" text-anchor=""middle"" fill=""#94a3b8"">This prestigious enterprise laurel is proudly presented to</text>
+
+  <!-- Nominee Name -->
+  <text x=""500"" y=""295"" font-family=""serif"" font-size=""44"" font-weight=""900"" text-anchor=""middle"" fill=""url(#goldGrad)"" filter=""url(#glow)"">{safeNominee}</text>
+  <text x=""500"" y=""325"" font-family=""sans-serif"" font-size=""14"" font-weight=""600"" text-anchor=""middle"" fill=""#cbd5e1"">{safeTitle} • {safeDept}</text>
+
+  <!-- Divider -->
+  <line x1=""350"" y1=""350"" x2=""650"" y2=""350"" stroke=""#fbbf24"" stroke-width=""1.5"" stroke-opacity=""0.5"" />
+
+  <!-- Category & Citation -->
+  <text x=""500"" y=""385"" font-family=""sans-serif"" font-size=""12"" font-weight=""bold"" letter-spacing=""3"" text-anchor=""middle"" fill=""#f59e0b"">{safeCategory.ToUpperInvariant()}</text>
+  <text x=""500"" y=""425"" font-family=""serif"" font-size=""15"" font-style=""italic"" text-anchor=""middle"" fill=""#e2e8f0"">""{safeCitation}""</text>
+
+  <!-- Merit Allocation Box -->
+  <rect x=""250"" y=""465"" width=""500"" height=""60"" rx=""12"" fill=""#0f172a"" fill-opacity=""0.7"" stroke=""#fbbf24"" stroke-width=""1"" stroke-opacity=""0.3"" />
+  <text x=""350"" y=""495"" font-family=""sans-serif"" font-size=""11"" font-weight=""bold"" text-anchor=""middle"" fill=""#94a3b8"">SPOT BONUS GRANT</text>
+  <text x=""350"" y=""515"" font-family=""monospace"" font-size=""14"" font-weight=""bold"" text-anchor=""middle"" fill=""#10b981"">{Model.GrantAmountFormatted}</text>
+
+  <line x1=""500"" y1=""475"" x2=""500"" y2=""515"" stroke=""#334155"" stroke-width=""1"" />
+
+  <text x=""650"" y=""495"" font-family=""sans-serif"" font-size=""11"" font-weight=""bold"" text-anchor=""middle"" fill=""#94a3b8"">EXTRA MERIT PTO</text>
+  <text x=""650"" y=""515"" font-family=""monospace"" font-size=""14"" font-weight=""bold"" text-anchor=""middle"" fill=""#38bdf8"">+{Model.ExtraPtoDays} Days</text>
+
+  <!-- Signatures & Verification Footer -->
+  <line x1=""120"" y1=""600"" x2=""320"" y2=""600"" stroke=""#64748b"" stroke-width=""1"" />
+  <text x=""220"" y=""618"" font-family=""sans-serif"" font-size=""11"" font-weight=""bold"" text-anchor=""middle"" fill=""#f8fafc"">{safeNominator}</text>
+  <text x=""220"" y=""633"" font-family=""sans-serif"" font-size=""9"" text-anchor=""middle"" fill=""#64748b"">Nominator / Sponsor</text>
+
+  <text x=""500"" y=""605"" font-family=""monospace"" font-size=""10"" text-anchor=""middle"" fill=""#fbbf24"">LAUREATE RECORD: {awardId}</text>
+  <text x=""500"" y=""625"" font-family=""sans-serif"" font-size=""10"" text-anchor=""middle"" fill=""#64748b"">Issued: {dateFormatted}</text>
+
+  <line x1=""680"" y1=""600"" x2=""880"" y2=""600"" stroke=""#64748b"" stroke-width=""1"" />
+  <text x=""780"" y=""618"" font-family=""sans-serif"" font-size=""11"" font-weight=""bold"" text-anchor=""middle"" fill=""#f8fafc"">Enterprise Executive Committee</text>
+  <text x=""780"" y=""633"" font-family=""sans-serif"" font-size=""9"" text-anchor=""middle"" fill=""#64748b"">CTO & People Operations Authority</text>
+</svg>";
+    }
+
+    public string GenerateGrantLetter()
+    {
+        var awardId = string.IsNullOrEmpty(_lastAwardId) ? "AWARD-" + DateTime.UtcNow.ToString("yyyyMMdd") : _lastAwardId;
+        var dateFormatted = DateTime.UtcNow.ToString("MMMM dd, yyyy");
+
+        return $@"================================================================================
+                    EXECUTIVE MEMORANDUM & GRANT DISBURSEMENT
+================================================================================
+NOMINATION ID:     {awardId}
+DATE ISSUED:       {dateFormatted}
+CLASSIFICATION:    CONFIDENTIAL // HR & PAYROLL DISBURSEMENT
+STATUS:            APPROVED & AUTHORIZED
+--------------------------------------------------------------------------------
+RECIPIENT (NOMINEE):
+  Name:            {Model.NomineeName}
+  Title:           {Model.NomineeTitle}
+  Department:      {Model.NomineeDepartment}
+
+NOMINATED BY:
+  Nominator:       {Model.NominatorName}
+  Relationship:    {Model.Relationship}
+
+HONOR CONFERRED:
+  Award Category:  {Model.AwardCategory}
+  Citation:        ""{Model.InscriptionText}""
+
+FINANCIAL DISBURSEMENT & BENEFIT ALLOCATION:
+  1. Spot Cash Bonus:       {Model.GrantAmountFormatted}
+     Payroll Code:          BONUS-SPOT-Q4
+     Disbursement Cycle:    Next regular direct deposit payroll run
+  2. Extra Paid Time Off:   +{Model.ExtraPtoDays} PTO Days
+     HR Accrual Code:       PTO-MERIT-2026
+  3. Public Recognition:    {(Model.PublishToWallOfFame ? "Corporate Wall of Fame & All-Hands Broadcast" : "Private / Manager Recognition")}
+
+IMPACT NARRATIVE & JUSTIFICATION:
+  ""{Model.ImpactNarrative}""
+
+AUTHORIZATION & SIGNATURES:
+  [APPROVED] Office of the Chief Technology Officer
+  [VERIFIED] People Operations & Compensation Committee
+================================================================================";
+    }
+}

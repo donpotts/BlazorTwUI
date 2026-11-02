@@ -1,0 +1,60 @@
+@namespace BlazorTwUI.Components.UI
+
+<kbd class="inline-flex items-center justify-center font-mono font-medium rounded-md select-none border transition-colors @SizeClasses @VariantClasses @Class"
+     title="@Tooltip">
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        @FormatKey(Key)
+    }
+</kbd>
+
+@code {
+    [Parameter] public string? Key { get; set; }
+    [Parameter] public string Size { get; set; } = "md"; // "xs", "sm", "md", "lg"
+    [Parameter] public string Variant { get; set; } = "default"; // "default", "subtle", "outline", "brand"
+    [Parameter] public string? Tooltip { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string SizeClasses => Size switch
+    {
+        "xs" => "px-1 py-0.5 text-[9px] min-w-[16px] h-4",
+        "sm" => "px-1.5 py-0.5 text-[10px] min-w-[20px] h-5",
+        "lg" => "px-2.5 py-1 text-sm min-w-[30px] h-8",
+        _ => "px-2 py-0.5 text-xs min-w-[24px] h-6"
+    };
+
+    private string VariantClasses => Variant switch
+    {
+        "brand" => "bg-brand-50 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300 border-brand-200 dark:border-brand-800 shadow-[0_1px_0_1px_rgba(99,102,241,0.2)]",
+        "outline" => "bg-transparent text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700",
+        "subtle" => "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-transparent",
+        _ => "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 shadow-[0_2px_0_0px_rgba(0,0,0,0.08)] dark:shadow-[0_2px_0_0px_rgba(255,255,255,0.05)]"
+    };
+
+    private static string FormatKey(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "";
+        return raw.Trim().ToLowerInvariant() switch
+        {
+            "cmd" or "meta" or "command" => "⌘",
+            "ctrl" or "control" => "⌃",
+            "shift" => "⇧",
+            "alt" or "option" or "opt" => "⌥",
+            "enter" or "return" => "↵",
+            "tab" => "⇥",
+            "backspace" or "delete" => "⌫",
+            "esc" or "escape" => "⎋",
+            "up" or "arrowup" => "↑",
+            "down" or "arrowdown" => "↓",
+            "left" or "arrowleft" => "←",
+            "right" or "arrowright" => "→",
+            "space" => "␣",
+            _ => raw.ToUpperInvariant()
+        };
+    }
+}

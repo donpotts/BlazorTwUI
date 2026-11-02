@@ -1,0 +1,232 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+@if (IsOpen && CurrentStepItem is not null)
+{
+    <!-- Dimmed Backdrop with Blur -->
+    <div class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs transition-opacity duration-300 flex items-center justify-center p-4"
+         @onclick="CloseTour"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="tour-card-title">
+        
+        <!-- Coaching Tour Card -->
+        <div class="relative w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-7 space-y-5 animate-zoom-in select-none"
+             @onclick:stopPropagation="true">
+            
+            <!-- Header: Step Counter & Close -->
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-300">
+                        Step @(CurrentStepIndex + 1) of @Steps.Count
+                    </span>
+                    @if (!string.IsNullOrEmpty(CurrentStepItem.Badge))
+                    {
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            @CurrentStepItem.Badge
+                        </span>
+                    }
+                </div>
+
+                <button type="button"
+                        @onclick="CloseTour"
+                        class="p-1 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition focus:outline-none"
+                        aria-label="Close Tour">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Step Progress Track -->
+            <div class="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div class="bg-gradient-to-r from-brand-500 to-indigo-600 h-full rounded-full transition-all duration-300"
+                     style="width: @($"{((CurrentStepIndex + 1) * 100.0 / Math.Max(1, Steps.Count)):F0}%");"></div>
+            </div>
+
+            <!-- Icon & Title -->
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shrink-0 shadow-sm border border-brand-500/20 text-2xl">
+                    @CurrentStepItem.IconEmoji
+                </div>
+
+                <div class="space-y-1">
+                    <h3 id="tour-card-title" class="text-lg sm:text-xl font-black text-slate-900 dark:text-white">
+                        @CurrentStepItem.Title
+                    </h3>
+                    <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+                        @CurrentStepItem.Description
+                    </p>
+                </div>
+            </div>
+
+            <!-- Best Practice / Pro-Tip Box -->
+            @if (!string.IsNullOrEmpty(CurrentStepItem.Tip))
+            {
+                <div class="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                    <span class="text-amber-600 dark:text-amber-400 font-bold shrink-0">💡 TIP:</span>
+                    <span>@CurrentStepItem.Tip</span>
+                </div>
+            }
+
+            <!-- Code Snippet Preview (if available) -->
+            @if (!string.IsNullOrEmpty(CurrentStepItem.Snippet))
+            {
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between px-1">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            Razor Component Snippet
+                        </span>
+                        <button type="button"
+                                @onclick="CopyCurrentSnippet"
+                                class="text-[10px] font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1 focus:outline-none">
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            <span>Copy Code</span>
+                        </button>
+                    </div>
+                    <div class="rounded-xl bg-slate-950 p-3 font-mono text-[11px] text-emerald-400 overflow-x-auto border border-slate-800 shadow-inner">
+                        <code>@CurrentStepItem.Snippet</code>
+                    </div>
+                </div>
+            }
+
+            <!-- Step Action Button (e.g., launch video, try feature) -->
+            @if (!string.IsNullOrEmpty(CurrentStepItem.ActionLabel) && CurrentStepItem.ActionClick != null)
+            {
+                <div class="pt-1">
+                    <button type="button"
+                            @onclick="() => CurrentStepItem.ActionClick?.Invoke()"
+                            class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold shadow-md shadow-brand-500/20 transition flex items-center justify-center gap-2">
+                        @CurrentStepItem.ActionLabel
+                    </button>
+                </div>
+            }
+
+            <!-- Footer: Navigation Buttons -->
+            <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <button type="button"
+                        @onclick="CloseTour"
+                        class="text-xs font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+                    Skip Coaching
+                </button>
+
+                <div class="flex items-center gap-2">
+                    @if (CurrentStepIndex > 0)
+                    {
+                        <TwButton Variant="ButtonVariant.Outline" Size="ComponentSize.Sm" OnClick="PrevStep">
+                            Back
+                        </TwButton>
+                    }
+
+                    @if (CurrentStepIndex < Steps.Count - 1)
+                    {
+                        <TwButton Variant="ButtonVariant.Primary" Size="ComponentSize.Sm" OnClick="NextStep">
+                            Next Step
+                        </TwButton>
+                    }
+                    else
+                    {
+                        <TwButton Variant="ButtonVariant.Primary" Size="ComponentSize.Sm" OnClick="FinishTour">
+                            Complete Coaching 🎉
+                        </TwButton>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    public sealed record TourStep(
+        string Title,
+        string Description,
+        string IconEmoji = "🎓",
+        string? Badge = null,
+        string? Tip = null,
+        string? Snippet = null,
+        string? ActionLabel = null,
+        Action? ActionClick = null
+    );
+
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public IReadOnlyList<TourStep> Steps { get; set; } = Array.Empty<TourStep>();
+    [Parameter] public EventCallback OnCompleted { get; set; }
+
+    public int CurrentStepIndex { get; private set; }
+
+    private bool _wasOpen;
+
+    protected override void OnParametersSet()
+    {
+        if (IsOpen && !_wasOpen)
+        {
+            CurrentStepIndex = 0;
+        }
+        _wasOpen = IsOpen;
+    }
+
+    private TourStep? CurrentStepItem => (Steps.Count > 0 && CurrentStepIndex >= 0 && CurrentStepIndex < Steps.Count)
+        ? Steps[CurrentStepIndex]
+        : null;
+
+    public void StartTour()
+    {
+        CurrentStepIndex = 0;
+        IsOpen = true;
+        IsOpenChanged.InvokeAsync(true);
+        StateHasChanged();
+    }
+
+    private void NextStep()
+    {
+        if (CurrentStepIndex < Steps.Count - 1)
+        {
+            CurrentStepIndex++;
+        }
+    }
+
+    private void PrevStep()
+    {
+        if (CurrentStepIndex > 0)
+        {
+            CurrentStepIndex--;
+        }
+    }
+
+    private async Task CopyCurrentSnippet()
+    {
+        if (!string.IsNullOrEmpty(CurrentStepItem?.Snippet))
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", CurrentStepItem.Snippet);
+                Toast.Show("Snippet Copied", "Markup copied to clipboard!", SemanticVariant.Success);
+            }
+            catch
+            {
+                // Discard
+            }
+        }
+    }
+
+    private async Task CloseTour()
+    {
+        CurrentStepIndex = 0;
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task FinishTour()
+    {
+        CurrentStepIndex = 0;
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+        await OnCompleted.InvokeAsync();
+    }
+}

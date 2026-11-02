@@ -1,0 +1,71 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="@(PositionClass.Contains("relative") || PositionClass.Contains("static") ? "" : "fixed") z-40 @PositionClass @Class">
+    <!-- Click Outside Dim Backdrop when Open -->
+    @if (_isOpen)
+    {
+        <div class="fixed inset-0 bg-slate-900/20 dark:bg-black/40 backdrop-blur-[1px] transition-opacity z-30"
+             @onclick="ToggleOpen"></div>
+    }
+
+    <!-- Speed Dial Actions Stack -->
+    <div class="relative z-40 flex flex-col items-end gap-3 mb-3 transition-all duration-300 @(_isOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-4 pointer-events-none")">
+        @foreach (var action in Actions)
+        {
+            <div class="flex items-center gap-2.5 group cursor-pointer"
+                 @onclick="() => HandleActionClick(action)">
+                <!-- Label Pill -->
+                @if (!string.IsNullOrEmpty(action.Label))
+                {
+                    <span class="text-xs font-semibold px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-md border border-slate-200/80 dark:border-slate-800 transition group-hover:scale-105">
+                        @action.Label
+                    </span>
+                }
+
+                <!-- Mini Action Button -->
+                <button type="button"
+                        class="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95 focus:outline-none @(!string.IsNullOrEmpty(action.ColorClass) ? action.ColorClass : "bg-slate-800 dark:bg-slate-700")"
+                        aria-label="@action.Label">
+                    @if (!string.IsNullOrEmpty(action.IconSvg))
+                    {
+                        <span class="w-4 h-4 flex items-center justify-center">
+                            @((MarkupString)action.IconSvg)
+                        </span>
+                    }
+                </button>
+            </div>
+        }
+    </div>
+
+    <!-- Main Trigger Button -->
+    <button type="button"
+            @onclick="ToggleOpen"
+            class="relative z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-brand-600 hover:bg-brand-700 text-white shadow-xl shadow-brand-500/30 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-brand-500/30"
+            aria-label="Speed dial actions"
+            aria-expanded="@_isOpen">
+        <svg class="w-6 h-6 transition-transform duration-300 @(_isOpen ? "rotate-45" : "rotate-0")" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+    </button>
+</div>
+
+@code {
+    public sealed record SpeedDialAction(string Id, string Label, string? IconSvg = null, string? ColorClass = null, Action? OnClick = null);
+
+    [Parameter] public IReadOnlyList<SpeedDialAction> Actions { get; set; } = Array.Empty<SpeedDialAction>();
+    [Parameter] public EventCallback<string> OnActionSelected { get; set; }
+    /// <summary>Mobile-first positioning, sits comfortably on bottom-left or bottom-right</summary>
+    [Parameter] public string PositionClass { get; set; } = "bottom-20 sm:bottom-8 left-4 sm:left-8";
+    [Parameter] public string? Class { get; set; }
+
+    private bool _isOpen;
+
+    private void ToggleOpen() => _isOpen = !_isOpen;
+
+    private async Task HandleActionClick(SpeedDialAction action)
+    {
+        _isOpen = false;
+        action.OnClick?.Invoke();
+        await OnActionSelected.InvokeAsync(action.Id);
+    }
+}

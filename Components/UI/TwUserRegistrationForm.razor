@@ -1,0 +1,215 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden max-w-2xl mx-auto @CustomClass">
+    <!-- Header -->
+    <div class="p-6 sm:p-8 bg-gradient-to-r from-brand-600 via-indigo-600 to-brand-700 text-white relative">
+        <div class="flex items-center gap-3 mb-2">
+            <span class="p-2 rounded-xl bg-white/10 backdrop-blur-md">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+            </span>
+            <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/20">Enterprise Account</span>
+        </div>
+        <h2 class="text-2xl font-black tracking-tight">@Title</h2>
+        <p class="text-xs sm:text-sm text-indigo-100 mt-1">@Subtitle</p>
+    </div>
+
+    <!-- Form Content -->
+    <div class="p-6 sm:p-8 space-y-5">
+        <!-- Quick SSO Buttons -->
+        @if (ShowSocialLogins)
+        {
+            <div class="space-y-2.5">
+                <span class="text-xs font-semibold text-slate-500 dark:text-slate-400 block text-center uppercase tracking-wider">Fast registration with SSO</span>
+                <div class="grid grid-cols-2 gap-3">
+                    <button type="button" @onclick='() => TriggerSso("GitHub")' class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold transition">
+                        <span>🐙</span>
+                        <span>GitHub SSO</span>
+                    </button>
+                    <button type="button" @onclick='() => TriggerSso("Google")' class="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold transition">
+                        <span>🔍</span>
+                        <span>Google Workspace</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="relative flex items-center justify-center my-4">
+                <div class="w-full border-t border-slate-200 dark:border-slate-800"></div>
+                <span class="absolute px-3 bg-white dark:bg-slate-900 text-[11px] font-mono text-slate-400 uppercase tracking-wider">Or register with email</span>
+            </div>
+        }
+
+        <!-- Name & Organization Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Full Name *</label>
+                <input type="text" @bind="_model.FullName" placeholder="e.g. Elena Rostova"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+            </div>
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Username / Handle *</label>
+                <input type="text" @bind="_model.Username" placeholder="elena_dev"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none font-mono" />
+            </div>
+        </div>
+
+        <!-- Email & Role -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Corporate Email Address *</label>
+                <input type="email" @bind="_model.Email" placeholder="elena@company.com"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+            </div>
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Primary Role</label>
+                <select @bind="_model.Role"
+                        class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none">
+                    <option value="Engineer">Software Engineer / Architect</option>
+                    <option value="DevOps">DevOps / Platform Engineer</option>
+                    <option value="Product">Product Manager / Owner</option>
+                    <option value="Security">Security & Compliance Officer</option>
+                    <option value="Executive">Executive / CTO / VP</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Password Strength Meter Component Integrated -->
+        <div class="space-y-1.5">
+            <TwPasswordStrength Label="Master Account Password *" 
+                                @bind-Value="_model.Password" 
+                                Placeholder="Enter at least 8 characters..." />
+        </div>
+
+        <!-- Confirm Password -->
+        <div class="space-y-1">
+            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Confirm Master Password *</label>
+            <input type="password" @bind="_model.ConfirmPassword" placeholder="Repeat your password..."
+                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+        </div>
+
+        <!-- Legal Consent Checkbox -->
+        <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-850/80 border border-slate-200 dark:border-slate-800 space-y-2">
+            <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600 dark:text-slate-300">
+                <input type="checkbox" @bind="_model.AgreeToTerms"
+                       class="mt-0.5 rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500 h-4 w-4" />
+                <span>
+                    I accept the <a href="#terms" class="text-brand-600 dark:text-brand-400 font-semibold hover:underline">Terms of Service</a> and acknowledge the <a href="#privacy" class="text-brand-600 dark:text-brand-400 font-semibold hover:underline">Privacy Policy</a>.
+                </span>
+            </label>
+            <label class="flex items-start gap-2.5 cursor-pointer text-xs text-slate-600 dark:text-slate-300">
+                <input type="checkbox" @bind="_model.SubscribeNewsletter"
+                       class="mt-0.5 rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500 h-4 w-4" />
+                <span>Receive weekly technical release notes and zero-day advisory updates.</span>
+            </label>
+        </div>
+
+        <!-- Error Feedback -->
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400 text-xs font-medium flex items-center gap-2">
+                <span>⚠️</span>
+                <span>@_errorMessage</span>
+            </div>
+        }
+
+        <!-- Submit Button -->
+        <button type="button"
+                @onclick="HandleSubmit"
+                disabled="@IsSubmitting"
+                class="w-full py-3 px-4 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-500 disabled:opacity-50 transition shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 text-sm">
+            @if (IsSubmitting)
+            {
+                <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                <span>Creating Enterprise Account...</span>
+            }
+            else
+            {
+                <span>Complete Registration</span>
+                <span>→</span>
+            }
+        </button>
+
+        <!-- Footer Help -->
+        <p class="text-center text-xs text-slate-500 dark:text-slate-400 pt-2">
+            Already have an account? <a href="#login" class="text-brand-600 dark:text-brand-400 font-semibold hover:underline">Sign In</a>
+        </p>
+    </div>
+</div>
+
+@code {
+    public class RegistrationModel
+    {
+        public string FullName { get; set; } = "";
+        public string Username { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Role { get; set; } = "Engineer";
+        public string Password { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
+        public bool AgreeToTerms { get; set; } = false;
+        public bool SubscribeNewsletter { get; set; } = true;
+    }
+
+    [Parameter] public string Title { get; set; } = "Create Your Account";
+    [Parameter] public string Subtitle { get; set; } = "Deploy enterprise WebAssembly apps with instant Tailwind CSS parity";
+    [Parameter] public bool ShowSocialLogins { get; set; } = true;
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<RegistrationModel> OnRegistered { get; set; }
+    [Parameter] public EventCallback<string> OnSsoRequested { get; set; }
+
+    private RegistrationModel _model = new();
+    private bool IsSubmitting = false;
+    private string? _errorMessage;
+
+    private async Task TriggerSso(string provider)
+    {
+        if (OnSsoRequested.HasDelegate)
+        {
+            await OnSsoRequested.InvokeAsync(provider);
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_model.FullName) || string.IsNullOrWhiteSpace(_model.Email))
+        {
+            _errorMessage = "Full Name and Email Address are required.";
+            return;
+        }
+
+        if (!_model.Email.Contains('@') || !_model.Email.Contains('.'))
+        {
+            _errorMessage = "Please enter a valid corporate email address.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_model.Password) || _model.Password.Length < 8)
+        {
+            _errorMessage = "Password must be at least 8 characters.";
+            return;
+        }
+
+        if (_model.Password != _model.ConfirmPassword)
+        {
+            _errorMessage = "Password and confirmation password do not match.";
+            return;
+        }
+
+        if (!_model.AgreeToTerms)
+        {
+            _errorMessage = "You must accept the Terms of Service to proceed.";
+            return;
+        }
+
+        IsSubmitting = true;
+        await Task.Delay(800); // Simulate API call
+        IsSubmitting = false;
+
+        if (OnRegistered.HasDelegate)
+        {
+            await OnRegistered.InvokeAsync(_model);
+        }
+    }
+}

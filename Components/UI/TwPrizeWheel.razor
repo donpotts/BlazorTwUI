@@ -1,0 +1,493 @@
+@namespace BlazorTwUI.Components.UI
+@inject IJSRuntime JS
+@inject ToastService Toast
+@implements IDisposable
+
+<div class="flex flex-col space-y-6 @Class">
+    <TwConfetti @ref="_confettiRef" />
+
+    <!-- Rich Victory Celebration Modal (Beyond plain toasts!) -->
+    <TwCelebrationModal @bind-IsOpen="_showCelebrationModal"
+                        Title="Wheel Victory!"
+                        Subtitle="The wheel landed on your winning slice! Claim your reward below:"
+                        BadgeEmoji="@(_winningPrize?.Emoji ?? "🏆")"
+                        RewardTitle="@_winningPrize?.Title"
+                        RewardEmoji="@_winningPrize?.Emoji"
+                        RewardDescription="Prize recorded in morale rewards ledger."
+                        PrimaryActionText="Claim Winning Prize"
+                        SecondaryActionText="Spin Again"
+                        Style="TwConfetti.CelebrationStyle.Fireworks"
+                        ParticleCount="180"
+                        OnPrimaryAction="ClaimPrizeFromModal"
+                        OnSecondaryAction="SpinAgainFromModal" />
+
+    <!-- Header -->
+    <div class="text-center space-y-1">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-xs">
+            <span>🎡</span> Inspired by MyWheel Interactive Physics
+        </div>
+        <h3 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">@Title</h3>
+        <p class="text-xs sm:text-sm text-slate-500 max-w-lg mx-auto">
+            Experience realistic weighted wheel deceleration (5s), dynamic ticking audio, and click the glowing center circle anytime to stop exactly where you want!
+        </p>
+    </div>
+
+    <!-- Main Dual-Pane Layout: Wheel on Left, Options List on Right -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center justify-center">
+        <!-- Wheel Column (Columns 1-7) -->
+        <div class="lg:col-span-7 flex flex-col items-center justify-center">
+            <div class="wheel-wrapper">
+                <!-- Top Pointer Needle -->
+                <div class="wheel-pointer"></div>
+
+                <!-- 500x500 SVG Wheel -->
+                <svg class="wheel @(_isSpinning ? "spinning" : "")" id="wheel" style="@GetWheelStyle()" viewBox="0 0 500 500">
+                    @for (int i = 0; i < Prizes.Count; i++)
+                    {
+                        var anglePerSlice = 360.0 / Prizes.Count;
+                        var startAngle = i * anglePerSlice;
+                        var endAngle = (i + 1) * anglePerSlice;
+                        var prize = Prizes[i];
+                        var pathData = GetWedgePath(250, 250, 240, startAngle, endAngle);
+                        var textAngle = (startAngle + anglePerSlice / 2.0) + 90.0;
+                        var textPosition = GetTextPosition(250, 250, 165, startAngle + anglePerSlice / 2.0);
+                        var lines = WrapText($"{prize.Emoji} {prize.Title}", 13);
+                        var verticalOffset = -(lines.Count - 1) * 0.6;
+
+                        <g class="wheel-section cursor-default">
+                            <path d="@pathData" fill="@prize.Color" stroke="#ffffff" stroke-width="3" />
+                            <text x="@textPosition.X" y="@textPosition.Y"
+                                  text-anchor="middle"
+                                  dominant-baseline="middle"
+                                  transform="rotate(@textAngle, @textPosition.X, @textPosition.Y)"
+                                  class="slice-text">
+                                @for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
+                                {
+                                    <tspan x="@textPosition.X" dy="@(lineIndex == 0 ? verticalOffset + "em" : "1.2em")">@lines[lineIndex]</tspan>
+                                }
+                            </text>
+                        </g>
+                    }
+
+                    <!-- Interactive Center Circle / STOP Button -->
+                    <circle cx="250" cy="250" r="38" fill="white" stroke="#1e293b" stroke-width="5"
+                            class="center-circle @(_isSpinning ? "stop-button" : "")"
+                            @onclick="StopWheelIfSpinning" />
+                </svg>
+
+                @if (_isSpinning)
+                {
+                    <div class="stop-text-overlay" @onclick="StopWheelIfSpinning">STOP</div>
+                }
+            </div>
+
+            <!-- Controls & Spin Status -->
+            <div class="flex flex-col items-center space-y-3 mt-6 w-full max-w-sm">
+                <div class="flex flex-wrap items-center gap-2.5 w-full justify-center">
+                    <TwButton id="btn-spin-wheel"
+                              Variant="ButtonVariant.Primary"
+                              Size="ComponentSize.Lg"
+                              OnClick="SpinWheel"
+                              Disabled="@_isSpinning"
+                              Class="flex-1 shadow-md">
+                        @(_isSpinning ? "🎡 Spinning (Click STOP)..." : "🎲 Spin Wheel (5s)!")
+                    </TwButton>
+
+                    <button type="button"
+                            id="btn-reset-wheel"
+                            @onclick="ResetWheel"
+                            disabled="@_isSpinning"
+                            title="Reset wheel to initial 0° state"
+                            class="px-3.5 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 text-slate-700 dark:text-slate-200 font-bold text-xs transition border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-1.5">
+                        <span>↺</span>
+                        <span>Reset</span>
+                    </button>
+
+                    @if (_isSpinning)
+                    {
+                        <button type="button"
+                                id="btn-stop-wheel"
+                                @onclick="StopWheelIfSpinning"
+                                class="px-4 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs tracking-wider uppercase shadow-md transition animate-pulse flex items-center gap-1.5">
+                            <span>🛑</span>
+                            <span>STOP</span>
+                        </button>
+                    }
+                </div>
+
+                <!-- Selection Status Feedback -->
+                <div class="text-center min-h-[44px] flex items-center justify-center">
+                    @if (!string.IsNullOrEmpty(_selectionMessage))
+                    {
+                        <div class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs sm:text-sm font-semibold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition">
+                            @_selectionMessage
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-xs text-slate-400">Click "Spin Wheel" or the center button to begin! 🎲</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Prize Options List Column (Columns 8-12, inspired by MyWheel Recipe List) -->
+        <div class="lg:col-span-5 space-y-3">
+            <div class="p-5 rounded-3xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>🎯</span> Wheel Slices & Odds (@Prizes.Count)
+                    </h4>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                        @($"{360.0 / Prizes.Count:F1}° each")
+                    </span>
+                </div>
+
+                <div class="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                    @for (int i = 0; i < Prizes.Count; i++)
+                    {
+                        var prize = Prizes[i];
+                        var isWinner = _winningPrize?.Title == prize.Title;
+
+                        <div class="flex items-center justify-between p-2.5 rounded-xl transition-all duration-300 @(isWinner ? "bg-amber-100/70 dark:bg-amber-950/40 border-2 border-amber-500 shadow-sm scale-[1.02]" : "bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/60")"
+                             style="border-left: 6px solid @prize.Color;">
+                            <div class="flex items-center gap-2.5 truncate">
+                                <span class="text-base select-none">@prize.Emoji</span>
+                                <div class="truncate">
+                                    <p class="text-xs font-bold text-slate-900 dark:text-white truncate">@prize.Title</p>
+                                    <p class="text-[10px] text-slate-500 truncate">@prize.Description</p>
+                                </div>
+                            </div>
+
+                            @if (isWinner)
+                            {
+                                <span class="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-amber-500 text-white animate-bounce">
+                                    WINNER
+                                </span>
+                            }
+                        </div>
+                    }
+                </div>
+
+                @if (_claimedPrizes.Count > 0)
+                {
+                    <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                                <span>🏆</span> Claimed Prizes (@_claimedPrizes.Count)
+                            </span>
+                            <button type="button" @onclick="ExportClaimedPrizesCsv" class="text-[11px] font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+                                Export CSV
+                            </button>
+                        </div>
+                        <div class="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+                            @foreach (var claim in _claimedPrizes)
+                            {
+                                <div class="flex items-center justify-between p-2 rounded-xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/80 text-[11px]">
+                                    <div class="flex items-center gap-1.5 truncate">
+                                        <span>@claim.Emoji</span>
+                                        <span class="font-bold text-slate-900 dark:text-white truncate">@claim.Title</span>
+                                    </div>
+                                    <span class="font-mono text-[10px] text-emerald-700 dark:text-emerald-300 font-bold">@claim.ClaimVoucher</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string Title { get; set; } = "Spin to Win!";
+    [Parameter] public EventCallback<PrizeItem> OnPrizeWon { get; set; }
+    [Parameter] public EventCallback<ClaimedPrizeRecord> OnPrizeClaimed { get; set; }
+
+    public record PrizeItem(string Title, string Emoji, string Color, string Description);
+    public record ClaimedPrizeRecord(string ClaimVoucher, string Emoji, string Title, DateTime ClaimedAt);
+
+    private readonly List<ClaimedPrizeRecord> _claimedPrizes = new();
+
+    [Parameter]
+    public List<PrizeItem> Prizes { get; set; } = new()
+    {
+        new("$25 Coffee Card", "☕", "#6366f1", "Starbucks or local artisan roaster"),
+        new("Swag Hoodie", "👕", "#10b981", "Embroidered heavyweight team hoodie"),
+        new("Friday Half-Day", "🏖️", "#f59e0b", "Log off at 1:00 PM with lead approval"),
+        new("Team Lead Lunch", "🍕", "#ef4444", "Catered lunch ordered to your desk"),
+        new("ANC Headphones", "🎧", "#8b5cf6", "Noise-cancelling desktop headset grant"),
+        new("Desk Succulent", "🌱", "#06b6d4", "Live desktop garden terrarium delivered"),
+        new("VIP Parking Spot", "🚗", "#ec4899", "Front-row reserved parking space"),
+        new("Golden Award", "🏆", "#f97316", "Wall of fame framed achievement award")
+    };
+
+    private TwConfetti? _confettiRef;
+    private bool _showCelebrationModal = false;
+    private bool _isSpinning = false;
+    private double _currentRotation = 0;
+    private double _targetRotation = 0;
+    private PrizeItem? _winningPrize;
+    private string _selectionMessage = "";
+    private readonly Random _rand = new();
+    private CancellationTokenSource? _spinCancellation;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                await JS.InvokeVoidAsync("initWheelRotation", _currentRotation);
+            }
+            catch
+            {
+                // Interop safe fallback
+            }
+        }
+    }
+
+    private string GetWheelStyle()
+    {
+        return $"transform: rotate({_currentRotation}deg);";
+    }
+
+    private async Task SpinWheel()
+    {
+        if (_isSpinning || Prizes.Count == 0) return;
+
+        _spinCancellation?.Cancel();
+        _spinCancellation = new CancellationTokenSource();
+
+        _isSpinning = true;
+        _winningPrize = null;
+        _selectionMessage = "🎡 Spinning... (Click center STOP to halt anytime!)";
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await JS.InvokeVoidAsync("playWheelSound", "spin");
+        }
+        catch {}
+
+        // Calculate random rotation: 6-11 full 360 spins + random final angle for authentic 5s deceleration
+        var fullSpins = _rand.Next(6, 12);
+        var finalAngle = _rand.Next(0, 360);
+        _targetRotation = _currentRotation + (fullSpins * 360) + finalAngle;
+
+        try
+        {
+            await JS.InvokeVoidAsync("setWheelRotation", _targetRotation, 5000);
+        }
+        catch {}
+
+        try
+        {
+            await Task.Delay(5000, _spinCancellation.Token);
+
+            if (!_spinCancellation.Token.IsCancellationRequested)
+            {
+                await CompleteNaturalSpin();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Spin was cancelled by user clicking the center STOP button
+        }
+    }
+
+    private async Task CompleteNaturalSpin()
+    {
+        if (Prizes.Count == 0) return;
+
+        // Pointer is at the top (0 degrees). Compute which wedge lands underneath it:
+        var normalizedAngle = (360.0 - (_targetRotation % 360.0)) % 360.0;
+        var sectionAngle = 360.0 / Prizes.Count;
+        var selectedIndex = (int)Math.Floor(normalizedAngle / sectionAngle) % Prizes.Count;
+
+        _currentRotation = _targetRotation % 360.0;
+        _winningPrize = Prizes[selectedIndex];
+        _isSpinning = false;
+        _selectionMessage = $"🎉 You got: {_winningPrize.Emoji} {_winningPrize.Title}! 🎉";
+        _showCelebrationModal = true;
+
+        try
+        {
+            await JS.InvokeVoidAsync("completeWheelSpin", _currentRotation);
+            await JS.InvokeVoidAsync("playWheelSound", "select");
+        }
+        catch {}
+
+        if (_confettiRef != null)
+        {
+            await _confettiRef.FireStyleAsync(TwConfetti.CelebrationStyle.Fireworks, 0.5, 0.4, 160);
+        }
+
+        Toast.Show("🎉 WINNER!", $"Claimed: {_winningPrize.Emoji} {_winningPrize.Title}", SemanticVariant.Success);
+        await OnPrizeWon.InvokeAsync(_winningPrize);
+    }
+
+    private async Task StopWheelIfSpinning()
+    {
+        if (!_isSpinning || Prizes.Count == 0) return;
+
+        try
+        {
+            _spinCancellation?.Cancel();
+
+            var currentRotationFromJS = await JS.InvokeAsync<double>("stopWheelSpin");
+
+            var normalizedAngle = (360.0 - (currentRotationFromJS % 360.0)) % 360.0;
+            var sectionAngle = 360.0 / Prizes.Count;
+            var selectedIndex = (int)Math.Floor(normalizedAngle / sectionAngle) % Prizes.Count;
+
+            _currentRotation = currentRotationFromJS % 360.0;
+            _winningPrize = Prizes[selectedIndex];
+            _isSpinning = false;
+            _selectionMessage = $"🛑 Stopped! You got: {_winningPrize.Emoji} {_winningPrize.Title}! 🎉";
+            _showCelebrationModal = true;
+
+            try
+            {
+                await JS.InvokeVoidAsync("playWheelSound", "select");
+            }
+            catch {}
+
+            if (_confettiRef != null)
+            {
+                await _confettiRef.FireStyleAsync(TwConfetti.CelebrationStyle.Coins, 0.5, 0.4, 180);
+            }
+
+            Toast.Show("🛑 Manual Stop!", $"Landed on: {_winningPrize.Emoji} {_winningPrize.Title}", SemanticVariant.Warning);
+            await OnPrizeWon.InvokeAsync(_winningPrize);
+        }
+        catch
+        {
+            _isSpinning = false;
+            _selectionMessage = "Wheel stopped";
+        }
+    }
+
+    public async Task ResetWheel()
+    {
+        _spinCancellation?.Cancel();
+        _isSpinning = false;
+        _winningPrize = null;
+        _currentRotation = 0;
+        _targetRotation = 0;
+        _selectionMessage = "Wheel reset to starting position (0°). Ready to spin!";
+        _showCelebrationModal = false;
+
+        try
+        {
+            await JS.InvokeVoidAsync("resetWheel");
+        }
+        catch {}
+
+        Toast.Show("Wheel Reset", "Returned to 0° start position.", SemanticVariant.Info);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClaimPrizeFromModal()
+    {
+        _showCelebrationModal = false;
+        if (_winningPrize != null)
+        {
+            var claim = new ClaimedPrizeRecord(
+                $"PRIZE-{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}",
+                _winningPrize.Emoji,
+                _winningPrize.Title,
+                DateTime.UtcNow
+            );
+            _claimedPrizes.Insert(0, claim);
+            if (OnPrizeClaimed.HasDelegate)
+            {
+                await OnPrizeClaimed.InvokeAsync(claim);
+            }
+        }
+        Toast.Show("Prize Recorded!", $"Added {_winningPrize?.Emoji} {_winningPrize?.Title} to team giveaway ledger.", SemanticVariant.Success);
+    }
+
+    private async Task ExportClaimedPrizesCsv()
+    {
+        if (_claimedPrizes.Count == 0) return;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine("VoucherCode,Emoji,PrizeTitle,ClaimedAtUtc");
+        foreach (var c in _claimedPrizes)
+        {
+            sb.AppendLine($"\"{c.ClaimVoucher}\",\"{c.Emoji}\",\"{c.Title}\",\"{c.ClaimedAt:yyyy-MM-dd HH:mm:ss}\"");
+        }
+        await JS.InvokeVoidAsync("pdfHelper.downloadText", $"giveaway_winners_{DateTime.UtcNow:yyyyMMddHHmmss}.csv", "text/csv", sb.ToString());
+        Toast.Show("Ledger Exported", $"Downloaded CSV audit of {_claimedPrizes.Count} claimed prizes.", SemanticVariant.Success);
+    }
+
+    private async Task SpinAgainFromModal()
+    {
+        await Task.Delay(60);
+        await SpinWheel();
+    }
+
+    private string GetWedgePath(double centerX, double centerY, double radius, double startAngle, double endAngle)
+    {
+        var startAngleRad = (startAngle - 90.0) * Math.PI / 180.0;
+        var endAngleRad = (endAngle - 90.0) * Math.PI / 180.0;
+
+        var startX = centerX + radius * Math.Cos(startAngleRad);
+        var startY = centerY + radius * Math.Sin(startAngleRad);
+        var endX = centerX + radius * Math.Cos(endAngleRad);
+        var endY = centerY + radius * Math.Sin(endAngleRad);
+
+        var largeArcFlag = (endAngle - startAngle) > 180.0 ? 1 : 0;
+
+        return $"M {centerX} {centerY} L {startX:F2} {startY:F2} A {radius} {radius} 0 {largeArcFlag} 1 {endX:F2} {endY:F2} Z";
+    }
+
+    private (double X, double Y) GetTextPosition(double centerX, double centerY, double radius, double angle)
+    {
+        var angleRad = (angle - 90.0) * Math.PI / 180.0;
+        var x = centerX + radius * Math.Cos(angleRad);
+        var y = centerY + radius * Math.Sin(angleRad);
+        return (x, y);
+    }
+
+    private List<string> WrapText(string text, int maxLength)
+    {
+        if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+            return new List<string> { text };
+
+        var words = text.Split(' ');
+        var lines = new List<string>();
+        var currentLine = "";
+
+        foreach (var word in words)
+        {
+            if (string.IsNullOrEmpty(currentLine))
+            {
+                currentLine = word;
+            }
+            else if ((currentLine + " " + word).Length <= maxLength)
+            {
+                currentLine += " " + word;
+            }
+            else
+            {
+                lines.Add(currentLine);
+                currentLine = word;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(currentLine))
+        {
+            lines.Add(currentLine);
+        }
+
+        return lines;
+    }
+
+    public void Dispose()
+    {
+        _spinCancellation?.Cancel();
+        _spinCancellation?.Dispose();
+    }
+}

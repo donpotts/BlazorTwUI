@@ -1,0 +1,475 @@
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@inject ToastService Toast
+@implements IAsyncDisposable
+
+<div class="space-y-6 @Class">
+    <!-- Scanner Card Container -->
+    <div class="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl text-white">
+        <!-- Header Toolbar -->
+        <div class="flex flex-wrap items-center justify-between gap-4 p-4 sm:p-6 border-b border-slate-800 bg-slate-950/60 backdrop-blur-md">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-400 flex items-center justify-center">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
+                    </svg>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-white flex items-center gap-2">
+                        Multi-Format Scanner
+                        @if (_isScanning)
+                        {
+                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                Live Feed
+                            </span>
+                        }
+                    </h3>
+                    <p class="text-xs text-slate-400">QR Code, Code 128, EAN-13, UPC, DataMatrix & Aztec</p>
+                </div>
+            </div>
+
+            <!-- Controls: Camera Select, Torch, Mode Toggle -->
+            <div class="flex flex-wrap items-center gap-2.5">
+                @if (_videoDevices.Any())
+                {
+                    <select value="@_selectedDeviceId"
+                            @onchange="HandleDeviceChange"
+                            class="px-3 py-1.5 rounded-xl text-xs bg-slate-800 border border-slate-700 text-slate-200 focus:outline-none focus:border-brand-500">
+                        @foreach (var dev in _videoDevices)
+                        {
+                            <option value="@dev.DeviceId">@dev.Label</option>
+                        }
+                    </select>
+                }
+
+                @if (_isScanning)
+                {
+                    <button type="button"
+                            @onclick="ToggleTorch"
+                            class="p-2 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors @(_torchActive ? "text-amber-400 border-amber-500/50" : "")"
+                            title="Toggle Torch / Flashlight">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </button>
+
+                    <button type="button"
+                            @onclick="StopCameraAsync"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-600 hover:bg-rose-700 text-white transition-colors flex items-center gap-1.5 shadow-lg shadow-rose-600/20">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor" />
+                        </svg>
+                        Stop Camera
+                    </button>
+                }
+                else
+                {
+                    <button type="button"
+                            @onclick="StartCameraAsync"
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-white transition-colors flex items-center gap-1.5 shadow-lg shadow-brand-500/20">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Start Camera
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- Scanner Viewport Area -->
+        <div class="relative w-full aspect-video sm:aspect-[21/9] bg-black flex items-center justify-center overflow-hidden">
+            <!-- HTML5 Video Element for live camera stream -->
+            <video @ref="_videoRef"
+                   class="w-full h-full object-cover @(_isScanning ? "block" : "hidden")"
+                   playsinline
+                   muted
+                   autoplay></video>
+
+            <!-- Placeholder State when camera is inactive -->
+            @if (!_isScanning)
+            {
+                <div class="flex flex-col items-center justify-center text-center p-6 space-y-4 max-w-md">
+                    <div class="w-16 h-16 rounded-3xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-slate-400">
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-white">Camera Viewfinder Idle</h4>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Click <strong class="text-brand-400">Start Camera</strong> to scan live, or drop / upload any image file below.
+                        </p>
+                    </div>
+                    <button type="button"
+                            @onclick="StartCameraAsync"
+                            class="px-4 py-2 rounded-xl text-xs font-bold bg-brand-500 hover:bg-brand-600 text-white transition-all shadow-lg shadow-brand-500/25">
+                        Launch Live Viewfinder
+                    </button>
+                </div>
+            }
+
+            <!-- Viewfinder Reticle Overlay (Active when scanning) -->
+            @if (_isScanning)
+            {
+                <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+                    <!-- Scanning Box Reticle -->
+                    <div class="relative w-64 h-64 sm:w-72 sm:h-72 border border-brand-500/30 rounded-3xl">
+                        <!-- 4 Corner Neon Brackets -->
+                        <div class="absolute -top-1 -left-1 w-6 h-6 border-t-4 border-l-4 border-brand-400 rounded-tl-xl shadow-[0_0_12px_rgba(99,102,241,0.8)]"></div>
+                        <div class="absolute -top-1 -right-1 w-6 h-6 border-t-4 border-r-4 border-brand-400 rounded-tr-xl shadow-[0_0_12px_rgba(99,102,241,0.8)]"></div>
+                        <div class="absolute -bottom-1 -left-1 w-6 h-6 border-b-4 border-l-4 border-brand-400 rounded-bl-xl shadow-[0_0_12px_rgba(99,102,241,0.8)]"></div>
+                        <div class="absolute -bottom-1 -right-1 w-6 h-6 border-b-4 border-r-4 border-brand-400 rounded-br-xl shadow-[0_0_12px_rgba(99,102,241,0.8)]"></div>
+
+                        <!-- Animated Laser Scanning Line -->
+                        <div class="absolute inset-x-2 h-0.5 bg-gradient-to-r from-transparent via-rose-500 to-transparent shadow-[0_0_15px_rgba(244,63,94,1)] animate-bounce"
+                             style="animation-duration: 2s;"></div>
+
+                        <!-- Center Aim Marker -->
+                        <div class="absolute inset-0 flex items-center justify-center opacity-40">
+                            <div class="w-4 h-4 border border-white/50 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Secondary File Upload & Fast Presets Bar -->
+        <div class="p-4 sm:p-6 border-t border-slate-800 bg-slate-950/40 grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <!-- Dropzone / File Picker -->
+            <div>
+                <label class="text-xs font-semibold text-slate-400 block mb-1.5">Or Scan from Image File / Screenshot</label>
+                <div class="relative flex items-center">
+                    <input type="file"
+                           accept="image/*"
+                           @onchange="HandleFileUpload"
+                           class="block w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-brand-300 hover:file:bg-slate-700 cursor-pointer rounded-2xl border border-slate-800 bg-slate-900/60 p-1" />
+                </div>
+            </div>
+
+            <!-- 1-Click Test Presets (Instant verification without webcam) -->
+            <div>
+                <label class="text-xs font-semibold text-slate-400 block mb-1.5">1-Click Test Presets (Zero Webcam Required)</label>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button"
+                            @onclick='() => RunTestPreset("https://tailwindcss.com", "QR_CODE")'
+                            class="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors">
+                        🌐 URL QR
+                    </button>
+                    <button type="button"
+                            @onclick='() => RunTestPreset("WIFI:S:Guest-Lounge;T:WPA;P:SuperSecret99;;", "QR_CODE")'
+                            class="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors">
+                        📶 Wi-Fi QR
+                    </button>
+                    <button type="button"
+                            @onclick='() => RunTestPreset("INV-2026-X889", "CODE_128")'
+                            class="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors">
+                        📦 Code 128
+                    </button>
+                    <button type="button"
+                            @onclick='() => RunTestPreset("012345678905", "UPC_A")'
+                            class="px-2.5 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors">
+                        🛒 EAN / UPC
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Scan Result Banner -->
+    @if (_latestResult != null)
+    {
+        <div class="p-6 rounded-3xl bg-gradient-to-r from-emerald-500/10 via-slate-900 to-indigo-500/10 border border-emerald-500/30 text-white shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-fadeIn">
+            <div class="space-y-1 max-w-xl">
+                <div class="flex items-center gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500 text-white shadow-sm">
+                        @_latestResult.Format
+                    </span>
+                    <span class="text-xs text-slate-400">Scanned at @_latestResult.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>
+                </div>
+                <div class="text-base sm:text-lg font-mono font-bold text-white break-all">
+                    @_latestResult.Text
+                </div>
+                @if (IsUrl(_latestResult.Text))
+                {
+                    <p class="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                        Detected valid Web Link
+                    </p>
+                }
+                else if (IsWifi(_latestResult.Text))
+                {
+                    <p class="text-xs text-brand-400 font-semibold flex items-center gap-1">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                        </svg>
+                        Detected Wi-Fi Network Credentials
+                    </p>
+                }
+            </div>
+
+            <div class="flex items-center gap-2 self-end sm:self-center">
+                @if (IsUrl(_latestResult.Text))
+                {
+                    <a href="@_latestResult.Text"
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-1.5 shadow-lg shadow-emerald-600/20">
+                        Open Link
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </a>
+                }
+                <button type="button"
+                        @onclick="() => CopyTextAsync(_latestResult.Text)"
+                        class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <rect x="8" y="8" width="12" height="12" rx="2" />
+                        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                    </svg>
+                    Copy
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Scan History Ledger -->
+    @if (_scanHistory.Any())
+    {
+        <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">Scan History Ledger</h4>
+                    <p class="text-xs text-slate-500">@_scanHistory.Count recent code scans recorded</p>
+                </div>
+                <button type="button"
+                        @onclick="() => _scanHistory.Clear()"
+                        class="text-xs font-semibold text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors">
+                    Clear History
+                </button>
+            </div>
+
+            <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                @foreach (var item in _scanHistory.Take(8))
+                {
+                    <div class="py-3 flex items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                @item.Format
+                            </span>
+                            <span class="font-mono text-slate-800 dark:text-slate-200 truncate max-w-xs sm:max-w-md">
+                                @item.Text
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-slate-400 text-[11px]">@item.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>
+                            <button type="button"
+                                    @onclick="() => CopyTextAsync(item.Text)"
+                                    class="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                                    title="Copy text">
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <rect x="8" y="8" width="12" height="12" rx="2" />
+                                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    public class BarcodePayload
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Format { get; set; } = "QR_CODE";
+        public string Timestamp { get; set; } = string.Empty;
+    }
+
+    public class BarcodeScanResult
+    {
+        public string Text { get; set; } = string.Empty;
+        public string Format { get; set; } = "QR_CODE";
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    }
+
+    public class VideoDeviceInfo
+    {
+        public string DeviceId { get; set; } = string.Empty;
+        public string Label { get; set; } = string.Empty;
+    }
+
+    [Parameter] public EventCallback<BarcodeScanResult> OnScan { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private ElementReference _videoRef;
+    private DotNetObjectReference<TwBarcodeScanner>? _dotNetRef;
+    private bool _isScanning = false;
+    private bool _torchActive = false;
+    private string _selectedDeviceId = string.Empty;
+    private List<VideoDeviceInfo> _videoDevices = new();
+    private BarcodeScanResult? _latestResult;
+    private List<BarcodeScanResult> _scanHistory = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _dotNetRef = DotNetObjectReference.Create(this);
+            try
+            {
+                var devices = await JS.InvokeAsync<List<VideoDeviceInfo>>("blazorBarcodeScanner.getVideoInputDevices");
+                if (devices != null && devices.Any())
+                {
+                    _videoDevices = devices;
+                    _selectedDeviceId = devices.First().DeviceId;
+                    StateHasChanged();
+                }
+            }
+            catch { }
+        }
+    }
+
+    public async Task StartCameraAsync()
+    {
+        if (_dotNetRef == null) _dotNetRef = DotNetObjectReference.Create(this);
+        try
+        {
+            var success = await JS.InvokeAsync<bool>("blazorBarcodeScanner.startCamera", _videoRef, _selectedDeviceId, _dotNetRef);
+            _isScanning = success;
+            if (!success)
+            {
+                Toast.Show("Camera unavailable", "Unable to start video feed. You can upload an image instead.", SemanticVariant.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast.Show("Camera Error", ex.Message, SemanticVariant.Danger);
+        }
+    }
+
+    public async Task StopCameraAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("blazorBarcodeScanner.stopCamera");
+        }
+        catch { }
+        _isScanning = false;
+        _torchActive = false;
+    }
+
+    public async Task ToggleTorch()
+    {
+        try
+        {
+            _torchActive = await JS.InvokeAsync<bool>("blazorBarcodeScanner.toggleTorch");
+        }
+        catch { }
+    }
+
+    private async Task HandleDeviceChange(ChangeEventArgs e)
+    {
+        _selectedDeviceId = e.Value?.ToString() ?? string.Empty;
+        if (_isScanning)
+        {
+            await StartCameraAsync();
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnBarcodeDetected(BarcodePayload payload)
+    {
+        var result = new BarcodeScanResult
+        {
+            Text = payload.Text,
+            Format = payload.Format,
+            Timestamp = DateTime.UtcNow
+        };
+
+        _latestResult = result;
+        _scanHistory.Insert(0, result);
+        Toast.Show($"Detected {result.Format}", result.Text, SemanticVariant.Success);
+
+        if (OnScan.HasDelegate)
+        {
+            await OnScan.InvokeAsync(result);
+        }
+        StateHasChanged();
+    }
+
+    private async Task HandleFileUpload(ChangeEventArgs e)
+    {
+        // Read file using FileReader in JS
+        try
+        {
+            await JS.InvokeVoidAsync("eval", @"
+                const file = document.querySelector('input[type=file]').files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                        const result = await window.blazorBarcodeScanner.decodeDataUrl(ev.target.result);
+                        if (result) {
+                            DotNet.invokeMethodAsync('BlazorTwUI', 'OnBarcodeDetectedFromUpload', result);
+                        } else {
+                            alert('No valid QR code or barcode found in this image.');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            ");
+        }
+        catch { }
+    }
+
+    public void RunTestPreset(string text, string format)
+    {
+        var result = new BarcodeScanResult
+        {
+            Text = text,
+            Format = format,
+            Timestamp = DateTime.UtcNow
+        };
+        _latestResult = result;
+        _scanHistory.Insert(0, result);
+        try
+        {
+            _ = JS.InvokeVoidAsync("blazorBarcodeScanner.playScanBeep");
+        }
+        catch { }
+        Toast.Show($"Preset Detected: {format}", text, SemanticVariant.Success);
+        if (OnScan.HasDelegate)
+        {
+            _ = OnScan.InvokeAsync(result);
+        }
+    }
+
+    private async Task CopyTextAsync(string text)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            Toast.Show("Copied to Clipboard", text, SemanticVariant.Success);
+        }
+        catch { }
+    }
+
+    private bool IsUrl(string text) =>
+        Uri.TryCreate(text, UriKind.Absolute, out var uri) &&
+        (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+
+    private bool IsWifi(string text) =>
+        text.StartsWith("WIFI:", StringComparison.OrdinalIgnoreCase);
+
+    public async ValueTask DisposeAsync()
+    {
+        await StopCameraAsync();
+        _dotNetRef?.Dispose();
+    }
+}

@@ -1,0 +1,247 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden max-w-4xl mx-auto @CustomClass">
+    <!-- Header -->
+    <div class="p-6 sm:p-8 bg-gradient-to-r from-indigo-950 via-slate-900 to-indigo-950 text-white border-b border-slate-800 relative">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <span class="p-3 rounded-2xl bg-brand-500/20 text-brand-400 border border-brand-500/30">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xl sm:text-2xl font-black tracking-tight">@Title</h2>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Official Affidavit</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-1">@Subtitle</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-start sm:self-center">
+                <span class="text-xs font-mono px-3 py-1 rounded-xl bg-white/10 text-slate-300 border border-white/10">
+                    Date: @DateTime.UtcNow.ToString("yyyy-MM-dd")
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formal Statement & Principles -->
+    <div class="p-6 sm:p-8 space-y-6 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
+        <div class="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 shadow-xs">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-brand-600 dark:text-brand-400">Statement of Formal Affirmation</h3>
+            <p class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed italic">
+                "I solemnly affirm that in my capacity as an engineering leader, contributor, or system operator, I uphold the highest ethical standards of open innovation, software supply chain security, and data integrity."
+            </p>
+        </div>
+
+        <!-- 3 Pledges -->
+        <div class="space-y-3">
+            <label class="flex items-start gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer">
+                <input type="checkbox" @bind="_pledge1"
+                       class="mt-0.5 rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500 h-4 w-4" />
+                <div class="text-xs">
+                    <strong class="font-bold text-slate-900 dark:text-white block">1. Supply Chain & Code Integrity Pledge</strong>
+                    <span class="text-slate-500 dark:text-slate-400">I will not introduce intentional backdoors, unverified binary blobs, or bypass cryptographic dependency checksums in production artifacts.</span>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer">
+                <input type="checkbox" @bind="_pledge2"
+                       class="mt-0.5 rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500 h-4 w-4" />
+                <div class="text-xs">
+                    <strong class="font-bold text-slate-900 dark:text-white block">2. Responsible Disclosure & Zero-Day Ethics</strong>
+                    <span class="text-slate-500 dark:text-slate-400">I commit to disclosing discovered vulnerabilities responsibly and coordinating remediation before any public dissemination.</span>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 cursor-pointer">
+                <input type="checkbox" @bind="_pledge3"
+                       class="mt-0.5 rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500 h-4 w-4" />
+                <div class="text-xs">
+                    <strong class="font-bold text-slate-900 dark:text-white block">3. Data Stewardship & Non-Exfiltration</strong>
+                    <span class="text-slate-500 dark:text-slate-400">I guarantee that end-user data and corporate credentials are never exfiltrated to unauthorized third-party telemetry sinks.</span>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- Signatory Details & Signature Pad -->
+    <div class="p-6 sm:p-8 space-y-6">
+        <div class="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white">Signatory Information</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Identity details for the immutable compliance ledger certificate.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Signatory Full Name *</label>
+                <input type="text" @bind="_model.SignatoryName" placeholder="e.g. Jordan Miller"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+            </div>
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Corporate Email *</label>
+                <input type="email" @bind="_model.CorporateEmail" placeholder="j.miller@enterprise.com"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Title & Corporate Organization</label>
+                <input type="text" @bind="_model.Organization" placeholder="VP of Infrastructure, Acme Systems"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+            </div>
+            <div class="space-y-1">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Security Clearance / Employee ID</label>
+                <input type="text" @bind="_model.EmployeeId" placeholder="EMP-44910-SEC"
+                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none font-mono" />
+            </div>
+        </div>
+
+        <!-- Signature Method Selector -->
+        <div class="space-y-3 pt-2">
+            <div class="flex items-center justify-between">
+                <label class="block text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                    Digital Execution Signature *
+                </label>
+                <div class="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+                    <button type="button" @onclick='() => _signMode = "draw"'
+                            class="px-3 py-1 rounded-lg transition @(_signMode == "draw" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs" : "text-slate-500")">
+                        Draw Signature
+                    </button>
+                    <button type="button" @onclick='() => _signMode = "type"'
+                            class="px-3 py-1 rounded-lg transition @(_signMode == "type" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs" : "text-slate-500")">
+                        Type Signature
+                    </button>
+                </div>
+            </div>
+
+            @if (_signMode == "draw")
+            {
+                <div class="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden p-2 bg-slate-50/50 dark:bg-slate-950/40">
+                    <TwSignaturePad @ref="_sigPadRef"
+                                   Title="Digital Stylus / Touch Canvas"
+                                   Subtitle="Sign cleanly using mouse, pen, or touch input"
+                                   OnSave="OnSignatureSaved" />
+                </div>
+            }
+            else
+            {
+                <div class="p-6 rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-850/60 text-center space-y-3">
+                    <span class="text-xs text-slate-400 block uppercase tracking-wider font-mono">Rendered Cursive Script</span>
+                    <div class="font-serif italic text-3xl sm:text-4xl text-slate-800 dark:text-slate-100 tracking-wide select-none py-2">
+                        @(!string.IsNullOrWhiteSpace(_model.SignatoryName) ? _model.SignatoryName : "Your Signature")
+                    </div>
+                    <span class="text-[11px] font-mono text-slate-400">Cryptographically bound to signatory identity</span>
+                </div>
+            }
+        </div>
+
+        <!-- Verification Hash Preview -->
+        <div class="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-[11px] font-mono text-slate-600 dark:text-slate-300 flex items-center justify-between">
+            <span class="truncate">Affidavit Hash: SHA256-PLG-@DateTime.UtcNow.Ticks.ToString("X")-VALID</span>
+            <span class="text-emerald-600 dark:text-emerald-400 font-bold whitespace-nowrap ml-2">● HSM Pinned</span>
+        </div>
+
+        <!-- Feedback Alert -->
+        @if (!string.IsNullOrEmpty(_notificationMessage))
+        {
+            <div class="p-3.5 rounded-xl @(_isSigned ? "bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300" : "bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400") text-xs font-semibold flex items-center gap-2">
+                <span>@(_isSigned ? "📜" : "⚠️")</span>
+                <span>@_notificationMessage</span>
+            </div>
+        }
+
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" @onclick="AffirmPledge" disabled="@_isSubmitting"
+                    class="w-full sm:w-auto px-7 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-xs sm:text-sm font-bold transition shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2">
+                @if (_isSubmitting)
+                {
+                    <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Affirming & Timestamping...</span>
+                }
+                else
+                {
+                    <span>Affirm & Execute Pledge</span>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    public class PledgeModel
+    {
+        public string SignatoryName { get; set; } = "Jordan Miller";
+        public string CorporateEmail { get; set; } = "j.miller@acmesystems.org";
+        public string Organization { get; set; } = "VP of Infrastructure, Acme Systems";
+        public string EmployeeId { get; set; } = "EMP-44910-SEC";
+        public string? SignatureDataUrl { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    }
+
+    [Parameter] public string Title { get; set; } = "Enterprise Engineering & Ethics Pledge";
+    [Parameter] public string Subtitle { get; set; } = "Legally affirmed compliance with software supply chain integrity and responsible AI";
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<PledgeModel> OnPledgeAffirmed { get; set; }
+
+    private PledgeModel _model = new();
+    private TwSignaturePad? _sigPadRef;
+    private string _signMode = "draw";
+    private bool _pledge1 = true;
+    private bool _pledge2 = true;
+    private bool _pledge3 = true;
+    private bool _isSubmitting = false;
+    private bool _isSigned = false;
+    private string? _notificationMessage;
+
+    private void OnSignatureSaved(string dataUrl)
+    {
+        _model.SignatureDataUrl = dataUrl;
+    }
+
+    private async Task AffirmPledge()
+    {
+        _notificationMessage = null;
+
+        if (!_pledge1 || !_pledge2 || !_pledge3)
+        {
+            _isSigned = false;
+            _notificationMessage = "You must agree to all 3 pledge principles before executing this document.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_model.SignatoryName) || string.IsNullOrWhiteSpace(_model.CorporateEmail))
+        {
+            _isSigned = false;
+            _notificationMessage = "Signatory Name and Corporate Email are required.";
+            return;
+        }
+
+        if (_signMode == "draw" && _sigPadRef != null)
+        {
+            try
+            {
+                _model.SignatureDataUrl = await _sigPadRef.SaveImageAsync();
+            }
+            catch { }
+        }
+
+        _isSubmitting = true;
+        await Task.Delay(800);
+        _isSubmitting = false;
+        _isSigned = true;
+        _notificationMessage = $"Pledge successfully affirmed by {_model.SignatoryName}. Tamper-evident Certificate #CERT-2026-PLG-89211 generated.";
+
+        if (OnPledgeAffirmed.HasDelegate)
+        {
+            await OnPledgeAffirmed.InvokeAsync(_model);
+        }
+    }
+}

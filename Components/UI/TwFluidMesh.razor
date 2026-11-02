@@ -1,0 +1,217 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="relative w-full rounded-3xl overflow-hidden border border-slate-200/60 dark:border-slate-800/80 bg-slate-950 p-6 text-white shadow-2xl @Class" @attributes="AdditionalAttributes">
+    @* Organic Generative Fluid Mesh (Pure SVG & CSS Math) *@
+    <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-60 mix-blend-screen filter blur-2xl">
+        <svg viewBox="0 0 800 600" class="w-full h-full object-cover select-none">
+            <defs>
+                <linearGradient id="@_gradId1" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="@PrimaryMoodColor" stop-opacity="0.8" />
+                    <stop offset="100%" stop-color="@SecondaryMoodColor" stop-opacity="0.2" />
+                </linearGradient>
+                <linearGradient id="@_gradId2" x1="100%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="@AccentMoodColor" stop-opacity="0.8" />
+                    <stop offset="100%" stop-color="@PrimaryMoodColor" stop-opacity="0.3" />
+                </linearGradient>
+            </defs>
+            @* Animated Organic Blob 1 *@
+            <circle cx="@Blob1X" cy="@Blob1Y" r="220" fill="url(#@_gradId1)" class="transition-all duration-700 ease-in-out">
+                <animate attributeName="r" values="200;240;200" dur="8s" repeatCount="indefinite" />
+            </circle>
+            @* Animated Organic Blob 2 *@
+            <circle cx="@Blob2X" cy="@Blob2Y" r="280" fill="url(#@_gradId2)" class="transition-all duration-700 ease-in-out">
+                <animate attributeName="r" values="260;300;260" dur="11s" repeatCount="indefinite" />
+            </circle>
+            @* Central Resonant Glow Orb *@
+            <circle cx="400" cy="300" r="160" fill="@AccentMoodColor" opacity="0.4" class="transition-all duration-700 ease-in-out">
+                <animate attributeName="opacity" values="0.25;0.55;0.25" dur="6s" repeatCount="indefinite" />
+            </circle>
+        </svg>
+    </div>
+
+    @* Subtle Tactile Film Grain / Grid Overlay *@
+    <div class="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/5 via-transparent to-black/40"></div>
+
+    @* Foreground Interactive Content *@
+    <div class="relative z-10 flex flex-col gap-5">
+        @* Header & Emotional State Resonance Indicator *@
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 pb-4">
+            <div class="space-y-1">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full animate-pulse" style="background-color: @PrimaryMoodColor"></span>
+                    <h3 class="text-sm font-extrabold uppercase tracking-wider text-white">
+                        2027 Fluid Emotional Resonance Mesh
+                    </h3>
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-white/90 border border-white/10">
+                        Psychological Biometrics
+                    </span>
+                </div>
+                <p class="text-xs text-white/60">
+                    Tactile organic shader tuning color temperature and fluid velocity to harmonize operator nervous systems.
+                </p>
+            </div>
+
+            @* Emotional Sentiment Selector *@
+            <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-black/40 border border-white/10 backdrop-blur-md">
+                @foreach (var state in Enum.GetValues<EmotionalState>())
+                {
+                    var isSelected = Mood == state;
+                    <button type="button"
+                            @onclick="() => SetMood(state)"
+                            class="px-2.5 py-1 rounded-xl text-xs font-semibold transition-all duration-300 @(isSelected ? "bg-white/20 text-white shadow-sm border border-white/30" : "text-white/50 hover:text-white")">
+                        @GetMoodLabel(state)
+                    </button>
+                }
+            </div>
+        </div>
+
+        @* Psychological Metrics Readout *@
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div class="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm space-y-1">
+                <div class="text-[10px] text-white/50 uppercase font-medium">Cognitive Load Factor</div>
+                <div class="font-mono text-base font-extrabold text-white">@CognitiveLoadPercent%</div>
+                <div class="text-[10px] text-emerald-400 font-medium">Optimal Resonance</div>
+            </div>
+            <div class="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm space-y-1">
+                <div class="text-[10px] text-white/50 uppercase font-medium">Fluid Mesh Frequency</div>
+                <div class="font-mono text-base font-extrabold text-white">@ResonanceFrequencyHz Hz</div>
+                <div class="text-[10px] text-indigo-300 font-medium">Alpha Wave Entrainment</div>
+            </div>
+            <div class="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm space-y-1">
+                <div class="text-[10px] text-white/50 uppercase font-medium">Vervain Coherence</div>
+                <div class="font-mono text-base font-extrabold text-emerald-400">0.984 φ</div>
+                <div class="text-[10px] text-white/50">Zero Jitter</div>
+            </div>
+            <div class="p-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm space-y-1">
+                <div class="text-[10px] text-white/50 uppercase font-medium">UI Tactility Index</div>
+                <div class="font-mono text-base font-extrabold text-brand-300">Volumetric 3D</div>
+                <div class="text-[10px] text-white/50">Spatial Shader Active</div>
+            </div>
+        </div>
+
+        @if (ChildContent != null)
+        {
+            <div class="pt-2">
+                @ChildContent
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    public enum EmotionalState
+    {
+        DeepFocus,
+        CreativeAurora,
+        HighAlert,
+        ZenCalm
+    }
+
+    [Parameter] public EmotionalState Mood { get; set; } = EmotionalState.DeepFocus;
+    [Parameter] public EventCallback<EmotionalState> MoodChanged { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter(CaptureUnmatchedValues = true)] public IDictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private readonly string _gradId1 = "meshGrad1_" + Guid.NewGuid().ToString("N")[..6];
+    private readonly string _gradId2 = "meshGrad2_" + Guid.NewGuid().ToString("N")[..6];
+
+    private string PrimaryMoodColor => Mood switch
+    {
+        EmotionalState.DeepFocus => "#4f46e5",
+        EmotionalState.CreativeAurora => "#9333ea",
+        EmotionalState.HighAlert => "#f97316",
+        EmotionalState.ZenCalm => "#10b981",
+        _ => "#6366f1"
+    };
+
+    private string SecondaryMoodColor => Mood switch
+    {
+        EmotionalState.DeepFocus => "#06b6d4",
+        EmotionalState.CreativeAurora => "#ec4899",
+        EmotionalState.HighAlert => "#ef4444",
+        EmotionalState.ZenCalm => "#14b8a6",
+        _ => "#3b82f6"
+    };
+
+    private string AccentMoodColor => Mood switch
+    {
+        EmotionalState.DeepFocus => "#3b82f6",
+        EmotionalState.CreativeAurora => "#a855f7",
+        EmotionalState.HighAlert => "#f59e0b",
+        EmotionalState.ZenCalm => "#84cc16",
+        _ => "#8b5cf6"
+    };
+
+    private int Blob1X => Mood switch
+    {
+        EmotionalState.DeepFocus => 280,
+        EmotionalState.CreativeAurora => 220,
+        EmotionalState.HighAlert => 450,
+        EmotionalState.ZenCalm => 350,
+        _ => 300
+    };
+
+    private int Blob1Y => Mood switch
+    {
+        EmotionalState.DeepFocus => 200,
+        EmotionalState.CreativeAurora => 380,
+        EmotionalState.HighAlert => 180,
+        EmotionalState.ZenCalm => 240,
+        _ => 220
+    };
+
+    private int Blob2X => Mood switch
+    {
+        EmotionalState.DeepFocus => 560,
+        EmotionalState.CreativeAurora => 620,
+        EmotionalState.HighAlert => 360,
+        EmotionalState.ZenCalm => 500,
+        _ => 520
+    };
+
+    private int Blob2Y => Mood switch
+    {
+        EmotionalState.DeepFocus => 380,
+        EmotionalState.CreativeAurora => 220,
+        EmotionalState.HighAlert => 420,
+        EmotionalState.ZenCalm => 340,
+        _ => 360
+    };
+
+    private int CognitiveLoadPercent => Mood switch
+    {
+        EmotionalState.DeepFocus => 28,
+        EmotionalState.CreativeAurora => 42,
+        EmotionalState.HighAlert => 86,
+        EmotionalState.ZenCalm => 14,
+        _ => 30
+    };
+
+    private double ResonanceFrequencyHz => Mood switch
+    {
+        EmotionalState.DeepFocus => 10.4,
+        EmotionalState.CreativeAurora => 14.8,
+        EmotionalState.HighAlert => 28.2,
+        EmotionalState.ZenCalm => 7.8,
+        _ => 10.0
+    };
+
+    private static string GetMoodLabel(EmotionalState s) => s switch
+    {
+        EmotionalState.DeepFocus => "🧠 Deep Focus",
+        EmotionalState.CreativeAurora => "✨ Creative Aurora",
+        EmotionalState.HighAlert => "🔥 Urgent Vigilance",
+        EmotionalState.ZenCalm => "🌿 Zen Calm",
+        _ => s.ToString()
+    };
+
+    private async Task SetMood(EmotionalState state)
+    {
+        Mood = state;
+        if (MoodChanged.HasDelegate)
+        {
+            await MoodChanged.InvokeAsync(state);
+        }
+    }
+}

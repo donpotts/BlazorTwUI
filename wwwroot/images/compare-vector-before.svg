@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <!-- Raster Pixelated Geometry (Stepped staircase pixels) -->
+  <rect width="800" height="450" fill="#0f172a" />
+  <pattern id="pixelGrid2" width="20" height="20" patternUnits="userSpaceOnUse">
+    <rect width="20" height="20" fill="none" stroke="#334155" stroke-width="0.7" opacity="0.4" />
+  </pattern>
+  <rect width="800" height="450" fill="url(#pixelGrid2)" />
+
+  <!-- Pixelated Falcon / Shield Emblem built from pixel blocks -->
+  <g transform="translate(400, 225) scale(20)">
+    <!-- Shield Outline in Pixels -->
+    <rect x="-6" y="-7" width="12" height="2" fill="#ef4444" />
+    <rect x="-7" y="-5" width="2" height="4" fill="#ef4444" />
+    <rect x="5" y="-5" width="2" height="4" fill="#ef4444" />
+    <rect x="-6" y="-1" width="2" height="3" fill="#ef4444" />
+    <rect x="4" y="-1" width="2" height="3" fill="#ef4444" />
+    <rect x="-5" y="2" width="2" height="2" fill="#ef4444" />
+    <rect x="3" y="2" width="2" height="2" fill="#ef4444" />
+    <rect x="-4" y="4" width="2" height="2" fill="#ef4444" />
+    <rect x="2" y="4" width="2" height="2" fill="#ef4444" />
+    <rect x="-2" y="6" width="4" height="2" fill="#ef4444" />
+
+    <!-- Interior Fill -->
+    <rect x="-5" y="-5" width="10" height="4" fill="#f97316" />
+    <rect x="-4" y="-1" width="8" height="3" fill="#fbbf24" />
+    <rect x="-3" y="2" width="6" height="2" fill="#fbbf24" />
+    <rect x="-2" y="4" width="4" height="2" fill="#fbbf24" />
+
+    <!-- Center Star in Pixels -->
+    <rect x="-1" y="-3" width="2" height="6" fill="#ffffff" />
+    <rect x="-3" y="-1" width="6" height="2" fill="#ffffff" />
+    <rect x="-2" y="-2" width="1" height="1" fill="#ffffff" />
+    <rect x="1" y="-2" width="1" height="1" fill="#ffffff" />
+    <rect x="-2" y="1" width="1" height="1" fill="#ffffff" />
+    <rect x="1" y="1" width="1" height="1" fill="#ffffff" />
+  </g>
+  <text x="400" y="420" font-family="monospace" font-weight="700" font-size="14" fill="#ef4444" text-anchor="middle">PIXEL ALIASING • 32x32 BITMAP RASTER</text>
+</svg>

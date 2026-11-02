@@ -1,0 +1,127 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@* Push-to-talk microphone. Records, shows a live level meter, optionally transcribes through a host-supplied function, and reports the clip. *@
+<div class="inline-flex items-center gap-3 @Class" data-testid="voice-input" data-state="@_state">
+    <button type="button" @onclick="ToggleAsync" disabled="@(_state == "transcribing")" aria-pressed="@Recording.ToString().ToLowerInvariant()" data-testid="voice-toggle"
+            aria-label="@(Recording ? "Stop recording" : "Start recording")"
+            class="inline-flex items-center justify-center w-11 h-11 rounded-full text-white font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-500 disabled:opacity-50 @(Recording ? "bg-red-700 hover:bg-red-600" : "bg-brand-700 hover:bg-brand-600")">
+        @if (Recording)
+        {
+            <span class="w-3.5 h-3.5 rounded-sm bg-white" aria-hidden="true"></span>
+        }
+        else
+        {
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v4"/></svg>
+        }
+    </button>
+    <TwLiveWaveform Levels="_levels" Active="Recording" Bars="16" AriaLabel="Microphone level" />
+    <span class="text-xs text-slate-700 dark:text-slate-300" role="status" data-testid="voice-status">@StatusText</span>
+</div>
+
+@code {
+    public sealed record VoiceClip(string Mime, byte[] Bytes);
+
+    private string _state = "idle"; // idle | recording | transcribing | error
+    private string? _message;
+    private IReadOnlyList<float> _levels = Array.Empty<float>();
+    private DotNetObjectReference<TwVoiceInput>? _self;
+
+    [Parameter] public EventCallback<VoiceClip> OnRecorded { get; set; }
+    /// <summary>Optional: turn a clip into text (call your speech-to-text endpoint). The text is sent to <see cref="OnTranscript"/>.</summary>
+    [Parameter] public Func<VoiceClip, Task<string>>? Transcribe { get; set; }
+    [Parameter] public EventCallback<string> OnTranscript { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool Recording => _state == "recording";
+
+    private string StatusText => _state switch
+    {
+        "recording" => "Listening…",
+        "transcribing" => "Transcribing…",
+        "error" => _message ?? "Microphone unavailable",
+        _ => _message ?? "Tap to talk"
+    };
+
+    private async Task ToggleAsync()
+    {
+        if (Recording) await StopAsync();
+        else await StartAsync();
+    }
+
+    private async Task StartAsync()
+    {
+        _message = null;
+        try
+        {
+            _self ??= DotNetObjectReference.Create(this);
+            var ok = await JS.InvokeAsync<bool>("twAgentKit.voiceStart", _self);
+            if (!ok) { Fail("This browser has no microphone support."); return; }
+            _state = "recording";
+        }
+        catch (JSException ex)
+        {
+            Fail(ex.Message.Contains("Permission", StringComparison.OrdinalIgnoreCase) || ex.Message.Contains("denied", StringComparison.OrdinalIgnoreCase)
+                ? "Microphone permission was denied."
+                : "Could not start the microphone.");
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        _levels = Array.Empty<float>();
+        VoiceClip? clip = null;
+        try
+        {
+            var raw = await JS.InvokeAsync<VoiceBlob?>("twAgentKit.voiceStop");
+            if (raw is not null) clip = new VoiceClip(raw.Mime, Convert.FromBase64String(raw.Base64));
+        }
+        catch (JSException) { Fail("Recording failed."); return; }
+
+        _state = "idle";
+        if (clip is null) return;
+        await OnRecorded.InvokeAsync(clip);
+
+        if (Transcribe is null) return;
+        _state = "transcribing";
+        try
+        {
+            var text = await Transcribe(clip);
+            _state = "idle";
+            await OnTranscript.InvokeAsync(text);
+        }
+        catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException or TaskCanceledException)
+        {
+            Fail("Transcription failed.");
+        }
+    }
+
+    private void Fail(string message)
+    {
+        _state = "error";
+        _message = message;
+    }
+
+    [JSInvokable]
+    public Task OnLevels(float[] levels)
+    {
+        _levels = levels;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    private sealed class VoiceBlob
+    {
+        public string Mime { get; set; } = "";
+        public string Base64 { get; set; } = "";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Recording)
+        {
+            try { await JS.InvokeAsync<VoiceBlob?>("twAgentKit.voiceStop"); }
+            catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+        }
+        _self?.Dispose();
+    }
+}

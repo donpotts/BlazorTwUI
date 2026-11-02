@@ -1,0 +1,101 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="@AnimationClass @Class" 
+     style="@InlineStyle"
+     @onmouseenter="HandleMouseEnter"
+     @onmouseleave="HandleMouseLeave">
+    @ChildContent
+</div>
+
+@code {
+    public enum AnimationType
+    {
+        FadeIn,
+        FadeInUp,
+        FadeInDown,
+        FadeInLeft,
+        FadeInRight,
+        ZoomIn,
+        ZoomOut,
+        BounceIn,
+        Bounce,
+        Pulse,
+        PulseGlow,
+        Spin
+    }
+
+    [Parameter] public AnimationType Type { get; set; } = AnimationType.FadeInUp;
+    [Parameter] public int DurationMs { get; set; } = 400;
+    [Parameter] public int DelayMs { get; set; } = 0;
+    [Parameter] public bool Infinite { get; set; }
+    [Parameter] public bool OnHover { get; set; }
+    [Parameter] public bool Play { get; set; } = true;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool _isHovered;
+
+    private bool ShouldAnimate => OnHover ? _isHovered : Play;
+
+    private string AnimationClass
+    {
+        get
+        {
+            if (!ShouldAnimate) return "";
+
+            return Type switch
+            {
+                AnimationType.FadeIn => "animate-fade-in",
+                AnimationType.FadeInUp => "animate-fade-in-up",
+                AnimationType.FadeInDown => "animate-fade-in-down",
+                AnimationType.FadeInLeft => "animate-fade-in-left",
+                AnimationType.FadeInRight => "animate-fade-in-right",
+                AnimationType.ZoomIn => "animate-zoom-in",
+                AnimationType.ZoomOut => "animate-zoom-out",
+                AnimationType.BounceIn => "animate-bounce-in",
+                AnimationType.Bounce => "animate-bounce",
+                AnimationType.Pulse => "animate-pulse",
+                AnimationType.PulseGlow => "animate-pulse-glow",
+                AnimationType.Spin => "animate-spin",
+                _ => "animate-fade-in"
+            };
+        }
+    }
+
+    private string InlineStyle
+    {
+        get
+        {
+            var styles = new List<string>();
+            if (DurationMs > 0) styles.Add($"animation-duration: {DurationMs}ms;");
+            if (DelayMs > 0) styles.Add($"animation-delay: {DelayMs}ms;");
+            if (Infinite) styles.Add("animation-iteration-count: infinite;");
+            return string.Join(" ", styles);
+        }
+    }
+
+    private void HandleMouseEnter()
+    {
+        if (OnHover)
+        {
+            _isHovered = true;
+        }
+    }
+
+    private void HandleMouseLeave()
+    {
+        if (OnHover)
+        {
+            _isHovered = false;
+        }
+    }
+
+    public async Task ReplayAsync()
+    {
+        Play = false;
+        StateHasChanged();
+        await Task.Delay(20);
+        Play = true;
+        StateHasChanged();
+    }
+}

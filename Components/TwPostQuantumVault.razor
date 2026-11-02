@@ -1,0 +1,120 @@
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject TwPostQuantumService PqcService
+
+<div class="btui-pqc-vault rounded-2xl border border-indigo-200 dark:border-indigo-900/50 bg-gradient-to-br from-indigo-50/50 via-white to-purple-50/30 dark:from-slate-900 dark:via-slate-900 dark:to-indigo-950/30 p-5 shadow-sm space-y-4">
+    <!-- Header with NIST FIPS 203 Badge -->
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-indigo-100 dark:border-indigo-900/40 pb-3">
+        <div class="flex items-center gap-2">
+            <span class="text-xl">🛡️</span>
+            <div>
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    Post-Quantum Secure Enclave
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        NIST FIPS 203 ML-KEM-768
+                    </span>
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Module-Lattice-Based Key-Encapsulation Mechanism &amp; HPKE zero-trust payload encryption.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                Quantum Resistant
+            </span>
+        </div>
+    </div>
+
+    <!-- Input for Sensitive Payload -->
+    <div class="space-y-2">
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+            Sensitive Enterprise Data (SSN / Check 21 MICR / Executive Compensation):
+        </label>
+        <div class="flex flex-col sm:flex-row gap-2">
+            <input type="text"
+                   @bind="_inputPayload"
+                   placeholder="e.g. ⑆021000021⑆ 1234567890⑈ $85,000.00"
+                   class="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 font-mono" />
+            <button type="button"
+                    @onclick="HandleEncryptAsync"
+                    disabled="@_isProcessing"
+                    class="px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition flex items-center justify-center gap-1.5 disabled:opacity-50">
+                @if (_isProcessing)
+                {
+                    <span class="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin"></span>
+                    <span>Encapsulating...</span>
+                }
+                else
+                {
+                    <span>🔒 Encrypt with ML-KEM</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    <!-- Cryptographic Result Inspection Box -->
+    @if (_result != null)
+    {
+        <div class="p-3.5 rounded-xl bg-slate-900 text-slate-100 border border-slate-800 space-y-2 text-xs font-mono">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <span class="text-indigo-400 font-bold flex items-center gap-1.5">
+                    <span>✨</span> Key Encapsulation Verified
+                </span>
+                <span class="text-[11px] text-slate-400">Duration: @(_result.HandshakeDurationMs.ToString("F2"))ms</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase">ML-KEM Ciphertext:</span>
+                    <span class="text-indigo-300 select-all">@_result.EncapsulatedCiphertextHex</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase">Derived Shared Secret:</span>
+                    <span class="text-emerald-400 select-all">@_result.DecapsulatedSecretHex</span>
+                </div>
+            </div>
+
+            <div class="pt-1 border-t border-slate-800">
+                <span class="text-slate-400 block text-[10px] uppercase">AES-256-GCM Envelope (Base64):</span>
+                <p class="text-slate-300 break-all text-[11px] select-all bg-slate-800/80 p-1.5 rounded mt-0.5">
+                    @_result.EncryptedEnvelopeBase64
+                </p>
+            </div>
+
+            <div class="pt-1 flex items-center justify-between text-[11px] text-emerald-400">
+                <span class="flex items-center gap-1">
+                    <span>✓</span> Roundtrip Decrypted Payload: <strong>@_result.DecryptedPayload</strong>
+                </span>
+                <span class="text-slate-500">Zero Third-Party APIs</span>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string _inputPayload = "⑆021000021⑆ 8492049182⑈ $142,500.00";
+    private PostQuantumEnclaveResult? _result;
+    private bool _isProcessing;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await HandleEncryptAsync();
+    }
+
+    private async Task HandleEncryptAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_inputPayload)) return;
+        _isProcessing = true;
+        try
+        {
+            _result = await PqcService.EncryptSensitivePayloadAsync(_inputPayload);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+}

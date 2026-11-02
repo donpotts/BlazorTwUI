@@ -1,0 +1,39 @@
+<div class="relative inline-block text-left @Class">
+    <div @onclick="Toggle">
+        @TriggerContent
+    </div>
+
+    @if (_isOpen)
+    {
+        <!-- Click outside overlay -->
+        <div class="fixed inset-0 z-30" @onclick="Close"></div>
+
+        <div class="absolute @AlignmentClass z-40 mt-2 w-56 origin-top-right rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl ring-1 ring-black/5 focus:outline-none p-1.5 animate-in fade-in zoom-in-95 duration-100"
+             @onclick="HandleMenuClick">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    private bool _isOpen;
+
+    [Parameter] public RenderFragment? TriggerContent { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Alignment { get; set; } = "right"; // right, left
+    [Parameter] public bool CloseOnSelect { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    private string AlignmentClass => Alignment == "left" ? "left-0 origin-top-left" : "right-0 origin-top-right";
+
+    public void Toggle() => _isOpen = !_isOpen;
+    public void Close() => _isOpen = false;
+
+    private void HandleMenuClick()
+    {
+        if (CloseOnSelect)
+        {
+            _isOpen = false;
+        }
+    }
+}

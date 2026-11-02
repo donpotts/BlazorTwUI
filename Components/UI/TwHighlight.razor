@@ -1,0 +1,171 @@
+@namespace BlazorTwUI.Components.UI
+@using Microsoft.AspNetCore.Components
+@using System.Text.RegularExpressions
+
+<div class="btui-highlight inline-block w-full space-y-2 @Class">
+    @if (ShowNavigation && MatchCount > 0)
+    {
+        <div class="flex items-center justify-between text-xs p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <div class="flex items-center gap-1.5 font-mono">
+                <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                <span class="text-slate-600 dark:text-slate-400">Match</span>
+                <strong class="text-slate-900 dark:text-white">@(ActiveIndex + 1)</strong>
+                <span class="text-slate-400">of</span>
+                <strong class="text-slate-900 dark:text-white">@MatchCount</strong>
+            </div>
+
+            <div class="flex items-center gap-1">
+                <button type="button"
+                        @onclick="PreviousMatch"
+                        disabled="@(MatchCount <= 1)"
+                        aria-label="Previous match"
+                        class="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30 transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <button type="button"
+                        @onclick="NextMatch"
+                        disabled="@(MatchCount <= 1)"
+                        aria-label="Next match"
+                        class="p-1 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 disabled:opacity-30 transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Rendered Highlight Segments -->
+    <div class="leading-relaxed text-slate-800 dark:text-slate-200">
+        @if (string.IsNullOrEmpty(SearchText) || MatchCount == 0)
+        {
+            @Text
+        }
+        else
+        {
+            @for (int i = 0; i < _segments.Count; i++)
+            {
+                var seg = _segments[i];
+                if (seg.IsMatch)
+                {
+                    bool isActive = (seg.MatchIndex == ActiveIndex);
+                    <mark class="@(isActive ? ActiveHighlightClass : HighlightClass) transition-all">@seg.Text</mark>
+                }
+                else
+                {
+                    @seg.Text
+                }
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Text { get; set; } = string.Empty;
+    [Parameter] public string SearchText { get; set; } = string.Empty;
+    [Parameter] public bool CaseSensitive { get; set; } = false;
+    [Parameter] public bool WholeWord { get; set; } = false;
+    [Parameter] public int ActiveIndex { get; set; } = 0;
+    [Parameter] public EventCallback<int> ActiveIndexChanged { get; set; }
+    [Parameter] public bool ShowNavigation { get; set; } = true;
+    [Parameter] public string HighlightClass { get; set; } = "bg-amber-200/90 dark:bg-amber-900/60 text-amber-950 dark:text-amber-100 rounded-xs px-0.5";
+    [Parameter] public string ActiveHighlightClass { get; set; } = "bg-amber-500 text-white font-bold rounded-xs px-0.5 shadow-xs ring-2 ring-amber-400";
+    [Parameter] public string Class { get; set; } = string.Empty;
+
+    public int MatchCount { get; private set; }
+
+    private class TextSegment
+    {
+        public string Text { get; set; } = string.Empty;
+        public bool IsMatch { get; set; }
+        public int MatchIndex { get; set; }
+    }
+
+    private List<TextSegment> _segments = new();
+
+    protected override void OnParametersSet()
+    {
+        ComputeSegments();
+    }
+
+    private void ComputeSegments()
+    {
+        _segments.Clear();
+        MatchCount = 0;
+
+        if (string.IsNullOrEmpty(Text) || string.IsNullOrEmpty(SearchText))
+        {
+            return;
+        }
+
+        string pattern = Regex.Escape(SearchText);
+        if (WholeWord)
+        {
+            pattern = $@"\b{pattern}\b";
+        }
+
+        var options = CaseSensitive ? RegexOptions.None : RegexOptions.IgnoreCase;
+        var matches = Regex.Matches(Text, pattern, options);
+        MatchCount = matches.Count;
+
+        if (MatchCount == 0)
+        {
+            return;
+        }
+
+        if (ActiveIndex >= MatchCount)
+        {
+            ActiveIndex = 0;
+        }
+
+        int lastIndex = 0;
+        int matchIdx = 0;
+
+        foreach (Match m in matches)
+        {
+            if (m.Index > lastIndex)
+            {
+                _segments.Add(new TextSegment
+                {
+                    Text = Text.Substring(lastIndex, m.Index - lastIndex),
+                    IsMatch = false
+                });
+            }
+
+            _segments.Add(new TextSegment
+            {
+                Text = m.Value,
+                IsMatch = true,
+                MatchIndex = matchIdx
+            });
+
+            matchIdx++;
+            lastIndex = m.Index + m.Length;
+        }
+
+        if (lastIndex < Text.Length)
+        {
+            _segments.Add(new TextSegment
+            {
+                Text = Text.Substring(lastIndex),
+                IsMatch = false
+            });
+        }
+    }
+
+    public async Task NextMatch()
+    {
+        if (MatchCount <= 0) return;
+        ActiveIndex = (ActiveIndex + 1) % MatchCount;
+        await ActiveIndexChanged.InvokeAsync(ActiveIndex);
+    }
+
+    public async Task PreviousMatch()
+    {
+        if (MatchCount <= 0) return;
+        ActiveIndex = (ActiveIndex - 1 + MatchCount) % MatchCount;
+        await ActiveIndexChanged.InvokeAsync(ActiveIndex);
+    }
+}

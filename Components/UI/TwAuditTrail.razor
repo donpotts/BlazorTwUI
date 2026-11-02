@@ -1,0 +1,65 @@
+@inherits TwSessionComponentBase
+@using BlazorTwUI.Models
+@inject IJSRuntime JS
+
+<section aria-labelledby="@_titleId" class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 @Class" data-testid="audit-trail">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+        <h4 id="@_titleId" class="text-sm font-bold text-slate-900 dark:text-white">Audit trail</h4>
+        <span class="text-xs text-slate-600 dark:text-slate-400" data-testid="audit-count">@Session.Audit.Count events</span>
+
+        <div class="ms-auto flex items-center gap-2">
+            <label for="@_filterId" class="sr-only">Filter by actor</label>
+            <select id="@_filterId" @bind="_filter" data-testid="audit-filter"
+                    class="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                <option value="">All actors</option>
+                <option value="Human">Human</option>
+                <option value="Agent">Agent</option>
+                <option value="System">System</option>
+            </select>
+            <button type="button" @onclick="ExportAsync" disabled="@(Session.Audit.Count == 0)" data-testid="audit-export"
+                    class="min-h-[36px] px-3 rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-bold text-slate-900 dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                Export JSON
+            </button>
+        </div>
+    </div>
+
+    @if (!Visible.Any())
+    {
+        <p class="text-xs text-slate-600 dark:text-slate-400">Nothing recorded yet.</p>
+    }
+    else
+    {
+        <ol class="space-y-1.5 max-h-72 overflow-y-auto" tabindex="0" aria-label="Audit events">
+            @foreach (var entry in Visible)
+            {
+                <li class="flex items-start gap-2 text-xs" data-testid="audit-row" data-actor="@entry.Actor" data-action="@entry.Action">
+                    <span class="font-mono text-slate-600 dark:text-slate-400 w-6 shrink-0 text-end">@entry.Seq</span>
+                    <span class="shrink-0 px-1.5 py-0.5 rounded font-bold @ActorClass(entry.Actor)">@entry.Actor</span>
+                    <span class="font-mono font-semibold text-slate-900 dark:text-white shrink-0">@entry.Action</span>
+                    <span class="text-slate-700 dark:text-slate-300 break-words min-w-0">@entry.Detail</span>
+                </li>
+            }
+        </ol>
+    }
+</section>
+
+@code {
+    private readonly string _titleId = "audit-title-" + Guid.NewGuid().ToString("N")[..8];
+    private readonly string _filterId = "audit-filter-" + Guid.NewGuid().ToString("N")[..8];
+    private string _filter = "";
+
+    private IEnumerable<AuditEntry> Visible =>
+        string.IsNullOrEmpty(_filter) ? Session.Audit : Session.Audit.Where(a => a.Actor.ToString() == _filter);
+
+    private static string ActorClass(AuditActor actor) => actor switch
+    {
+        AuditActor.Human => "bg-sky-100 text-sky-900 dark:bg-sky-500/20 dark:text-sky-200",
+        AuditActor.Agent => "bg-violet-100 text-violet-900 dark:bg-violet-500/20 dark:text-violet-200",
+        _ => "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-200"
+    };
+
+    private async Task ExportAsync()
+    {
+        await JS.InvokeVoidAsync("pdfHelper.downloadText", $"agent-audit-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json", "application/json", Session.ExportAuditJson());
+    }
+}

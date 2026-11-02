@@ -1,0 +1,124 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject ToastService Toast
+
+<div class="relative w-full @Class">
+    <div class="relative rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
+        <div class="flex items-center px-3.5 py-2.5 gap-2.5">
+            <span class="text-blue-500 dark:text-blue-400 text-base">✨</span>
+            <input type="text"
+                   @bind="SearchQuery"
+                   @bind:event="oninput"
+                   @onkeydown="HandleKeyDown"
+                   placeholder="@Placeholder"
+                   class="w-full bg-transparent text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none" />
+
+            @if (!string.IsNullOrWhiteSpace(SearchQuery))
+            {
+                <button type="button" @onclick="ClearSearch" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs p-1">✕</button>
+            }
+
+            <span class="px-2 py-0.5 rounded-md bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-mono text-[10px] font-bold shrink-0">
+                AI Semantic
+            </span>
+        </div>
+
+        @if (_isSearching)
+        {
+            <div class="h-0.5 w-full bg-blue-100 dark:bg-blue-950 overflow-hidden">
+                <div class="h-full bg-blue-600 animate-pulse w-2/3"></div>
+            </div>
+        }
+    </div>
+
+    @* Semantic Dropdown & Suggestions *@
+    @if (_showSuggestions && FilteredSuggestions.Count > 0)
+    {
+        <div class="absolute left-0 right-0 top-full mt-2 z-30 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-3 space-y-2 animate-zoom-in">
+            <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400 px-1">
+                <span>Semantic Matches & Tool Suggestions</span>
+                <span class="font-mono text-emerald-500">Vector Cosine > 0.88</span>
+            </div>
+
+            <div class="space-y-1">
+                @foreach (var sug in FilteredSuggestions)
+                {
+                    <button type="button"
+                            @onclick="() => SelectSuggestion(sug)"
+                            class="w-full text-left p-2.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center justify-between gap-3 group">
+                        <div class="flex items-center gap-2.5 min-w-0">
+                            <span class="text-xs p-1 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">🔍</span>
+                            <div>
+                                <div class="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition truncate">
+                                    @sug.Text
+                                </div>
+                                <div class="text-[10px] text-slate-400 capitalize">@sug.Category Intent</div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0">
+                            <span class="w-16 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden hidden sm:block">
+                                <span class="block h-full bg-emerald-500 rounded-full" style="width: 92%;"></span>
+                            </span>
+                            <span class="text-[10px] font-mono font-bold text-slate-400 group-hover:text-blue-500">&rarr;</span>
+                        </div>
+                    </button>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string SearchQuery { get; set; } = "";
+    [Parameter] public EventCallback<string> SearchQueryChanged { get; set; }
+    [Parameter] public EventCallback<string> OnSearchSubmitted { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Semantic natural language search (e.g. 'high salary engineers in cloud')...";
+    [Parameter] public string Class { get; set; } = "";
+
+    private bool _isSearching = false;
+    private bool _showSuggestions = false;
+
+    private readonly List<SmartSuggestion> _allSuggestions = new()
+    {
+        new() { Text = "Find all engineers with salary > $150k in US-West", Category = "Filter Query" },
+        new() { Text = "Show cloud cluster quota & memory headroom", Category = "Backend Tool" },
+        new() { Text = "Switch system theme to dark mode with cyber cyan accent", Category = "Frontend Tool" },
+        new() { Text = "Export P&L operating expense breakdown to CSV", Category = "Data Action" },
+        new() { Text = "Generate annual company plan executive milestones", Category = "AGUI Prompt" }
+    };
+
+    private List<SmartSuggestion> FilteredSuggestions => string.IsNullOrWhiteSpace(SearchQuery)
+        ? _allSuggestions.Take(3).ToList()
+        : _allSuggestions.Where(s => s.Text.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase) || s.Category.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    protected override void OnParametersSet()
+    {
+        _showSuggestions = !string.IsNullOrWhiteSpace(SearchQuery);
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            _showSuggestions = false;
+            OnSearchSubmitted.InvokeAsync(SearchQuery);
+        }
+    }
+
+    private void SelectSuggestion(SmartSuggestion sug)
+    {
+        SearchQuery = sug.Text;
+        _showSuggestions = false;
+        SearchQueryChanged.InvokeAsync(SearchQuery);
+        OnSearchSubmitted.InvokeAsync(SearchQuery);
+    }
+
+    private void ClearSearch()
+    {
+        SearchQuery = "";
+        _showSuggestions = false;
+        SearchQueryChanged.InvokeAsync(SearchQuery);
+    }
+}

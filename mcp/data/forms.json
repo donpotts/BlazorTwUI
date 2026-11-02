@@ -1,0 +1,2492 @@
+[
+  {
+    "id": "login",
+    "title": "User Login & SSO Form",
+    "category": "Authentication & Identity",
+    "description": "Standard email/password authentication with remember-me and social SSO options.",
+    "icon": "\ud83d\udd11",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "email",
+        "label": "Email Address",
+        "type": "Email"
+      },
+      {
+        "name": "password",
+        "label": "Password",
+        "type": "Password"
+      },
+      {
+        "name": "remember_me",
+        "label": "Remember Me for 30 Days",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "registration",
+    "title": "New Account Registration",
+    "category": "Authentication & Identity",
+    "description": "Self-service user registration with corporate domain matching and password confirmation.",
+    "icon": "\ud83d\udcdd",
+    "fieldCount": 5,
+    "fields": [
+      {
+        "name": "full_name",
+        "label": "Full Name",
+        "type": "Text"
+      },
+      {
+        "name": "email",
+        "label": "Corporate Email",
+        "type": "Email"
+      },
+      {
+        "name": "password",
+        "label": "Secure Password",
+        "type": "Password"
+      },
+      {
+        "name": "confirm_password",
+        "label": "Confirm Password",
+        "type": "Password"
+      },
+      {
+        "name": "accept_terms",
+        "label": "I accept the Terms & Conditions",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "mfa_otp",
+    "title": "Multi-Factor Authentication (MFA) Form",
+    "category": "Authentication & Identity",
+    "description": "Time-based one-time password (TOTP) or SMS security verification code entry.",
+    "icon": "\ud83d\udee1\ufe0f",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "otp_code",
+        "label": "6-Digit Verification Code",
+        "type": "Text"
+      },
+      {
+        "name": "trust_device",
+        "label": "Trust this browser for 14 days",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "password_reset",
+    "title": "Password Recovery Request",
+    "category": "Authentication & Identity",
+    "description": "Request password reset magic link or token via registered email address.",
+    "icon": "\ud83d\udd04",
+    "fieldCount": 1,
+    "fields": [
+      {
+        "name": "email",
+        "label": "Registered Email Address",
+        "type": "Email"
+      }
+    ]
+  },
+  {
+    "id": "force_password_change",
+    "title": "Mandatory Password Rotation Form",
+    "category": "Authentication & Identity",
+    "description": "Compliance-enforced credential renewal with old password validation.",
+    "icon": "\ud83d\udd12",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "current_password",
+        "label": "Current Password",
+        "type": "Password"
+      },
+      {
+        "name": "new_password",
+        "label": "New Password (min 12 chars)",
+        "type": "Password"
+      },
+      {
+        "name": "confirm_new_password",
+        "label": "Confirm New Password",
+        "type": "Password"
+      }
+    ]
+  },
+  {
+    "id": "magic_link",
+    "title": "Passwordless Magic Link Request",
+    "category": "Authentication & Identity",
+    "description": "Zero-friction passwordless authentication via cryptographic single-use URL.",
+    "icon": "\u2728",
+    "fieldCount": 1,
+    "fields": [
+      {
+        "name": "email",
+        "label": "Work Email",
+        "type": "Email"
+      }
+    ]
+  },
+  {
+    "id": "sso_domain_claim",
+    "title": "Enterprise SSO Domain Verification",
+    "category": "Authentication & Identity",
+    "description": "Register and verify corporate SAML 2.0 / OIDC identity provider domains.",
+    "icon": "\ud83c\udfe2",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "domain",
+        "label": "Corporate Domain",
+        "type": "Text"
+      },
+      {
+        "name": "idp_provider",
+        "label": "Identity Provider (IdP)",
+        "type": "Select"
+      },
+      {
+        "name": "metadata_url",
+        "label": "SAML Metadata XML URL",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "session_unlock",
+    "title": "Session Timeout Re-Authentication",
+    "category": "Authentication & Identity",
+    "description": "Quick PIN or biometrics re-entry after idle screen lock.",
+    "icon": "\u23f1\ufe0f",
+    "fieldCount": 1,
+    "fields": [
+      {
+        "name": "pin",
+        "label": "4-Digit Quick PIN",
+        "type": "Password"
+      }
+    ]
+  },
+  {
+    "id": "api_key_provisioning",
+    "title": "API Key & Access Token Generator",
+    "category": "Authentication & Identity",
+    "description": "Developer form for creating scoped REST and GraphQL programmatic access tokens.",
+    "icon": "\u26a1",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "key_name",
+        "label": "Key Description / Label",
+        "type": "Text"
+      },
+      {
+        "name": "scope",
+        "label": "Permission Scope",
+        "type": "Select"
+      },
+      {
+        "name": "expiration_days",
+        "label": "Expires In (Days)",
+        "type": "Number"
+      }
+    ]
+  },
+  {
+    "id": "device_authorization",
+    "title": "New Device OAuth Authorization",
+    "category": "Authentication & Identity",
+    "description": "Authorize secondary devices, CLI tools, or Smart TVs via 8-character user code.",
+    "icon": "\ud83d\udcf1",
+    "fieldCount": 1,
+    "fields": [
+      {
+        "name": "user_code",
+        "label": "User Code Displayed on Screen",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "profile_edit",
+    "title": "Personal Profile Information",
+    "category": "User Profiles & Account Settings",
+    "description": "Update legal name, display handle, job role, and biography.",
+    "icon": "\ud83d\udc64",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "first_name",
+        "label": "First Name",
+        "type": "Text"
+      },
+      {
+        "name": "last_name",
+        "label": "Last Name",
+        "type": "Text"
+      },
+      {
+        "name": "handle",
+        "label": "Public Handle (@username)",
+        "type": "Text"
+      },
+      {
+        "name": "bio",
+        "label": "Short Biography",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "avatar_upload",
+    "title": "Avatar & Profile Media Selector",
+    "category": "User Profiles & Account Settings",
+    "description": "Upload or select custom image avatars with crop and focal positioning.",
+    "icon": "\ud83d\uddbc\ufe0f",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "avatar_url",
+        "label": "Image Asset URL",
+        "type": "Text"
+      },
+      {
+        "name": "alt_text",
+        "label": "Accessibility Alt Text",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "email_change",
+    "title": "Primary Email Address Change",
+    "category": "User Profiles & Account Settings",
+    "description": "Update notification address with two-step validation on both old and new inboxes.",
+    "icon": "\u2709\ufe0f",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "new_email",
+        "label": "New Email Address",
+        "type": "Email"
+      },
+      {
+        "name": "current_password",
+        "label": "Current Password Confirmation",
+        "type": "Password"
+      }
+    ]
+  },
+  {
+    "id": "security_2fa_setup",
+    "title": "Two-Factor Authentication Setup",
+    "category": "User Profiles & Account Settings",
+    "description": "Configure Authenticator App (Google/Microsoft Authenticator) with secret key.",
+    "icon": "\ud83d\udd10",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "secret_key",
+        "label": "Secret Key (Scan QR or enter manually)",
+        "type": "Text"
+      },
+      {
+        "name": "confirmation_code",
+        "label": "Verification Code from App",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "notification_preferences",
+    "title": "Notification Channel Preferences",
+    "category": "User Profiles & Account Settings",
+    "description": "Granular control over email digests, push notifications, and SMS alerts.",
+    "icon": "\ud83d\udd14",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "email_digest",
+        "label": "Weekly Executive Email Digest",
+        "type": "Toggle"
+      },
+      {
+        "name": "slack_alerts",
+        "label": "Instant Slack Incident Alerts",
+        "type": "Toggle"
+      },
+      {
+        "name": "marketing_updates",
+        "label": "Product Announcements & Release Notes",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "localization_settings",
+    "title": "Localization, Currency & Timezone",
+    "category": "User Profiles & Account Settings",
+    "description": "Configure regional display formatting, locale language, and default currency.",
+    "icon": "\ud83c\udf0d",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "language",
+        "label": "Display Language",
+        "type": "Select"
+      },
+      {
+        "name": "timezone",
+        "label": "Local Timezone",
+        "type": "Select"
+      },
+      {
+        "name": "currency",
+        "label": "Reporting Currency",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "linked_social_accounts",
+    "title": "Federated Social Accounts Linking",
+    "category": "User Profiles & Account Settings",
+    "description": "Connect GitHub, Google, LinkedIn, and GitLab accounts for single-click sign-in.",
+    "icon": "\ud83d\udd17",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "link_github",
+        "label": "Connect GitHub Organization Account",
+        "type": "Toggle"
+      },
+      {
+        "name": "link_google",
+        "label": "Connect Google Workspace",
+        "type": "Toggle"
+      },
+      {
+        "name": "link_microsoft",
+        "label": "Connect Microsoft 365",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "accessibility_preferences",
+    "title": "Accessibility & Display Preferences",
+    "category": "User Profiles & Account Settings",
+    "description": "Adjust contrast modes, motion preferences, and font scaling.",
+    "icon": "\ud83d\udc53",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "high_contrast",
+        "label": "High Contrast WCAG AAA Mode",
+        "type": "Toggle"
+      },
+      {
+        "name": "reduced_motion",
+        "label": "Reduce Animation Motion",
+        "type": "Toggle"
+      },
+      {
+        "name": "font_scale",
+        "label": "Interface Text Scaling (100% - 150%)",
+        "type": "Slider"
+      }
+    ]
+  },
+  {
+    "id": "session_revocation",
+    "title": "Active Session Revocation Form",
+    "category": "User Profiles & Account Settings",
+    "description": "Audit active browser sessions, IP addresses, and terminate unauthorized logins.",
+    "icon": "\ud83d\udda5\ufe0f",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "revoke_all_other",
+        "label": "Log out of all other devices and locations",
+        "type": "Checkbox"
+      },
+      {
+        "name": "password",
+        "label": "Re-enter Password to confirm",
+        "type": "Password"
+      }
+    ]
+  },
+  {
+    "id": "delete_account",
+    "title": "Account Deletion / Erasure Request",
+    "category": "User Profiles & Account Settings",
+    "description": "Irreversible account termination in compliance with GDPR right to be forgotten.",
+    "icon": "\u26a0\ufe0f",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "confirmation_phrase",
+        "label": "Type 'DELETE MY ACCOUNT' to confirm",
+        "type": "Text"
+      },
+      {
+        "name": "reason",
+        "label": "Reason for Leaving",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "credit_card_payment",
+    "title": "Credit / Debit Card Checkout",
+    "category": "Billing, Checkout & Payments",
+    "description": "PCI-compliant card payment form with expiry, CVC, and cardholder name.",
+    "icon": "\ud83d\udcb3",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "cardholder_name",
+        "label": "Cardholder Name",
+        "type": "Text"
+      },
+      {
+        "name": "card_number",
+        "label": "Card Number",
+        "type": "Text"
+      },
+      {
+        "name": "exp_date",
+        "label": "Expiration Date (MM/YY)",
+        "type": "Text"
+      },
+      {
+        "name": "cvc",
+        "label": "CVC / CVV",
+        "type": "Password"
+      }
+    ]
+  },
+  {
+    "id": "billing_address",
+    "title": "Billing Address Information",
+    "category": "Billing, Checkout & Payments",
+    "description": "Tax jurisdiction address for invoice calculation and VAT compliance.",
+    "icon": "\ud83d\udccd",
+    "fieldCount": 5,
+    "fields": [
+      {
+        "name": "street_address",
+        "label": "Street Address",
+        "type": "Text"
+      },
+      {
+        "name": "city",
+        "label": "City",
+        "type": "Text"
+      },
+      {
+        "name": "state",
+        "label": "State / Province",
+        "type": "Text"
+      },
+      {
+        "name": "postal_code",
+        "label": "Postal / ZIP Code",
+        "type": "Text"
+      },
+      {
+        "name": "country",
+        "label": "Country",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "plan_upgrade",
+    "title": "SaaS Subscription Plan Upgrade",
+    "category": "Billing, Checkout & Payments",
+    "description": "Select tier (Starter, Pro, Enterprise) and billing frequency (Monthly vs Annual).",
+    "icon": "\ud83d\ude80",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "target_plan",
+        "label": "Select Plan Tier",
+        "type": "Select"
+      },
+      {
+        "name": "billing_cycle",
+        "label": "Billing Frequency",
+        "type": "Select"
+      },
+      {
+        "name": "seats",
+        "label": "Additional User Seats",
+        "type": "Number"
+      }
+    ]
+  },
+  {
+    "id": "tax_vat_id",
+    "title": "Tax & VAT Identification Number",
+    "category": "Billing, Checkout & Payments",
+    "description": "Enter EU VAT, GST, or US EIN for B2B reverse charge tax exemptions.",
+    "icon": "\ud83e\uddfe",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "tax_id_type",
+        "label": "Tax ID Standard",
+        "type": "Select"
+      },
+      {
+        "name": "tax_id_number",
+        "label": "Tax Identification Number",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "purchase_order_request",
+    "title": "Purchase Order (PO) Invoice Request",
+    "category": "Billing, Checkout & Payments",
+    "description": "Enterprise procurement request for Net-30 or Net-60 invoiced billing.",
+    "icon": "\ud83d\udcc4",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "po_number",
+        "label": "Official PO Reference Number",
+        "type": "Text"
+      },
+      {
+        "name": "payment_terms",
+        "label": "Payment Terms",
+        "type": "Select"
+      },
+      {
+        "name": "accounts_payable_email",
+        "label": "Accounts Payable Department Email",
+        "type": "Email"
+      }
+    ]
+  },
+  {
+    "id": "refund_request",
+    "title": "Payment Refund / Credit Request",
+    "category": "Billing, Checkout & Payments",
+    "description": "Submit dispute or refund request with transaction reference and reason.",
+    "icon": "\ud83d\udcb8",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "invoice_number",
+        "label": "Invoice / Charge Number",
+        "type": "Text"
+      },
+      {
+        "name": "refund_reason",
+        "label": "Reason for Refund Request",
+        "type": "Select"
+      },
+      {
+        "name": "explanation",
+        "label": "Additional Context",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "invoice_dispute",
+    "title": "Billing Discrepancy & Dispute Form",
+    "category": "Billing, Checkout & Payments",
+    "description": "Formal line-item dispute form with supporting document attachment.",
+    "icon": "\u2696\ufe0f",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "disputed_amount",
+        "label": "Disputed Amount ($ USD)",
+        "type": "Currency"
+      },
+      {
+        "name": "dispute_details",
+        "label": "Specific Line Item Discrepancy",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "wire_transfer_notification",
+    "title": "Wire Transfer / ACH Inward Notice",
+    "category": "Billing, Checkout & Payments",
+    "description": "Notify accounting of pending SWIFT/SEPA incoming wire payments.",
+    "icon": "\ud83c\udfe6",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "remittance_bank",
+        "label": "Originating Bank Institution",
+        "type": "Text"
+      },
+      {
+        "name": "transfer_reference",
+        "label": "Bank Wire Reference / MT103",
+        "type": "Text"
+      },
+      {
+        "name": "amount_transferred",
+        "label": "Amount Transferred ($ USD)",
+        "type": "Currency"
+      }
+    ]
+  },
+  {
+    "id": "coupon_redeem",
+    "title": "Promotional Code & Voucher Redeem",
+    "category": "Billing, Checkout & Payments",
+    "description": "Redeem promotional discount voucher or investor discount credit.",
+    "icon": "\ud83c\udff7\ufe0f",
+    "fieldCount": 1,
+    "fields": [
+      {
+        "name": "promo_code",
+        "label": "Coupon / Voucher Code",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "ach_verification",
+    "title": "Bank Account Micro-Deposit Verification",
+    "category": "Billing, Checkout & Payments",
+    "description": "Confirm two small bank deposit amounts to verify ACH direct debit account.",
+    "icon": "\ud83d\udd0d",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "deposit_1",
+        "label": "First Deposit Amount ($0.xx)",
+        "type": "Number"
+      },
+      {
+        "name": "deposit_2",
+        "label": "Second Deposit Amount ($0.xx)",
+        "type": "Number"
+      }
+    ]
+  },
+  {
+    "id": "company_plan",
+    "title": "Corporate Strategic Operating Plan",
+    "category": "Enterprise Business & Governance",
+    "description": "Formulate executive objectives, OKRs, capital budget, and milestones.",
+    "icon": "\ud83c\udfaf",
+    "fieldCount": 5,
+    "fields": [
+      {
+        "name": "company_name",
+        "label": "Company Legal Name",
+        "type": "Text"
+      },
+      {
+        "name": "fiscal_year",
+        "label": "Planning Fiscal Year",
+        "type": "Select"
+      },
+      {
+        "name": "executive_sponsor",
+        "label": "Executive Sponsor",
+        "type": "Text"
+      },
+      {
+        "name": "budget_millions",
+        "label": "Total Operating Budget ($M)",
+        "type": "Slider"
+      },
+      {
+        "name": "headcount_target",
+        "label": "New Headcount Target",
+        "type": "Number"
+      }
+    ]
+  },
+  {
+    "id": "profit_loss",
+    "title": "Corporate Profit & Loss (P&L) Statement",
+    "category": "Enterprise Business & Governance",
+    "description": "Model revenue streams, direct cost of goods sold, and operating margins.",
+    "icon": "\ud83d\udcca",
+    "fieldCount": 5,
+    "fields": [
+      {
+        "name": "reporting_period",
+        "label": "Reporting Period",
+        "type": "Text"
+      },
+      {
+        "name": "rev_arr",
+        "label": "Software Subscriptions (ARR)",
+        "type": "Currency"
+      },
+      {
+        "name": "cogs_cloud",
+        "label": "Cloud & Infrastructure COGS",
+        "type": "Currency"
+      },
+      {
+        "name": "opex_rnd",
+        "label": "R&D Engineering OPEX",
+        "type": "Currency"
+      },
+      {
+        "name": "tax_rate",
+        "label": "Effective Tax Rate (%)",
+        "type": "Slider"
+      }
+    ]
+  },
+  {
+    "id": "vendor_due_diligence",
+    "title": "Vendor Security & Due Diligence Questionnaire",
+    "category": "Enterprise Business & Governance",
+    "description": "Assess vendor compliance with ISO 27001, SOC2, and data safety.",
+    "icon": "\ud83d\udee1\ufe0f",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "vendor_name",
+        "label": "Vendor / Supplier Name",
+        "type": "Text"
+      },
+      {
+        "name": "has_soc2",
+        "label": "Maintains Valid SOC 2 Type II Certification",
+        "type": "Toggle"
+      },
+      {
+        "name": "data_encryption",
+        "label": "Data Encrypted at Rest (AES-256) & Transit (TLS 1.3)",
+        "type": "Toggle"
+      },
+      {
+        "name": "incident_response_sla",
+        "label": "Critical Incident Notification SLA",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "board_minutes",
+    "title": "Board of Directors Meeting Minutes",
+    "category": "Enterprise Business & Governance",
+    "description": "Official recording of board quorum, resolutions passed, and voting records.",
+    "icon": "\ud83d\udcd1",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "meeting_date",
+        "label": "Board Meeting Date",
+        "type": "Date"
+      },
+      {
+        "name": "quorum_present",
+        "label": "Quorum Formed by Certified Majority",
+        "type": "Checkbox"
+      },
+      {
+        "name": "resolutions_passed",
+        "label": "Key Corporate Resolutions Passed",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "nda_agreement",
+    "title": "Mutual Non-Disclosure Agreement (NDA)",
+    "category": "Enterprise Business & Governance",
+    "description": "Confidentiality undertaking binding signatory parties prior to diligence.",
+    "icon": "\ud83e\udd1d",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "counterparty_name",
+        "label": "Counterparty Legal Entity",
+        "type": "Text"
+      },
+      {
+        "name": "term_years",
+        "label": "Confidentiality Duration (Years)",
+        "type": "Select"
+      },
+      {
+        "name": "jurisdiction",
+        "label": "Governing Law Jurisdiction",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "shareholder_proxy",
+    "title": "Shareholder Annual Proxy Voting Form",
+    "category": "Enterprise Business & Governance",
+    "description": "Elect board members, ratify independent auditors, and vote on bylaws.",
+    "icon": "\ud83d\uddf3\ufe0f",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "shares_held",
+        "label": "Total Common Shares Held",
+        "type": "Number"
+      },
+      {
+        "name": "elect_auditors",
+        "label": "Ratify Ernst & Young LLP as Independent Auditors",
+        "type": "Select"
+      },
+      {
+        "name": "bylaw_amendment",
+        "label": "Approve Amendment to 2026 Equity Incentive Plan",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "risk_register",
+    "title": "Enterprise Risk Assessment Register",
+    "category": "Enterprise Business & Governance",
+    "description": "Document operational, cyber, market, and reputational risk factors.",
+    "icon": "\u26a0\ufe0f",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "risk_title",
+        "label": "Risk Title / Threat Description",
+        "type": "Text"
+      },
+      {
+        "name": "severity",
+        "label": "Impact Severity",
+        "type": "Select"
+      },
+      {
+        "name": "likelihood",
+        "label": "Occurrence Likelihood",
+        "type": "Select"
+      },
+      {
+        "name": "mitigation_strategy",
+        "label": "Mitigation Strategy & Redundancy",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "business_continuity",
+    "title": "Business Continuity & Disaster Plan",
+    "category": "Enterprise Business & Governance",
+    "description": "Disaster recovery RTO/RPO targets and emergency escalation chains.",
+    "icon": "\ud83d\udea8",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "rto_hours",
+        "label": "Recovery Time Objective (RTO in Hours)",
+        "type": "Number"
+      },
+      {
+        "name": "rpo_hours",
+        "label": "Recovery Point Objective (RPO in Hours)",
+        "type": "Number"
+      },
+      {
+        "name": "emergency_liaison",
+        "label": "Designated Emergency Response Commander",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "asset_audit",
+    "title": "Fixed Corporate Asset Audit Intake",
+    "category": "Enterprise Business & Governance",
+    "description": "Log enterprise laptops, lab servers, test hardware, and lease contracts.",
+    "icon": "\ud83d\udcbb",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "asset_tag",
+        "label": "Barcode Asset Tag Number",
+        "type": "Text"
+      },
+      {
+        "name": "asset_type",
+        "label": "Hardware Category",
+        "type": "Select"
+      },
+      {
+        "name": "assigned_to",
+        "label": "Assigned Employee",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "ma_intake",
+    "title": "M&A Target Diligence Initial Intake",
+    "category": "Enterprise Business & Governance",
+    "description": "Initial exploratory questionnaire for prospective acquisition targets.",
+    "icon": "\ud83d\udcc8",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "target_name",
+        "label": "Target Enterprise Name",
+        "type": "Text"
+      },
+      {
+        "name": "valuation_expectation",
+        "label": "Estimated Enterprise Valuation ($M)",
+        "type": "Number"
+      },
+      {
+        "name": "strategic_rationale",
+        "label": "Synergies & Strategic Fit",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "employee_award",
+    "title": "Employee Excellence & Spot Bonus Nomination",
+    "category": "Human Resources & People Operations",
+    "description": "Nominate exceptional team members for peer awards and cash grants.",
+    "icon": "\ud83c\udfc6",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "nominee_name",
+        "label": "Nominee Full Name",
+        "type": "Text"
+      },
+      {
+        "name": "award_category",
+        "label": "Award Category",
+        "type": "Select"
+      },
+      {
+        "name": "grant_amount",
+        "label": "Spot Cash Bonus ($ USD)",
+        "type": "Select"
+      },
+      {
+        "name": "inscription_quote",
+        "label": "Certificate Plaque Inscription",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "job_application",
+    "title": "Careers / Candidate Job Application",
+    "category": "Human Resources & People Operations",
+    "description": "Standard job applicant intake with resume link, portfolio, and work authorization.",
+    "icon": "\ud83d\udcbc",
+    "fieldCount": 5,
+    "fields": [
+      {
+        "name": "candidate_name",
+        "label": "Applicant Full Name",
+        "type": "Text"
+      },
+      {
+        "name": "email",
+        "label": "Email Address",
+        "type": "Email"
+      },
+      {
+        "name": "linkedin_url",
+        "label": "LinkedIn / GitHub Portfolio URL",
+        "type": "Text"
+      },
+      {
+        "name": "work_authorization",
+        "label": "Legally Authorized to Work in Country",
+        "type": "Toggle"
+      },
+      {
+        "name": "cover_letter",
+        "label": "Why are you interested in this mission?",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "onboarding_checklist",
+    "title": "New Hire Employee Onboarding Intake",
+    "category": "Human Resources & People Operations",
+    "description": "Capture emergency contacts, payroll bank routing, and equipment sizing.",
+    "icon": "\ud83d\ude80",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "preferred_name",
+        "label": "Preferred First Name",
+        "type": "Text"
+      },
+      {
+        "name": "emergency_contact",
+        "label": "Emergency Contact Name & Phone",
+        "type": "Text"
+      },
+      {
+        "name": "tshirt_size",
+        "label": "Company Swag Size",
+        "type": "Select"
+      },
+      {
+        "name": "laptop_choice",
+        "label": "Development Workstation Choice",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "pto_request",
+    "title": "Paid Time Off (PTO) & Leave Request",
+    "category": "Human Resources & People Operations",
+    "description": "Submit vacation, medical, or bereavement leave request for manager approval.",
+    "icon": "\ud83c\udfd6\ufe0f",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "leave_type",
+        "label": "Leave Classification",
+        "type": "Select"
+      },
+      {
+        "name": "start_date",
+        "label": "Leave Start Date",
+        "type": "Date"
+      },
+      {
+        "name": "end_date",
+        "label": "Leave Return Date",
+        "type": "Date"
+      },
+      {
+        "name": "coverage_handover",
+        "label": "Team Coverage Handover Notes",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "performance_review",
+    "title": "Annual 360 Performance Appraisal",
+    "category": "Human Resources & People Operations",
+    "description": "Evaluate goals achieved, core competency ratings, and professional growth areas.",
+    "icon": "\u2b50",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "review_period",
+        "label": "Appraisal Cycle",
+        "type": "Text"
+      },
+      {
+        "name": "overall_rating",
+        "label": "Overall Performance Rating (1 to 5 Stars)",
+        "type": "Rating"
+      },
+      {
+        "name": "key_achievements",
+        "label": "Top Achievements & Milestones Delivered",
+        "type": "Textarea"
+      },
+      {
+        "name": "growth_goals",
+        "label": "Goals for Upcoming Performance Year",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "expense_reimbursement",
+    "title": "Corporate Expense Reimbursement Report",
+    "category": "Human Resources & People Operations",
+    "description": "Itemize business travel, conference tickets, and client dining expenses.",
+    "icon": "\ud83e\uddfe",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "expense_category",
+        "label": "Expense Category",
+        "type": "Select"
+      },
+      {
+        "name": "total_amount",
+        "label": "Total Expense Amount ($ USD)",
+        "type": "Currency"
+      },
+      {
+        "name": "merchant_name",
+        "label": "Merchant / Vendor",
+        "type": "Text"
+      },
+      {
+        "name": "receipt_attached",
+        "label": "Receipt / Proof of Payment Attached",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "exit_interview",
+    "title": "Confidential Employee Exit Interview",
+    "category": "Human Resources & People Operations",
+    "description": "Gather honest feedback on company culture, leadership, and reasons for transition.",
+    "icon": "\ud83d\udeaa",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "departure_reason",
+        "label": "Primary Reason for Departure",
+        "type": "Select"
+      },
+      {
+        "name": "culture_rating",
+        "label": "Company Culture Satisfaction (1-5)",
+        "type": "Rating"
+      },
+      {
+        "name": "constructive_feedback",
+        "label": "Constructive Feedback for Executive Leadership",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "remote_work_agreement",
+    "title": "Remote & Hybrid Work Telecommuting Policy",
+    "category": "Human Resources & People Operations",
+    "description": "Agreement specifying home office ergonomic compliance and security standards.",
+    "icon": "\ud83c\udfe1",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "work_location",
+        "label": "Designated Home Office City & State",
+        "type": "Text"
+      },
+      {
+        "name": "has_secure_wifi",
+        "label": "Secured WPA3 Wi-Fi & Corporate VPN Active",
+        "type": "Toggle"
+      },
+      {
+        "name": "acknowledges_hours",
+        "label": "Acknowledges Core Collaboration Overlap Hours",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "benefits_enrollment",
+    "title": "Annual Health & Benefits Election Form",
+    "category": "Human Resources & People Operations",
+    "description": "Select health insurance tier, dental, 401(k) matching, and HSA contributions.",
+    "icon": "\ud83c\udfe5",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "medical_plan",
+        "label": "Health Insurance Plan Option",
+        "type": "Select"
+      },
+      {
+        "name": "401k_contribution",
+        "label": "401(k) Salary Deferral Percentage",
+        "type": "Slider"
+      },
+      {
+        "name": "hsa_annual_pledge",
+        "label": "HSA Annual Contribution ($ USD)",
+        "type": "Number"
+      }
+    ]
+  },
+  {
+    "id": "incident_grievance",
+    "title": "Workplace Incident & Ethics Grievance Report",
+    "category": "Human Resources & People Operations",
+    "description": "Confidential intake for reporting harassment, discrimination, or safety hazards.",
+    "icon": "\ud83d\udee1\ufe0f",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "is_anonymous",
+        "label": "Submit Anonymously",
+        "type": "Toggle"
+      },
+      {
+        "name": "incident_type",
+        "label": "Incident Classification",
+        "type": "Select"
+      },
+      {
+        "name": "detailed_report",
+        "label": "Description of Incident & Witnesses",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "company_party",
+    "title": "Corporate Gala & Party Planner",
+    "category": "Events, Parties & Hospitality",
+    "description": "Coordinate venue logistics, entertainment, catering menus, and employee RSVPs.",
+    "icon": "\ud83c\udf89",
+    "fieldCount": 5,
+    "fields": [
+      {
+        "name": "event_name",
+        "label": "Celebration Title",
+        "type": "Text"
+      },
+      {
+        "name": "venue_style",
+        "label": "Venue Style",
+        "type": "Select"
+      },
+      {
+        "name": "event_datetime",
+        "label": "Date & Schedule",
+        "type": "Text"
+      },
+      {
+        "name": "budget",
+        "label": "Total Event Budget ($ USD)",
+        "type": "Currency"
+      },
+      {
+        "name": "plus_one_allowed",
+        "label": "Allow Plus-One Guest Registration",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "conference_ticket",
+    "title": "Tech Conference Ticket Registration",
+    "category": "Events, Parties & Hospitality",
+    "description": "Attendee registration with badge printing name, workshop pass, and dinner ticket.",
+    "icon": "\ud83c\udf9f\ufe0f",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "badge_name",
+        "label": "Full Name for Conference Badge",
+        "type": "Text"
+      },
+      {
+        "name": "company_affiliation",
+        "label": "Company / Affiliation",
+        "type": "Text"
+      },
+      {
+        "name": "ticket_type",
+        "label": "Ticket Tier",
+        "type": "Select"
+      },
+      {
+        "name": "attend_hackathon",
+        "label": "Register for Weekend Hackathon",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "webinar_signup",
+    "title": "Live Developer Webinar Sign-Up",
+    "category": "Events, Parties & Hospitality",
+    "description": "Register for technical keynote with email calendar reminder and recording link.",
+    "icon": "\ud83c\udfa5",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "webinar_topic",
+        "label": "Webinar Session",
+        "type": "Select"
+      },
+      {
+        "name": "email",
+        "label": "Work Email for Calendar Invite",
+        "type": "Email"
+      }
+    ]
+  },
+  {
+    "id": "speaker_cfp",
+    "title": "Call for Proposals (CFP) Speaker Intake",
+    "category": "Events, Parties & Hospitality",
+    "description": "Submit talk abstracts, bio, technical difficulty level, and slide links.",
+    "icon": "\ud83c\udf99\ufe0f",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "talk_title",
+        "label": "Proposed Session Title",
+        "type": "Text"
+      },
+      {
+        "name": "abstract",
+        "label": "Detailed Abstract (max 300 words)",
+        "type": "Textarea"
+      },
+      {
+        "name": "difficulty_level",
+        "label": "Audience Technical Level",
+        "type": "Select"
+      },
+      {
+        "name": "speaker_bio",
+        "label": "Speaker Professional Bio",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "venue_booking",
+    "title": "Event Venue Booking & Lease Inquiry",
+    "category": "Events, Parties & Hospitality",
+    "description": "Private event space rental request with headcount and acoustic requirements.",
+    "icon": "\ud83c\udfdb\ufe0f",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "venue_requested",
+        "label": "Venue Space / Hall",
+        "type": "Select"
+      },
+      {
+        "name": "expected_headcount",
+        "label": "Expected Guest Headcount",
+        "type": "Number"
+      },
+      {
+        "name": "requires_av",
+        "label": "Full Audiovisual Stage & Lighting Package Required",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "catering_menu",
+    "title": "Catering & Banquet Menu Customizer",
+    "category": "Events, Parties & Hospitality",
+    "description": "Design 3-course dinner, buffet stations, cocktail bar, and midnight snacks.",
+    "icon": "\ud83c\udf7d\ufe0f",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "dining_style",
+        "label": "Service Format",
+        "type": "Select"
+      },
+      {
+        "name": "open_bar_tier",
+        "label": "Beverage Package",
+        "type": "Select"
+      },
+      {
+        "name": "special_courses",
+        "label": "Special Chef Tasting Requests",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "post_event_feedback",
+    "title": "Post-Event Attendee Experience Survey",
+    "category": "Events, Parties & Hospitality",
+    "description": "Evaluate keynote quality, food & beverage satisfaction, and networking value.",
+    "icon": "\ud83d\udccb",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "overall_experience",
+        "label": "Overall Event Rating (1-5 Stars)",
+        "type": "Rating"
+      },
+      {
+        "name": "favorite_session",
+        "label": "Most Valuable Session or Moment",
+        "type": "Text"
+      },
+      {
+        "name": "would_recommend",
+        "label": "Likelihood to Attend Next Year (%)",
+        "type": "Slider"
+      }
+    ]
+  },
+  {
+    "id": "vip_checkin",
+    "title": "VIP Executive Guest Fast Check-In",
+    "category": "Events, Parties & Hospitality",
+    "description": "Door management form for verifying credentials and issuing NFC passes.",
+    "icon": "\u2728",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "guest_id",
+        "label": "VIP Guest Registration ID",
+        "type": "Text"
+      },
+      {
+        "name": "security_badge_issued",
+        "label": "Issued Holographic Security Lanyard",
+        "type": "Checkbox"
+      },
+      {
+        "name": "escort_assigned",
+        "label": "Designated Executive Host Escort",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "event_sponsorship",
+    "title": "Corporate Event Sponsorship Application",
+    "category": "Events, Parties & Hospitality",
+    "description": "Sponsor tiers (Title, Platinum, Gold) with booth dimensions and logo rights.",
+    "icon": "\ud83e\udd1d",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "sponsor_company",
+        "label": "Sponsoring Enterprise",
+        "type": "Text"
+      },
+      {
+        "name": "sponsor_tier",
+        "label": "Sponsorship Package",
+        "type": "Select"
+      },
+      {
+        "name": "booth_needs",
+        "label": "Booth Dimensions & Electrical Needs",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "transportation_hotel",
+    "title": "Speaker Hotel & Airport Shuttle Dispatch",
+    "category": "Events, Parties & Hospitality",
+    "description": "Coordinate flight arrivals, chauffeur pickup, and luxury suite reservations.",
+    "icon": "\u2708\ufe0f",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "flight_number",
+        "label": "Arrival Flight Number",
+        "type": "Text"
+      },
+      {
+        "name": "hotel_nights",
+        "label": "Hotel Reservation Nights",
+        "type": "Number"
+      },
+      {
+        "name": "shuttle_requested",
+        "label": "Private Chauffeur Pickup Needed",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "support_ticket",
+    "title": "Customer Support Ticket Intake",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "Submit technical inquiries with severity level, environment details, and logs.",
+    "icon": "\ud83c\udfab",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "ticket_subject",
+        "label": "Issue Summary",
+        "type": "Text"
+      },
+      {
+        "name": "severity",
+        "label": "Impact Severity",
+        "type": "Select"
+      },
+      {
+        "name": "description",
+        "label": "Detailed Steps to Reproduce",
+        "type": "Textarea"
+      },
+      {
+        "name": "component_affected",
+        "label": "Component Affected",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "bug_report",
+    "title": "Engineering Bug Report & System Specs",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "Developer-grade defect filing with OS, browser version, and stack traces.",
+    "icon": "\ud83d\udc1b",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "bug_title",
+        "label": "Defect Title",
+        "type": "Text"
+      },
+      {
+        "name": "browser_os",
+        "label": "Browser & OS Environment",
+        "type": "Text"
+      },
+      {
+        "name": "repro_steps",
+        "label": "Reproduction Sequence",
+        "type": "Textarea"
+      },
+      {
+        "name": "stack_trace",
+        "label": "Console Error Output / Stack Trace",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "feature_request",
+    "title": "Product Feature Suggestion & Vote",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "Submit user ideas for roadmapping with business justification.",
+    "icon": "\ud83d\udca1",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "feature_title",
+        "label": "Feature Concept",
+        "type": "Text"
+      },
+      {
+        "name": "target_persona",
+        "label": "Target User Persona",
+        "type": "Text"
+      },
+      {
+        "name": "value_proposition",
+        "label": "Business Value & Use Case",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "service_outage_incident",
+    "title": "Major Incident Escalation Declaration",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "P1 incident alert dispatching on-call engineering commanders.",
+    "icon": "\ud83d\udea8",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "incident_code",
+        "label": "War Room Incident Code",
+        "type": "Text"
+      },
+      {
+        "name": "services_impacted",
+        "label": "Impacted Services",
+        "type": "Text"
+      },
+      {
+        "name": "estimated_users",
+        "label": "Estimated Affected Users",
+        "type": "Number"
+      },
+      {
+        "name": "incident_commander",
+        "label": "Designated Incident Commander",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "hardware_request",
+    "title": "Internal IT Hardware & Peripheral Request",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "Request test devices, ergonomic monitor arms, or USB-C docking hubs.",
+    "icon": "\ud83d\udda5\ufe0f",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "item_needed",
+        "label": "Requested Hardware Item",
+        "type": "Select"
+      },
+      {
+        "name": "manager_approval",
+        "label": "Direct Manager Has Approved",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "software_license_request",
+    "title": "SaaS Software License & Seat Allocation",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "Request seat licenses for Figma, GitHub Enterprise, or JetBrains IDE.",
+    "icon": "\ud83d\udd11",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "software_name",
+        "label": "Software Tool Name",
+        "type": "Select"
+      },
+      {
+        "name": "justification",
+        "label": "Business Need Justification",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "helpdesk_password_reset",
+    "title": "Helpdesk Identity Verification & Password Reset",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "IT desk form to verify caller via employee ID before resetting MFA.",
+    "icon": "\ud83d\udcde",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "employee_id",
+        "label": "Corporate Employee ID Number",
+        "type": "Text"
+      },
+      {
+        "name": "verification_question",
+        "label": "Manager Verified via Video Call",
+        "type": "Checkbox"
+      },
+      {
+        "name": "temp_password_issued",
+        "label": "Issue Temporary 24-Hour Passcode",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "customer_onboarding_kickoff",
+    "title": "Enterprise Customer Onboarding Kickoff",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "Account setup questionnaire capturing expected throughput and SSO lead.",
+    "icon": "\ud83d\udea2",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "customer_account",
+        "label": "Customer Enterprise Account Name",
+        "type": "Text"
+      },
+      {
+        "name": "projected_monthly_users",
+        "label": "Projected Monthly Active Users",
+        "type": "Number"
+      },
+      {
+        "name": "sso_lead_email",
+        "label": "Customer Identity Architect Email",
+        "type": "Email"
+      }
+    ]
+  },
+  {
+    "id": "vulnerability_disclosure",
+    "title": "Responsible Security Vulnerability Disclosure",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "White-hat hacker bug bounty submission with CVE details and PoC.",
+    "icon": "\ud83d\udee1\ufe0f",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "vulnerability_type",
+        "label": "Vulnerability Classification",
+        "type": "Select"
+      },
+      {
+        "name": "cvss_score",
+        "label": "Estimated CVSS Severity Score (1-10)",
+        "type": "Slider"
+      },
+      {
+        "name": "poc_details",
+        "label": "Proof of Concept Steps",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "escalation_request",
+    "title": "Executive Account Escalation Form",
+    "category": "Customer Support, IT & Helpdesk",
+    "description": "Trigger senior leadership intervention for high-value client retention.",
+    "icon": "\ud83d\udcc8",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "client_tier",
+        "label": "Client Tier",
+        "type": "Select"
+      },
+      {
+        "name": "executive_requested",
+        "label": "Executive Requested for Meeting",
+        "type": "Text"
+      },
+      {
+        "name": "urgent_summary",
+        "label": "Urgent Account Blocker",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "contact_us",
+    "title": "Contact Sales & General Inquiry",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Standard multi-channel lead intake with phone, company size, and budget.",
+    "icon": "\ud83d\udcec",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "full_name",
+        "label": "Your Name",
+        "type": "Text"
+      },
+      {
+        "name": "business_email",
+        "label": "Work Email",
+        "type": "Email"
+      },
+      {
+        "name": "company_size",
+        "label": "Company Employee Size",
+        "type": "Select"
+      },
+      {
+        "name": "message",
+        "label": "How can our team help you?",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "demo_request",
+    "title": "Schedule a Live Product Architecture Demo",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Book a 30-minute tailored walkthrough with a solution architect.",
+    "icon": "\ud83d\udcc5",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "preferred_date",
+        "label": "Preferred Demo Date",
+        "type": "Date"
+      },
+      {
+        "name": "primary_interest",
+        "label": "Primary Technology Focus",
+        "type": "Select"
+      },
+      {
+        "name": "team_size",
+        "label": "Number of Engineers Attending",
+        "type": "Number"
+      }
+    ]
+  },
+  {
+    "id": "newsletter_subscribe",
+    "title": "Engineering Architecture Newsletter",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Weekly technical dispatches on WebAssembly, C# 13, and Tailwind CSS.",
+    "icon": "\ud83d\udcf0",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "subscriber_email",
+        "label": "Email Address",
+        "type": "Email"
+      },
+      {
+        "name": "weekly_digest_only",
+        "label": "Send Weekly Digest Only (No Marketing)",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "partner_application",
+    "title": "Technology & Solution Partner Application",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Join enterprise certified reseller, system integrator, or ISV network.",
+    "icon": "\ud83e\udd1d",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "partner_company",
+        "label": "Partner Organization Name",
+        "type": "Text"
+      },
+      {
+        "name": "partner_type",
+        "label": "Partnership Track",
+        "type": "Select"
+      },
+      {
+        "name": "annual_client_base",
+        "label": "Annual Active Enterprise Clients",
+        "type": "Number"
+      }
+    ]
+  },
+  {
+    "id": "free_trial_activation",
+    "title": "30-Day Enterprise Sandbox Activation",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Spin up instantaneous private cloud sandbox tenant with full features.",
+    "icon": "\u26a1",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "tenant_slug",
+        "label": "Requested Tenant Subdomain (slug)",
+        "type": "Text"
+      },
+      {
+        "name": "cloud_region",
+        "label": "Deployment Cloud Region",
+        "type": "Select"
+      },
+      {
+        "name": "seed_sample_data",
+        "label": "Pre-load 50,000 Record Financial Sample Data",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "case_study_consent",
+    "title": "Customer Case Study & Logo Usage Consent",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Legal marketing release for quoting executive testimonials and logo displays.",
+    "icon": "\ud83d\udcc4",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "authorized_signatory",
+        "label": "Authorized Corporate Representative",
+        "type": "Text"
+      },
+      {
+        "name": "approved_quote",
+        "label": "Approved Public Testimonial Quote",
+        "type": "Textarea"
+      },
+      {
+        "name": "grant_logo_rights",
+        "label": "Grant Permission to Display Brand Logo on Site",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "referral_submission",
+    "title": "Customer Referral & Bounty Submission",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Refer peer enterprises and earn account credit or charity donation.",
+    "icon": "\ud83c\udf81",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "referred_name",
+        "label": "Referred Colleague / Decision Maker",
+        "type": "Text"
+      },
+      {
+        "name": "referred_company",
+        "label": "Referred Organization",
+        "type": "Text"
+      },
+      {
+        "name": "reward_choice",
+        "label": "Reward Preference",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "rfp_submission",
+    "title": "Request for Proposal (RFP) Ingestion",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Upload tender documents, deadline requirements, and security criteria.",
+    "icon": "\ud83d\udcd1",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "rfp_title",
+        "label": "RFP Project Title",
+        "type": "Text"
+      },
+      {
+        "name": "submission_deadline",
+        "label": "Formal Proposal Deadline",
+        "type": "Date"
+      },
+      {
+        "name": "budget_ceiling",
+        "label": "Maximum Budget Ceiling ($ USD)",
+        "type": "Currency"
+      }
+    ]
+  },
+  {
+    "id": "event_lead_scanner",
+    "title": "Tradeshow Booth Badge Lead Capture",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Fast-intake badge scanner form for conference sales reps.",
+    "icon": "\ud83c\udfaf",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "attendee_badge_id",
+        "label": "Scanned Badge QR Code",
+        "type": "Text"
+      },
+      {
+        "name": "buying_intent",
+        "label": "Procurement Timeline / Intent",
+        "type": "Select"
+      },
+      {
+        "name": "notes",
+        "label": "Booth Conversation Summary",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "co_marketing_request",
+    "title": "Joint Webinar & Co-Marketing Proposal",
+    "category": "Marketing, Sales & CRM Intake",
+    "description": "Propose co-branded whitepapers, live podcasts, or developer benchmarks.",
+    "icon": "\ud83c\udf99\ufe0f",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "co_marketer_org",
+        "label": "Partner Organization",
+        "type": "Text"
+      },
+      {
+        "name": "collaboration_type",
+        "label": "Campaign Format",
+        "type": "Select"
+      },
+      {
+        "name": "target_audience_size",
+        "label": "Expected Combined Reach",
+        "type": "Number"
+      }
+    ]
+  },
+  {
+    "id": "nps_survey",
+    "title": "Net Promoter Score (NPS) Survey",
+    "category": "Feedback, NPS & Surveys",
+    "description": "Industry standard 0-10 customer loyalty and advocacy measurement.",
+    "icon": "\ud83d\udcca",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "nps_score",
+        "label": "How likely are you to recommend us to a colleague? (0-10)",
+        "type": "Slider"
+      },
+      {
+        "name": "primary_reason",
+        "label": "What is the primary reason for your score?",
+        "type": "Textarea"
+      },
+      {
+        "name": "can_contact",
+        "label": "May our product team contact you for follow-up?",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "csat_satisfaction",
+    "title": "Customer Satisfaction (CSAT) Rating",
+    "category": "Feedback, NPS & Surveys",
+    "description": "Transaction-level satisfaction measurement following support or checkout.",
+    "icon": "\ud83d\ude0a",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "satisfaction_rating",
+        "label": "How satisfied were you with your support experience?",
+        "type": "Rating"
+      },
+      {
+        "name": "agent_helpfulness",
+        "label": "The support specialist resolved my issue efficiently",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "product_feature_feedback",
+    "title": "Feature Usability & Ergonomics Feedback",
+    "category": "Feedback, NPS & Surveys",
+    "description": "Targeted questionnaire on newly released components or workflows.",
+    "icon": "\ud83d\udca1",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "component_tested",
+        "label": "Component Evaluated",
+        "type": "Select"
+      },
+      {
+        "name": "ease_of_integration",
+        "label": "Ease of Integration Rating (1-5)",
+        "type": "Rating"
+      },
+      {
+        "name": "missing_capabilities",
+        "label": "What features would make this a 10/10 for you?",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "website_usability_survey",
+    "title": "Website Navigation & Usability Survey",
+    "category": "Feedback, NPS & Surveys",
+    "description": "Identify friction points, broken links, or documentation gaps.",
+    "icon": "\ud83c\udf10",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "found_needed_info",
+        "label": "Were you able to find the code samples you needed?",
+        "type": "Toggle"
+      },
+      {
+        "name": "navigation_clarity",
+        "label": "How clear was the documentation search?",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "market_research",
+    "title": "Industry Trends & Tech Stack Questionnaire",
+    "category": "Feedback, NPS & Surveys",
+    "description": "Annual developer survey tracking frontend paradigms and backend languages.",
+    "icon": "\ud83d\udd2c",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "primary_framework",
+        "label": "Primary Web UI Paradigm",
+        "type": "Select"
+      },
+      {
+        "name": "css_framework",
+        "label": "Styling Approach",
+        "type": "Select"
+      },
+      {
+        "name": "use_ai_tools",
+        "label": "Use AI-Assisted Pair Programming Daily",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "churn_cancellation",
+    "title": "Subscription Cancellation Exit Survey",
+    "category": "Feedback, NPS & Surveys",
+    "description": "Diagnose why subscribers leave and identify retention counter-offers.",
+    "icon": "\ud83d\udc94",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "cancel_reason",
+        "label": "Main Reason for Cancellation",
+        "type": "Select"
+      },
+      {
+        "name": "save_offer_interest",
+        "label": "Would a 50% discount for 3 months change your mind?",
+        "type": "Select"
+      }
+    ]
+  },
+  {
+    "id": "employee_pulse",
+    "title": "Weekly Employee Pulse & Morale Check-In",
+    "category": "Feedback, NPS & Surveys",
+    "description": "Anonymous micro-survey monitoring team burnout and workload balance.",
+    "icon": "\ud83d\udc93",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "morale_score",
+        "label": "How energizing was your work week? (1-5)",
+        "type": "Rating"
+      },
+      {
+        "name": "workload_balance",
+        "label": "Workload is Realistic & Sustainable",
+        "type": "Select"
+      },
+      {
+        "name": "shoutout",
+        "label": "Anonymous Shoutout to an Inspiring Teammate",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "training_evaluation",
+    "title": "Technical Workshop & Training Evaluation",
+    "category": "Feedback, NPS & Surveys",
+    "description": "Evaluate curriculum pacing, hands-on lab quality, and instructor clarity.",
+    "icon": "\ud83c\udf93",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "instructor_rating",
+        "label": "Instructor Clarity & Domain Expertise",
+        "type": "Rating"
+      },
+      {
+        "name": "lab_quality",
+        "label": "Hands-on Code Labs were Practical & Realistic",
+        "type": "Select"
+      },
+      {
+        "name": "key_takeaway",
+        "label": "Biggest Technical Skill Acquired",
+        "type": "Text"
+      }
+    ]
+  },
+  {
+    "id": "health_wellness_intake",
+    "title": "Corporate Wellness & Gym Membership Payout",
+    "category": "Feedback, NPS & Surveys",
+    "description": "Annual health reimbursement form for gym dues or meditation apps.",
+    "icon": "\ud83c\udfc3",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "program_name",
+        "label": "Wellness Facility / App Name",
+        "type": "Text"
+      },
+      {
+        "name": "annual_cost",
+        "label": "Total Annual Cost ($ USD)",
+        "type": "Currency"
+      },
+      {
+        "name": "reimbursement_receipt",
+        "label": "Proof of Membership Payment Attached",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "student_course_feedback",
+    "title": "Course & Academic Program Feedback",
+    "category": "Feedback, NPS & Surveys",
+    "description": "University or bootcamp feedback on curriculum and project rigor.",
+    "icon": "\ud83d\udcda",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "course_code",
+        "label": "Course Number & Title",
+        "type": "Text"
+      },
+      {
+        "name": "rigor_rating",
+        "label": "Curriculum Challenge Rating (1-5)",
+        "type": "Rating"
+      },
+      {
+        "name": "recommended_to_peers",
+        "label": "Would recommend this course to peers",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "cookie_consent",
+    "title": "GDPR / CCPA Cookie Consent Manager",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Configure granular telemetry, functional, and marketing cookie switches.",
+    "icon": "\ud83c\udf6a",
+    "fieldCount": 4,
+    "fields": [
+      {
+        "name": "essential_locked",
+        "label": "Strictly Necessary Cookies (Always Active)",
+        "type": "Toggle"
+      },
+      {
+        "name": "functional_cookies",
+        "label": "Functional Personalization Cookies",
+        "type": "Toggle"
+      },
+      {
+        "name": "telemetry_cookies",
+        "label": "Anonymized Analytics & Telemetry",
+        "type": "Toggle"
+      },
+      {
+        "name": "marketing_cookies",
+        "label": "Targeted Marketing & Remarketing",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "dsr_privacy_portal",
+    "title": "Data Subject Access & Erasure Request (DSR)",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Self-service GDPR Art. 17 right to be forgotten and data export.",
+    "icon": "\ud83d\udee1\ufe0f",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "requester_email",
+        "label": "Subject Account Email",
+        "type": "Email"
+      },
+      {
+        "name": "request_type",
+        "label": "DSR Request Category",
+        "type": "Select"
+      },
+      {
+        "name": "affirms_identity",
+        "label": "I swear under penalty of perjury that I own this account",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "terms_of_service",
+    "title": "Executive Terms of Service Acceptance",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Formal contract execution with company binding and SHA-256 stamp.",
+    "icon": "\ud83d\udcdc",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "signatory_name",
+        "label": "Authorized Signatory Name",
+        "type": "Text"
+      },
+      {
+        "name": "organization",
+        "label": "Company Name",
+        "type": "Text"
+      },
+      {
+        "name": "read_all_clauses",
+        "label": "I have reviewed all 12 contractual sections",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "ethics_pledge",
+    "title": "Code of Conduct & Ethics Affidavit",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Sworn declaration upholding compliance, integrity, and anti-corruption.",
+    "icon": "\u270d\ufe0f",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "signatory_title",
+        "label": "Corporate Officer Title",
+        "type": "Text"
+      },
+      {
+        "name": "uphold_code",
+        "label": "I swear adherence to the 3 ethical principles",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "hipaa_acknowledgment",
+    "title": "HIPAA Business Associate Agreement (BAA)",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Healthcare data protection protocols for processing Protected Health Information (PHI).",
+    "icon": "\ud83c\udfe5",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "covered_entity",
+        "label": "Covered Entity Name",
+        "type": "Text"
+      },
+      {
+        "name": "phi_handling_certified",
+        "label": "All staff trained in HIPAA Security Rule compliance",
+        "type": "Checkbox"
+      },
+      {
+        "name": "encryption_verified",
+        "label": "EHR databases encrypted with dedicated HSM keys",
+        "type": "Toggle"
+      }
+    ]
+  },
+  {
+    "id": "export_control_disclosure",
+    "title": "EAR / ITAR Export Control Compliance",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Verify non-export of dual-use encryption algorithms to sanctioned regimes.",
+    "icon": "\ud83c\udf10",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "destination_jurisdiction",
+        "label": "Destination Country of End Deployment",
+        "type": "Text"
+      },
+      {
+        "name": "is_dual_use",
+        "label": "Contains Military / Dual-Use Cryptographic Modules",
+        "type": "Toggle"
+      },
+      {
+        "name": "certifies_non_diversion",
+        "label": "Certifies assets will not be diverted to sanctioned entities",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "ip_assignment",
+    "title": "Proprietary Information & Inventions Agreement (PIIA)",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Assign patents, algorithms, and code created during tenure to enterprise.",
+    "icon": "\ud83d\udca1",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "inventor_name",
+        "label": "Inventor / Developer Name",
+        "type": "Text"
+      },
+      {
+        "name": "assigns_all_ip",
+        "label": "Irrevocably assigns all inventions, patents, and source code",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "conflict_of_interest",
+    "title": "Annual Conflict of Interest Disclosure",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Disclose secondary employment, board directorships, or family supplier ties.",
+    "icon": "\ud83d\udd0d",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "has_conflict",
+        "label": "Do you hold any directorship or outside financial interest?",
+        "type": "Toggle"
+      },
+      {
+        "name": "disclosure_statement",
+        "label": "If yes, explain relationship and mitigating safeguards",
+        "type": "Textarea"
+      }
+    ]
+  },
+  {
+    "id": "anti_bribery_compliance",
+    "title": "Foreign Corrupt Practices Act (FCPA) Certificate",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Affirm strict prohibition against bribes, kickbacks, or facilitation payments.",
+    "icon": "\ud83e\udd1d",
+    "fieldCount": 2,
+    "fields": [
+      {
+        "name": "officer_name",
+        "label": "Affirming Executive",
+        "type": "Text"
+      },
+      {
+        "name": "zero_kickbacks_affirmed",
+        "label": "Affirms strict zero-tolerance for bribes or foreign gifts",
+        "type": "Checkbox"
+      }
+    ]
+  },
+  {
+    "id": "whistleblower_report",
+    "title": "Anonymous Whistleblower Hotline Intake",
+    "category": "Legal, Compliance & Privacy",
+    "description": "Secure, encrypted channel for confidential reporting of fraud or waste.",
+    "icon": "\ud83d\udd12",
+    "fieldCount": 3,
+    "fields": [
+      {
+        "name": "allegation_category",
+        "label": "Allegation Nature",
+        "type": "Select"
+      },
+      {
+        "name": "detailed_allegation",
+        "label": "Facts, Dates, Locations, and Involved Parties",
+        "type": "Textarea"
+      },
+      {
+        "name": "evidence_description",
+        "label": "Description of Physical Documents / Records Held",
+        "type": "Textarea"
+      }
+    ]
+  }
+]

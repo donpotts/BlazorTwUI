@@ -1,0 +1,224 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject OcrEngineService OcrEngine
+@inject TwSoundService Sound
+@inject ToastService Toast
+@inject IJSRuntime JS
+
+<div class="inline-block relative @Class">
+    <button type="button"
+            @onclick="OpenModal"
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-50/70 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-xs font-bold transition shadow-xs">
+        <span class="text-sm">📄</span>
+        <span>Smart OCR / MICR</span>
+    </button>
+
+    @if (_isOpen)
+    {
+        <div class="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4"
+             @onclick="CloseModal"
+             role="dialog"
+             aria-modal="true">
+            <div class="relative w-full max-w-2xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4 animate-zoom-in max-h-[90vh] overflow-y-auto"
+                 @onclick:stopPropagation="true">
+                
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl font-bold border border-emerald-500/20">
+                            📄
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white">Smart Document OCR & MICR Extraction</h3>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">WASM Client</span>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Extract check routing/account numbers, invoices, and PDF forms automatically</p>
+                        </div>
+                    </div>
+                    <button type="button" @onclick="CloseModal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm">✕</button>
+                </div>
+
+                <!-- Preset Quick Selectors -->
+                <div class="space-y-1.5">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Quick Sample Presets:</span>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" @onclick='() => LoadPreset("check")'
+                                class="px-3 py-1.5 text-xs rounded-xl border transition flex items-center gap-1.5 @(_selectedPreset == "check" ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300")">
+                            <span>🏦</span>
+                            <span>Paper Check #1042 (MICR)</span>
+                        </button>
+                        <button type="button" @onclick='() => LoadPreset("draft")'
+                                class="px-3 py-1.5 text-xs rounded-xl border transition flex items-center gap-1.5 @(_selectedPreset == "draft" ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300")">
+                            <span>💳</span>
+                            <span>Cashier's Draft #5021</span>
+                        </button>
+                        <button type="button" @onclick='() => LoadPreset("invoice")'
+                                class="px-3 py-1.5 text-xs rounded-xl border transition flex items-center gap-1.5 @(_selectedPreset == "invoice" ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300")">
+                            <span>🧾</span>
+                            <span>Cloud Invoice #INV-88219</span>
+                        </button>
+                        <button type="button" @onclick='() => LoadPreset("w9")'
+                                class="px-3 py-1.5 text-xs rounded-xl border transition flex items-center gap-1.5 @(_selectedPreset == "w9" ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-500 text-emerald-700 dark:text-emerald-300 font-bold" : "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300")">
+                            <span>📑</span>
+                            <span>IRS Form W-9</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Processing Indicator -->
+                @if (_isProcessing)
+                {
+                    <div class="p-8 text-center space-y-3">
+                        <div class="w-8 h-8 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                        <p class="text-xs font-semibold text-slate-600 dark:text-slate-300">Performing optical character recognition & MICR clear band decoding...</p>
+                    </div>
+                }
+                else if (_documentResult != null)
+                {
+                    <!-- Extraction Results Container -->
+                    <div class="space-y-4">
+                        
+                        <!-- Check MICR Spotlight Card if Check/Draft -->
+                        @if (_documentResult.CheckData != null)
+                        {
+                            <div class="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 space-y-2">
+                                <div class="flex items-center justify-between text-xs">
+                                    <span class="font-bold text-emerald-800 dark:text-emerald-300">ANSI X9.27 MICR E-13B Detected:</span>
+                                    <span class="font-mono text-[11px] font-bold @(_documentResult.CheckData.MicrData.IsValidRoutingChecksum ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600")">
+                                        @(_documentResult.CheckData.MicrData.IsValidRoutingChecksum ? "✓ Valid ABA Checksum" : "✗ Checksum Error")
+                                    </span>
+                                </div>
+                                <div class="p-2.5 rounded-xl bg-slate-950 text-emerald-400 font-mono text-sm tracking-widest text-center">
+                                    @_documentResult.CheckData.MicrData.RawMicrLine
+                                </div>
+                                <div class="grid grid-cols-3 gap-2 text-[11px] pt-1">
+                                    <div class="p-2 rounded-lg bg-white/70 dark:bg-slate-800/80">
+                                        <span class="text-slate-400 block text-[9px] uppercase font-bold">Routing:</span>
+                                        <span class="font-mono font-bold text-slate-900 dark:text-white">@_documentResult.CheckData.MicrData.TransitRoutingNumber</span>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-white/70 dark:bg-slate-800/80">
+                                        <span class="text-slate-400 block text-[9px] uppercase font-bold">Account:</span>
+                                        <span class="font-mono font-bold text-slate-900 dark:text-white">@_documentResult.CheckData.MicrData.AccountNumber</span>
+                                    </div>
+                                    <div class="p-2 rounded-lg bg-white/70 dark:bg-slate-800/80">
+                                        <span class="text-slate-400 block text-[9px] uppercase font-bold">Check #:</span>
+                                        <span class="font-mono font-bold text-slate-900 dark:text-white">@_documentResult.CheckData.CheckNumber</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Mapped Field Entities -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                <span>Recognized Entities (@_documentResult.Fields.Count)</span>
+                                <span class="text-emerald-600 dark:text-emerald-400 font-mono text-[11px]">
+                                    Overall: @((_documentResult.ConfidenceScore * 100).ToString("F0"))%
+                                </span>
+                            </div>
+                            <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                @foreach (var f in _documentResult.Fields)
+                                {
+                                    <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex items-center justify-between gap-3 text-xs">
+                                        <div class="min-w-0">
+                                            <span class="font-bold text-slate-500 uppercase text-[10px] block">@f.Label</span>
+                                            <span class="font-semibold text-slate-900 dark:text-white truncate block">@f.Value</span>
+                                        </div>
+                                        <div class="flex items-center gap-2 shrink-0">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                                                @((f.Confidence * 100).ToString("F0"))%
+                                            </span>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Apply Actions -->
+                        <div class="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+                            <button type="button" @onclick="CloseModal"
+                                    class="px-4 py-2 text-xs font-semibold rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                                Cancel
+                            </button>
+                            <button type="button" @onclick="ApplyExtractedDataAsync"
+                                    class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition flex items-center gap-2">
+                                <span>✨ Apply Extracted OCR Entities</span>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public EventCallback<DocumentOcrResult> OnDocumentScanned { get; set; }
+    [Parameter] public EventCallback<CheckDraftOcrResult> OnCheckScanned { get; set; }
+
+    private bool _isOpen = false;
+    private bool _isProcessing = false;
+    private string _selectedPreset = "check";
+    private DocumentOcrResult? _documentResult;
+
+    private async Task OpenModal()
+    {
+        _isOpen = true;
+        await Sound.PlayPopAsync();
+        await LoadPreset("check");
+    }
+
+    private void CloseModal()
+    {
+        _isOpen = false;
+    }
+
+    private async Task LoadPreset(string presetKey)
+    {
+        _selectedPreset = presetKey;
+        _isProcessing = true;
+        StateHasChanged();
+
+        var docType = presetKey switch
+        {
+            "draft" => OcrDocumentType.BankDraft,
+            "invoice" => OcrDocumentType.CommercialInvoice,
+            "w9" => OcrDocumentType.TaxFormW9,
+            _ => OcrDocumentType.PaperCheck
+        };
+
+        var presetId = presetKey switch
+        {
+            "draft" => "check-draft-5021",
+            "invoice" => "invoice-cloud-8821",
+            "w9" => "tax-w9-corporate",
+            _ => "check-payroll-1042"
+        };
+
+        _documentResult = await OcrEngine.ScanDocumentAsync(docType, presetId);
+        _isProcessing = false;
+    }
+
+    private async Task ApplyExtractedDataAsync()
+    {
+        if (_documentResult == null) return;
+
+        await Sound.PlayChimeAsync();
+        Toast.Show("OCR Entities Extracted", $"Mapped {_documentResult.Fields.Count} fields from {_documentResult.Title}", SemanticVariant.Success);
+
+        if (OnDocumentScanned.HasDelegate)
+        {
+            await OnDocumentScanned.InvokeAsync(_documentResult);
+        }
+
+        if (OnCheckScanned.HasDelegate && _documentResult.CheckData != null)
+        {
+            await OnCheckScanned.InvokeAsync(_documentResult.CheckData);
+        }
+
+        CloseModal();
+    }
+}

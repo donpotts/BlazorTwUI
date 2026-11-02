@@ -1,0 +1,899 @@
+@namespace BlazorTwUI.Components.UI
+@typeparam TItem
+@using System.Globalization
+@using System.Text.Json
+@using BlazorTwUI.Services
+@inject IJSRuntime JS
+
+@{
+    var view = Compute();
+    var visible = VisibleColumns.ToList();
+    var lead = (DetailTemplate is not null ? 1 : 0) + (Selectable ? 1 : 0);
+    var colCount = lead + visible.Count + (ActionsTemplate is not null ? 1 : 0) + (HasEditable ? 1 : 0);
+    var multiSort = _sorts.Count > 1;
+}
+
+<div class="w-full space-y-3.5 @Class" data-testid="grid">
+    <!-- Hidden Declarative Column Collector -->
+    <CascadingValue Value="this" IsFixed="true">
+        @Columns
+    </CascadingValue>
+
+    <!-- Top Grid Toolbar: Search, Column Filter Toggle, Grouping, Column Chooser, Export, Batch Actions & Page Size -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2 flex-1">
+            @if (ShowGlobalSearch)
+            {
+                <div class="relative flex-1 min-w-[12rem] max-w-md">
+                    <span class="absolute inset-y-0 start-0 ps-3 flex items-center pointer-events-none text-slate-500" aria-hidden="true">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                    </span>
+                    <input type="search" value="@_searchQuery" @oninput="HandleGlobalSearchInput" placeholder="@SearchPlaceholder" aria-label="Search all records" data-testid="grid-search"
+                           class="w-full ps-9 pe-8 py-2 rounded-xl text-xs sm:text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" />
+                </div>
+            }
+
+            @if (AllowColumnFiltering)
+            {
+                <button type="button" @onclick="ToggleColumnFilters" aria-pressed="@_showColumnFilters.ToString().ToLowerInvariant()" title="Toggle per-column filters" data-testid="grid-filter-toggle"
+                        class="px-3 min-h-[38px] rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 @(_showColumnFilters ? "bg-brand-50 dark:bg-brand-950/40 border-brand-500 text-brand-800 dark:text-brand-300" : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300")">
+                    <span>Filters</span>
+                    @if (ActiveFilterCount > 0)
+                    {
+                        <span class="w-4 h-4 rounded-full bg-brand-700 text-white text-[10px] flex items-center justify-center font-bold">@ActiveFilterCount</span>
+                    }
+                </button>
+            }
+
+            @if (AllowGrouping)
+            {
+                <label class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-300">
+                    Group by
+                    <select value="@(_groupBy?.Title ?? "")" @onchange="HandleGroupChange" data-testid="grid-group-by"
+                            class="min-h-[38px] px-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                        <option value="">None</option>
+                        @foreach (var c in _columns.Where(c => c.Groupable))
+                        {
+                            <option value="@c.Title">@c.Title</option>
+                        }
+                    </select>
+                </label>
+            }
+
+            @if (AllowColumnChooser)
+            {
+                <div class="relative">
+                    <button type="button" @onclick="() => _chooserOpen = !_chooserOpen" aria-haspopup="true" aria-expanded="@_chooserOpen.ToString().ToLowerInvariant()" data-testid="grid-columns-button"
+                            class="px-3 min-h-[38px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-800 dark:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Columns</button>
+                    @if (_chooserOpen)
+                    {
+                        <div class="absolute start-0 top-full mt-1 z-30 min-w-[12rem] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg p-2" role="group" aria-label="Visible columns" data-testid="grid-columns-menu">
+                            @foreach (var c in _columns)
+                            {
+                                var col = c;
+                                <label class="flex items-center gap-2 px-2 min-h-[32px] rounded-lg text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                    <input type="checkbox" checked="@col.Visible" disabled="@(!col.Hideable || (col.Visible && VisibleColumns.Count() == 1))" @onchange="() => ToggleColumn(col)" data-testid="grid-column-toggle" data-col="@col.Title"
+                                           class="rounded border-slate-400 text-brand-600 focus:ring-brand-500" />
+                                    @col.Title
+                                </label>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (AllowExport)
+            {
+                <button type="button" @onclick="ExportAsync" data-testid="grid-export"
+                        class="px-3 min-h-[38px] rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-800 dark:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Export CSV</button>
+            }
+
+            @if (HasAnyActiveFilter)
+            {
+                <button type="button" @onclick="ResetAllFilters" data-testid="grid-reset"
+                        class="text-xs text-rose-700 dark:text-rose-400 font-semibold underline px-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Reset</button>
+            }
+        </div>
+
+        <!-- Active Batch Actions Toolbar (Visible when rows are selected) -->
+        @if (Selectable && _selectedItems.Count > 0)
+        {
+            <div class="flex items-center gap-2 p-1.5 px-3 rounded-xl bg-brand-50 dark:bg-brand-950/40 border border-brand-500/30 text-brand-800 dark:text-brand-300 text-xs font-semibold shadow-sm" role="status">
+                <span data-testid="grid-selected-count">@_selectedItems.Count selected</span>
+                <div class="h-3.5 w-px bg-brand-300 dark:bg-brand-700 mx-1"></div>
+                @if (BatchActionsTemplate is not null)
+                {
+                    @BatchActionsTemplate(_selectedItems.ToList())
+                }
+                <button type="button" @onclick="DeselectAll" class="text-[11px] underline hover:text-brand-900 dark:hover:text-white ms-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Clear</button>
+            </div>
+        }
+
+        <!-- Results Counter & Page Size Selector -->
+        <div class="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300 self-end lg:self-auto shrink-0">
+            <span data-testid="grid-range" role="status">Showing @(view.Total == 0 ? 0 : Math.Min((view.PageNumber - 1) * PageSize + 1, view.Total)) - @Math.Min(view.PageNumber * PageSize, view.Total) of @view.Total</span>
+
+            @if (ShowPageSizeSelector)
+            {
+                <label class="flex items-center gap-1.5">
+                    <span class="hidden sm:inline">Rows:</span>
+                    <select value="@PageSize" @onchange="HandlePageSizeChange" data-testid="grid-page-size"
+                            class="px-2 py-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-300 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                        @foreach (var size in PageSizeOptions)
+                        {
+                            <option value="@size">@size</option>
+                        }
+                    </select>
+                </label>
+            }
+        </div>
+    </div>
+
+    <!-- Desktop / Tablet Table View (hidden on mobile, visible on md+) -->
+    <div class="hidden md:block overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
+        <div class="overflow-auto" style="@(MaxHeight is null ? null : $"max-height:{MaxHeight}")">
+            <table class="w-full text-left text-sm text-slate-700 dark:text-slate-300" data-testid="grid-table">
+                <caption class="sr-only">@Label</caption>
+                <thead class="bg-slate-50 dark:bg-slate-950 text-xs uppercase font-bold text-slate-800 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 select-none @(StickyHeader || MaxHeight is not null ? "sticky top-0 z-10" : "")">
+                    <tr>
+                        @if (DetailTemplate is not null)
+                        {
+                            <th scope="col" class="w-10 px-2 py-3.5"><span class="sr-only">Expand row</span></th>
+                        }
+                        @if (Selectable)
+                        {
+                            <th scope="col" class="w-10 px-4 py-3.5 text-center">
+                                <input type="checkbox" checked="@IsAllPageSelected(view)" @onchange="ToggleSelectAllCurrentPage" aria-label="Select all rows on this page" data-testid="grid-select-all"
+                                       class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer" />
+                            </th>
+                        }
+
+                        @foreach (var col in visible)
+                        {
+                            var sortIdx = _sorts.FindIndex(s => s.Col == col);
+                            var isSorted = sortIdx >= 0;
+                            <th scope="col" aria-sort="@(isSorted ? (_sorts[sortIdx].Asc ? "ascending" : "descending") : (col.Sortable ? "none" : null))" data-col="@col.Title"
+                                class="px-5 py-3.5 bg-slate-50 dark:bg-slate-950 @(col.Frozen ? "sticky start-0 z-[1]" : "") @col.HeaderClass" style="@col.BuildWidthStyle()">
+                                <div class="flex items-center gap-1.5 @GetAlignClass(col.Align)">
+                                    @if (col.Sortable)
+                                    {
+                                        <button type="button" @onclick="e => HandleSort(col, e.ShiftKey)" title="Sort by @col.Title. Hold Shift to add a second sort." data-testid="grid-sort" data-col="@col.Title"
+                                                class="inline-flex items-center gap-1.5 uppercase font-bold rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                                            @if (col.HeaderTemplate is not null) { @col.HeaderTemplate } else { <span class="truncate">@col.Title</span> }
+                                            <span aria-hidden="true" class="text-xs shrink-0 @(isSorted ? "text-brand-700 dark:text-brand-400 font-bold" : "text-slate-500 dark:text-slate-500")">
+                                                @(isSorted ? (_sorts[sortIdx].Asc ? "▲" : "▼") : "↕")@(isSorted && multiSort ? (sortIdx + 1).ToString() : "")
+                                            </span>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        @if (col.HeaderTemplate is not null) { @col.HeaderTemplate } else { <span class="truncate">@col.Title</span> }
+                                    }
+                                </div>
+                            </th>
+                        }
+
+                        @if (ActionsTemplate is not null)
+                        {
+                            <th scope="col" class="px-5 py-3.5 text-end w-44">@ActionsTitle</th>
+                        }
+                        @if (HasEditable)
+                        {
+                            <th scope="col" class="px-3 py-3.5 text-end w-36"><span class="sr-only">Edit</span></th>
+                        }
+                    </tr>
+
+                    <!-- Optional Per-Column Filter Row -->
+                    @if (AllowColumnFiltering && _showColumnFilters)
+                    {
+                        <tr class="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 font-normal normal-case" data-testid="grid-filter-row">
+                            @if (DetailTemplate is not null) { <th class="w-10"></th> }
+                            @if (Selectable) { <th class="w-10 px-4 py-2"></th> }
+
+                            @foreach (var col in visible)
+                            {
+                                <th class="px-3 py-2" style="@col.BuildWidthStyle()">
+                                    @if (col.Filterable)
+                                    {
+                                        @if (col.FilterTemplate is not null)
+                                        {
+                                            @col.FilterTemplate
+                                        }
+                                        else
+                                        {
+                                            <div class="relative">
+                                                <input type="text" value="@col.CurrentFilterValue" @oninput="e => HandleColumnFilterInput(col, e)" aria-label="Filter @col.Title" data-testid="grid-col-filter" data-col="@col.Title"
+                                                       placeholder="@(col.FilterPlaceholder ?? $"Filter {col.Title}...")"
+                                                       class="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-200 placeholder-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" />
+                                            </div>
+                                        }
+                                    }
+                                </th>
+                            }
+
+                            @if (ActionsTemplate is not null)
+                            {
+                                <th class="px-5 py-2 text-end">
+                                    @if (ActiveFilterCount > 0)
+                                    {
+                                        <button type="button" @onclick="ResetColumnFilters" class="text-[11px] text-slate-700 dark:text-slate-300 hover:text-rose-700 font-medium underline">Clear Filters</button>
+                                    }
+                                </th>
+                            }
+                            @if (HasEditable) { <th></th> }
+                        </tr>
+                    }
+                </thead>
+
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    @if (view.Page.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="@colCount" class="py-12 text-center text-slate-600 dark:text-slate-400" data-testid="grid-empty">
+                                <div class="flex flex-col items-center justify-center gap-2">
+                                    <p>@EmptyText</p>
+                                    @if (HasAnyActiveFilter)
+                                    {
+                                        <button type="button" @onclick="ResetAllFilters" class="text-xs text-brand-800 dark:text-brand-400 font-semibold underline mt-1">Reset search &amp; filters</button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        string? lastGroup = null;
+                        var hasLast = false;
+                        var rowNo = (view.PageNumber - 1) * PageSize;
+
+                        @foreach (var item in view.Page)
+                        {
+                            rowNo++;
+                            string? groupKey = null;
+                            if (_groupBy is not null)
+                            {
+                                groupKey = GroupKeyOf(item);
+                                if (!hasLast || groupKey != lastGroup)
+                                {
+                                    hasLast = true;
+                                    lastGroup = groupKey;
+                                    var g = groupKey;
+                                    var members = view.Groups![g];
+                                    var collapsed = _collapsed.Contains(g);
+                                    <tr class="bg-slate-100 dark:bg-slate-800/70" data-testid="grid-group" data-group="@g" data-collapsed="@collapsed.ToString().ToLowerInvariant()">
+                                        <td colspan="@colCount" class="px-4 py-2">
+                                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                                                <button type="button" @onclick="() => ToggleGroup(g)" aria-expanded="@((!collapsed).ToString().ToLowerInvariant())" data-testid="grid-group-toggle"
+                                                        class="inline-flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                                                    <span aria-hidden="true" class="inline-block transition-transform motion-reduce:transition-none @(collapsed ? "rtl:rotate-180" : "rotate-90 rtl:-rotate-90")">›</span>
+                                                    @_groupBy.Title: @g <span class="font-normal text-slate-700 dark:text-slate-300">(@members.Count)</span>
+                                                </button>
+                                                @foreach (var sc in visible.Where(c => c.Summary != GridSummary.None && c != _groupBy))
+                                                {
+                                                    <span class="text-xs text-slate-800 dark:text-slate-200" data-testid="grid-group-summary">@sc.Title @SummaryText(sc, members)</span>
+                                                }
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                                if (_collapsed.Contains(groupKey)) { continue; }
+                            }
+
+                            var isSelected = _selectedItems.Contains(item);
+                            var isEditing = IsEditing(item);
+                            var expanded = _expanded.Contains(item);
+                            var detailId = $"{_id}-detail-{rowNo}";
+                            <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 @RowBackground(item, isSelected)"
+                                aria-selected="@(Selectable ? isSelected.ToString().ToLowerInvariant() : null)" data-testid="grid-row" data-row="@rowNo">
+                                @if (DetailTemplate is not null)
+                                {
+                                    <td class="w-10 px-2 py-3.5 text-center">
+                                        <button type="button" @onclick="() => ToggleDetail(item)" aria-expanded="@expanded.ToString().ToLowerInvariant()" aria-controls="@detailId" aria-label="@(expanded ? "Collapse" : "Expand") row @rowNo" data-testid="grid-detail-toggle"
+                                                class="w-7 h-7 rounded text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                                            <span aria-hidden="true" class="inline-block transition-transform motion-reduce:transition-none @(expanded ? "rotate-90 rtl:-rotate-90" : "rtl:rotate-180")">›</span>
+                                        </button>
+                                    </td>
+                                }
+                                @if (Selectable)
+                                {
+                                    <td class="w-10 px-4 py-3.5 text-center">
+                                        <input type="checkbox" checked="@isSelected" @onchange="() => ToggleItemSelection(item)" aria-label="Select row @rowNo" data-testid="grid-select-row"
+                                               class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer" />
+                                    </td>
+                                }
+
+                                @foreach (var col in visible)
+                                {
+                                    <td class="px-5 py-3.5 @GetAlignClass(col.Align) @(col.Frozen ? "sticky start-0 z-[1] bg-inherit" : "") @col.CellClass @col.CellClassSelector?.Invoke(item)" style="@col.BuildWidthStyle()" data-col="@col.Title">
+                                        @if (isEditing && col.Editable)
+                                        {
+                                            var eid = $"{_id}-e{_columns.IndexOf(col)}";
+                                            <label class="sr-only" for="@eid">@col.Title</label>
+                                            <input id="@eid" type="@col.InputType" value="@_draft.GetValueOrDefault(col)" @oninput="e => _draft[col] = e.Value?.ToString() ?? string.Empty" @onkeydown="e => OnEditKeyAsync(e, item)"
+                                                   aria-invalid="@(_errors.ContainsKey(col) ? "true" : null)" aria-describedby="@(_errors.ContainsKey(col) ? eid + "-err" : null)" data-testid="grid-edit-input" data-col="@col.Title"
+                                                   class="w-full px-2 py-1 rounded-lg border text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 @(_errors.ContainsKey(col) ? "border-red-600 focus-visible:ring-red-500" : "border-slate-300 dark:border-slate-600 focus-visible:ring-brand-500")" />
+                                            @if (_errors.TryGetValue(col, out var err))
+                                            {
+                                                <p id="@(eid + "-err")" role="alert" class="mt-1 text-xs font-semibold text-red-700 dark:text-red-300" data-testid="grid-edit-error">@err</p>
+                                            }
+                                        }
+                                        else if (col.CellTemplate is not null)
+                                        {
+                                            @col.CellTemplate(item)
+                                        }
+                                        else if (col.Property is not null)
+                                        {
+                                            @col.Property(item)
+                                        }
+                                    </td>
+                                }
+
+                                @if (ActionsTemplate is not null)
+                                {
+                                    <td class="px-5 py-3.5 text-end whitespace-nowrap">
+                                        <div class="inline-flex items-center gap-1.5 justify-end">@ActionsTemplate(item)</div>
+                                    </td>
+                                }
+                                @if (HasEditable)
+                                {
+                                    <td class="px-3 py-3.5 text-end whitespace-nowrap">
+                                        @if (isEditing)
+                                        {
+                                            <button type="button" @onclick="() => SaveEditAsync(item)" data-testid="grid-save" class="@EditBtn bg-brand-700 text-white hover:bg-brand-600">Save</button>
+                                            <button type="button" @onclick="CancelEdit" data-testid="grid-cancel" class="@EditBtn border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" @onclick="() => StartEdit(item)" disabled="@(_isEditing)" aria-label="Edit row @rowNo" data-testid="grid-edit"
+                                                    class="@EditBtn border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50">Edit</button>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                            @if (DetailTemplate is not null && expanded)
+                            {
+                                <tr id="@detailId" class="bg-slate-50 dark:bg-slate-950/50" data-testid="grid-detail">
+                                    <td colspan="@colCount" class="px-6 py-4">@DetailTemplate(item)</td>
+                                </tr>
+                            }
+                        }
+                    }
+                </tbody>
+
+                @if (visible.Any(c => c.Summary != GridSummary.None) && view.Total > 0)
+                {
+                    <tfoot class="bg-slate-50 dark:bg-slate-950 border-t-2 border-slate-200 dark:border-slate-700 font-bold text-slate-900 dark:text-slate-100" data-testid="grid-footer">
+                        <tr>
+                            @if (lead > 0)
+                            {
+                                <th scope="row" colspan="@lead" class="px-4 py-3 text-start text-xs uppercase">Totals</th>
+                            }
+                            @for (var i = 0; i < visible.Count; i++)
+                            {
+                                var col = visible[i];
+                                var text = col.Summary == GridSummary.None ? (i == 0 && lead == 0 ? "Totals" : "") : SummaryText(col, view.Filtered);
+                                <td class="px-5 py-3 @GetAlignClass(col.Align)" data-testid="grid-summary" data-col="@col.Title">@text</td>
+                            }
+                            @if (ActionsTemplate is not null) { <td></td> }
+                            @if (HasEditable) { <td></td> }
+                        </tr>
+                    </tfoot>
+                }
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile Stacked Card View (visible on mobile, hidden on md+) -->
+    <div class="grid grid-cols-1 gap-3 md:hidden">
+        @if (view.Page.Count == 0)
+        {
+            <div class="p-8 text-center text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                <p>@EmptyText</p>
+                @if (HasAnyActiveFilter)
+                {
+                    <button type="button" @onclick="ResetAllFilters" class="text-xs text-brand-800 font-semibold underline mt-2">Reset filters</button>
+                }
+            </div>
+        }
+        else
+        {
+            @foreach (var item in view.Page)
+            {
+                var isSelected = _selectedItems.Contains(item);
+                <div class="p-4 rounded-2xl border transition-all bg-white dark:bg-slate-900 shadow-sm @(isSelected ? "border-brand-500 ring-2 ring-brand-500/20" : "border-slate-200 dark:border-slate-800") @RowClassSelector?.Invoke(item)">
+                    @if (MobileCardTemplate is not null)
+                    {
+                        @MobileCardTemplate(item)
+                    }
+                    else
+                    {
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                                @if (Selectable)
+                                {
+                                    <label class="flex items-center gap-2">
+                                        <input type="checkbox" checked="@isSelected" @onchange="() => ToggleItemSelection(item)" class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer" />
+                                        <span class="text-xs font-bold text-slate-900 dark:text-slate-200">Select</span>
+                                    </label>
+                                }
+                                @if (visible.Count > 0)
+                                {
+                                    var firstCol = visible[0];
+                                    <div class="font-bold text-sm text-slate-900 dark:text-white truncate">
+                                        @if (firstCol.CellTemplate is not null) { @firstCol.CellTemplate(item) }
+                                        else if (firstCol.Property is not null) { @firstCol.Property(item) }
+                                    </div>
+                                }
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                @foreach (var col in visible.Skip(1))
+                                {
+                                    <div class="min-w-0">
+                                        <span class="text-slate-700 dark:text-slate-400 uppercase font-semibold text-[10px] block">@col.Title</span>
+                                        <div class="text-slate-900 dark:text-slate-200 font-medium mt-0.5 break-words">
+                                            @if (col.CellTemplate is not null) { @col.CellTemplate(item) }
+                                            else if (col.Property is not null) { @col.Property(item) }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    @if (ActionsTemplate is not null)
+                    {
+                        <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">@ActionsTemplate(item)</div>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Pagination Controls -->
+    @if (ShowPagination && view.Pages > 1)
+    {
+        <nav aria-label="Pagination" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+            <span class="text-xs text-slate-700 dark:text-slate-300" data-testid="grid-page-label">Page @view.PageNumber of @view.Pages</span>
+            <div class="flex items-center gap-1">
+                <button type="button" disabled="@(view.PageNumber <= 1)" @onclick="() => SetPage(view.PageNumber - 1)" data-testid="grid-prev"
+                        class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Previous</button>
+                @for (int i = 1; i <= view.Pages; i++)
+                {
+                    var p = i;
+                    if (view.Pages <= 7 || p == 1 || p == view.Pages || Math.Abs(p - view.PageNumber) <= 1)
+                    {
+                        <button type="button" @onclick="() => SetPage(p)" aria-current="@(p == view.PageNumber ? "page" : null)" aria-label="Page @p" data-testid="grid-page"
+                                class="w-8 h-8 rounded-xl text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 @(p == view.PageNumber ? "bg-brand-700 text-white shadow-sm" : "text-slate-800 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800")">@p</button>
+                    }
+                    else if (p == 2 || p == view.Pages - 1)
+                    {
+                        <span class="w-6 text-center text-slate-600 text-xs select-none" aria-hidden="true">...</span>
+                    }
+                }
+                <button type="button" disabled="@(view.PageNumber >= view.Pages)" @onclick="() => SetPage(view.PageNumber + 1)" data-testid="grid-next"
+                        class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-800 dark:text-slate-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Next</button>
+            </div>
+        </nav>
+    }
+</div>
+
+@code {
+    private const string EditBtn = "px-3 min-h-[32px] rounded-lg text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ms-1";
+
+    [Parameter] public IEnumerable<TItem> Items { get; set; } = Enumerable.Empty<TItem>();
+    [Parameter] public RenderFragment? Columns { get; set; }
+    [Parameter] public RenderFragment<TItem>? ActionsTemplate { get; set; }
+    [Parameter] public RenderFragment<TItem>? MobileCardTemplate { get; set; }
+    [Parameter] public RenderFragment<IReadOnlyList<TItem>>? BatchActionsTemplate { get; set; }
+    [Parameter] public string ActionsTitle { get; set; } = "Actions";
+    [Parameter] public string EmptyText { get; set; } = "No records found matching your criteria.";
+    [Parameter] public bool Selectable { get; set; }
+    [Parameter] public bool ShowGlobalSearch { get; set; } = true;
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search all records...";
+    [Parameter] public Func<TItem, string, bool>? SearchPredicate { get; set; }
+    [Parameter] public bool AllowColumnFiltering { get; set; } = true;
+    [Parameter] public bool ShowPagination { get; set; } = true;
+    [Parameter] public int PageSize { get; set; } = 5;
+    [Parameter] public int[] PageSizeOptions { get; set; } = new[] { 5, 10, 20, 50 };
+    [Parameter] public bool ShowPageSizeSelector { get; set; } = true;
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public EventCallback<int> CurrentPageChanged { get; set; }
+    [Parameter] public EventCallback<IReadOnlyList<TItem>> SelectionChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>Accessible name of the table.</summary>
+    [Parameter] public string Label { get; set; } = "Data grid";
+    /// <summary>Offer a "Group by" list. Group headers show a count and the columns' summaries.</summary>
+    [Parameter] public bool AllowGrouping { get; set; }
+    /// <summary>Title of the column to group by initially.</summary>
+    [Parameter] public string? GroupBy { get; set; }
+    /// <summary>Offer a Columns menu to show and hide columns.</summary>
+    [Parameter] public bool AllowColumnChooser { get; set; }
+    /// <summary>Offer Export CSV (all filtered rows, visible columns).</summary>
+    [Parameter] public bool AllowExport { get; set; }
+    [Parameter] public string ExportFileName { get; set; } = "export.csv";
+    /// <summary>Expandable detail row under each record (master-detail).</summary>
+    [Parameter] public RenderFragment<TItem>? DetailTemplate { get; set; }
+    /// <summary>Conditional formatting: extra classes for a whole row.</summary>
+    [Parameter] public Func<TItem, string?>? RowClassSelector { get; set; }
+    /// <summary>Keep the header in view; combine with <see cref="MaxHeight"/>.</summary>
+    [Parameter] public bool StickyHeader { get; set; }
+    /// <summary>CSS max-height for the table area, for example "24rem". The body scrolls and the header stays.</summary>
+    [Parameter] public string? MaxHeight { get; set; }
+    /// <summary>Remember sort, search, filters, grouping, page size and visible columns in localStorage under this key.</summary>
+    [Parameter] public string? StateKey { get; set; }
+    /// <summary>Fired after an edited row passed validation and its values were applied to the item.</summary>
+    [Parameter] public EventCallback<TItem> RowSaved { get; set; }
+
+    private sealed record View(List<TItem> Filtered, List<TItem> Page, int Total, int Pages, int PageNumber, Dictionary<string, List<TItem>>? Groups);
+    private sealed class SavedState
+    {
+        public string? Search { get; set; }
+        public List<SavedSort> Sorts { get; set; } = new();
+        public string? Group { get; set; }
+        public Dictionary<string, string> Filters { get; set; } = new();
+        public int PageSize { get; set; }
+        public List<string> Hidden { get; set; } = new();
+    }
+    private sealed record SavedSort(string C, bool A);
+
+    private readonly string _id = "grid-" + Guid.NewGuid().ToString("N")[..6];
+    private readonly List<TwDataGridColumn<TItem>> _columns = new();
+    private readonly HashSet<TItem> _selectedItems = new();
+    private readonly List<(TwDataGridColumn<TItem> Col, bool Asc)> _sorts = new();
+    private readonly HashSet<string> _collapsed = new();
+    private readonly HashSet<TItem> _expanded = new();
+    private readonly Dictionary<TwDataGridColumn<TItem>, string> _draft = new();
+    private readonly Dictionary<TwDataGridColumn<TItem>, string> _errors = new();
+    private TwDataGridColumn<TItem>? _groupBy;
+    private TItem? _editing;
+    private bool _isEditing;
+    private string _searchQuery = "";
+    private bool _showColumnFilters = true;
+    private bool _chooserOpen;
+    private bool _groupSeeded;
+    private bool _stateLoaded;
+
+    private IEnumerable<TwDataGridColumn<TItem>> VisibleColumns => _columns.Where(c => c.Visible);
+    private bool HasEditable => _columns.Any(c => c.Editable);
+
+    public void AddColumn(TwDataGridColumn<TItem> column)
+    {
+        if (!_columns.Contains(column))
+        {
+            _columns.Add(column);
+            if (!_groupSeeded && GroupBy is not null && column.Title == GroupBy) { _groupBy = column; _groupSeeded = true; }
+            StateHasChanged();
+        }
+    }
+
+    public void RemoveColumn(TwDataGridColumn<TItem> column)
+    {
+        _columns.Remove(column);
+        _sorts.RemoveAll(s => s.Col == column);
+        if (_groupBy == column) _groupBy = null;
+        StateHasChanged();
+    }
+
+    private int ActiveFilterCount => _columns.Count(c => !string.IsNullOrWhiteSpace(c.CurrentFilterValue));
+    private bool HasAnyActiveFilter => !string.IsNullOrWhiteSpace(_searchQuery) || ActiveFilterCount > 0;
+
+    private string GroupKeyOf(TItem item) => _groupBy!.ValueOf(item)?.ToString() is { Length: > 0 } s ? s : "(none)";
+
+    private sealed class NaturalComparer : IComparer<object?>
+    {
+        public int Compare(object? a, object? b)
+        {
+            if (a is null) return b is null ? 0 : -1;
+            if (b is null) return 1;
+            if (a is IComparable ca && a.GetType() == b.GetType()) return ca.CompareTo(b);
+            if (GridAggregate.TryNumber(a, out var x) && GridAggregate.TryNumber(b, out var y)) return x.CompareTo(y);
+            return string.Compare(a.ToString(), b.ToString(), StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private View Compute()
+    {
+        IEnumerable<TItem> data = Items ?? Enumerable.Empty<TItem>();
+
+        if (!string.IsNullOrWhiteSpace(_searchQuery))
+        {
+            if (SearchPredicate is not null)
+            {
+                data = data.Where(x => SearchPredicate(x, _searchQuery));
+            }
+            else
+            {
+                var q = _searchQuery.Trim().ToLowerInvariant();
+                data = data.Where(item => _columns.Any(col => col.ValueOf(item)?.ToString()?.ToLowerInvariant().Contains(q) == true));
+            }
+        }
+
+        foreach (var col in _columns.Where(c => !string.IsNullOrWhiteSpace(c.CurrentFilterValue)))
+        {
+            var f = col.CurrentFilterValue.Trim().ToLowerInvariant();
+            data = data.Where(item => col.ValueOf(item)?.ToString()?.ToLowerInvariant().Contains(f) == true);
+        }
+
+        var cmp = new NaturalComparer();
+        IOrderedEnumerable<TItem>? ordered = null;
+        if (_groupBy is not null) ordered = data.OrderBy(i => GroupKeyOf(i), StringComparer.OrdinalIgnoreCase);
+        foreach (var (col, asc) in _sorts)
+        {
+            Func<TItem, object?> key = col.SortBy ?? col.Property ?? (_ => null);
+            ordered = ordered is null
+                ? (asc ? data.OrderBy(key, cmp) : data.OrderByDescending(key, cmp))
+                : (asc ? ordered.ThenBy(key, cmp) : ordered.ThenByDescending(key, cmp));
+        }
+
+        var filtered = (ordered ?? data).ToList();
+        var total = filtered.Count;
+        var pages = Math.Max(1, (int)Math.Ceiling((double)total / PageSize));
+        var pageNo = Math.Clamp(CurrentPage, 1, pages);
+        var page = filtered.Skip((pageNo - 1) * PageSize).Take(PageSize).ToList();
+        var groups = _groupBy is null ? null : filtered.GroupBy(GroupKeyOf).ToDictionary(g => g.Key, g => g.ToList());
+        return new View(filtered, page, total, pages, pageNo, groups);
+    }
+
+    // A frozen cell must be opaque, so every row needs a background. The base is only added when nothing else sets one,
+    // otherwise it would fight the caller's highlight in the generated CSS.
+    private string RowBackground(TItem item, bool selected)
+    {
+        var custom = RowClassSelector?.Invoke(item);
+        if (selected) return "bg-brand-50 dark:bg-brand-950 " + custom;
+        return string.IsNullOrWhiteSpace(custom) || !custom.Contains("bg-", StringComparison.Ordinal) ? "bg-white dark:bg-slate-900 " + custom : custom;
+    }
+
+    private bool IsAllPageSelected(View v) => v.Page.Count > 0 && v.Page.All(i => _selectedItems.Contains(i));
+
+    private string SummaryText(TwDataGridColumn<TItem> col, IEnumerable<TItem> items)
+    {
+        var value = GridAggregate.Compute(col.Summary, items.Select(col.ValueOf));
+        return value is null ? "" : $"{GridAggregate.Label(col.Summary)} {GridAggregate.Format(value.Value, col.SummaryFormat)}";
+    }
+
+    // ---- sorting, filtering, paging ----
+
+    private void HandleSort(TwDataGridColumn<TItem> col, bool additive)
+    {
+        if (!col.Sortable) return;
+        var idx = _sorts.FindIndex(s => s.Col == col);
+
+        if (additive)
+        {
+            if (idx < 0) _sorts.Add((col, true));
+            else if (_sorts[idx].Asc) _sorts[idx] = (col, false);
+            else _sorts.RemoveAt(idx);
+        }
+        else if (idx >= 0 && _sorts.Count == 1)
+        {
+            if (_sorts[0].Asc) _sorts[0] = (col, false);
+            else _sorts.Clear();
+        }
+        else
+        {
+            _sorts.Clear();
+            _sorts.Add((col, true));
+        }
+        Persist();
+    }
+
+    private void HandleGlobalSearchInput(ChangeEventArgs e)
+    {
+        _searchQuery = e.Value?.ToString() ?? "";
+        CurrentPage = 1;
+        Persist();
+    }
+
+    private void HandleColumnFilterInput(TwDataGridColumn<TItem> col, ChangeEventArgs e)
+    {
+        col.CurrentFilterValue = e.Value?.ToString() ?? "";
+        CurrentPage = 1;
+        Persist();
+    }
+
+    private void ToggleColumnFilters() => _showColumnFilters = !_showColumnFilters;
+
+    private void ResetColumnFilters()
+    {
+        foreach (var col in _columns) col.CurrentFilterValue = "";
+        CurrentPage = 1;
+        Persist();
+    }
+
+    private void ResetAllFilters()
+    {
+        _searchQuery = "";
+        ResetColumnFilters();
+    }
+
+    private void HandlePageSizeChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var size))
+        {
+            PageSize = size;
+            CurrentPage = 1;
+            Persist();
+        }
+    }
+
+    private async Task SetPage(int page)
+    {
+        CurrentPage = Math.Clamp(page, 1, Compute().Pages);
+        await CurrentPageChanged.InvokeAsync(CurrentPage);
+    }
+
+    // ---- grouping, columns, detail ----
+
+    private void HandleGroupChange(ChangeEventArgs e)
+    {
+        var title = e.Value?.ToString();
+        _groupBy = string.IsNullOrEmpty(title) ? null : _columns.FirstOrDefault(c => c.Title == title);
+        _collapsed.Clear();
+        CurrentPage = 1;
+        Persist();
+    }
+
+    private void ToggleGroup(string key)
+    {
+        if (!_collapsed.Remove(key)) _collapsed.Add(key);
+    }
+
+    private void ToggleColumn(TwDataGridColumn<TItem> col)
+    {
+        if (!col.Hideable) return;
+        if (col.Visible && VisibleColumns.Count() == 1) return; // never hide the last column
+        col.Visible = !col.Visible;
+        if (!col.Visible) _sorts.RemoveAll(s => s.Col == col);
+        Persist();
+    }
+
+    private void ToggleDetail(TItem item)
+    {
+        if (!_expanded.Remove(item)) _expanded.Add(item);
+    }
+
+    // ---- selection ----
+
+    private async Task ToggleItemSelection(TItem item)
+    {
+        if (!_selectedItems.Remove(item)) _selectedItems.Add(item);
+        await SelectionChanged.InvokeAsync(_selectedItems.ToList());
+    }
+
+    private async Task ToggleSelectAllCurrentPage(ChangeEventArgs e)
+    {
+        var isChecked = (bool)(e.Value ?? false);
+        foreach (var item in Compute().Page)
+        {
+            if (isChecked) _selectedItems.Add(item);
+            else _selectedItems.Remove(item);
+        }
+        await SelectionChanged.InvokeAsync(_selectedItems.ToList());
+    }
+
+    private async Task DeselectAll()
+    {
+        _selectedItems.Clear();
+        await SelectionChanged.InvokeAsync(_selectedItems.ToList());
+    }
+
+    // ---- inline editing ----
+
+    private bool IsEditing(TItem item) => _isEditing && EqualityComparer<TItem>.Default.Equals(_editing, item);
+
+    private void StartEdit(TItem item)
+    {
+        _editing = item;
+        _isEditing = true;
+        _errors.Clear();
+        _draft.Clear();
+        foreach (var col in _columns.Where(c => c.Editable))
+            _draft[col] = col.EditText?.Invoke(item) ?? col.ValueOf(item)?.ToString() ?? "";
+    }
+
+    private void CancelEdit()
+    {
+        _isEditing = false;
+        _editing = default;
+        _draft.Clear();
+        _errors.Clear();
+    }
+
+    private async Task SaveEditAsync(TItem item)
+    {
+        _errors.Clear();
+        foreach (var col in _columns.Where(c => c.Editable))
+        {
+            if (col.Validate?.Invoke(_draft.GetValueOrDefault(col) ?? "") is { Length: > 0 } message) _errors[col] = message;
+        }
+        if (_errors.Count > 0) return; // stay in edit mode and show the messages
+
+        foreach (var col in _columns.Where(c => c.Editable))
+            col.EditValue?.Invoke(item, _draft.GetValueOrDefault(col) ?? "");
+
+        CancelEdit();
+        await RowSaved.InvokeAsync(item);
+    }
+
+    private async Task OnEditKeyAsync(KeyboardEventArgs e, TItem item)
+    {
+        if (e.Key == "Enter") await SaveEditAsync(item);
+        else if (e.Key == "Escape") CancelEdit();
+    }
+
+    // ---- export ----
+
+    /// <summary>CSV of every filtered row (all pages) and the visible columns. Cells that could run as spreadsheet formulas are neutralised.</summary>
+    public string BuildCsv()
+    {
+        var cols = VisibleColumns.ToList();
+        var rows = Compute().Filtered.Select(item => (IReadOnlyList<string?>)cols
+            .Select(c => c.ValueOf(item) is { } v ? Convert.ToString(v, CultureInfo.InvariantCulture) : "").ToList());
+        return GridCsv.Build(cols.Select(c => c.Title).ToList(), rows);
+    }
+
+    public async Task ExportAsync()
+    {
+        try { await JS.InvokeVoidAsync("pdfHelper.downloadText", ExportFileName, "text/csv;charset=utf-8", "﻿" + BuildCsv()); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
+    // ---- saved state ----
+
+    private string? StorageKey => StateKey is null ? null : "btui-grid:" + StateKey;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _stateLoaded || StorageKey is null) return;
+        _stateLoaded = true;
+        try
+        {
+            var json = await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+            if (string.IsNullOrWhiteSpace(json)) return;
+            var s = JsonSerializer.Deserialize<SavedState>(json);
+            if (s is null) return;
+
+            _searchQuery = s.Search ?? "";
+            _sorts.Clear();
+            foreach (var x in s.Sorts)
+                if (_columns.FirstOrDefault(c => c.Title == x.C) is { } c) _sorts.Add((c, x.A));
+            _groupBy = s.Group is null ? null : _columns.FirstOrDefault(c => c.Title == s.Group);
+            foreach (var c in _columns)
+            {
+                c.CurrentFilterValue = s.Filters.GetValueOrDefault(c.Title, "");
+                c.Visible = !s.Hidden.Contains(c.Title) || !c.Hideable;
+            }
+            if (s.PageSize > 0) PageSize = s.PageSize;
+            StateHasChanged();
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JsonException) { }
+    }
+
+    private void Persist()
+    {
+        if (StorageKey is null) return;
+        _ = PersistAsync();
+    }
+
+    private async Task PersistAsync()
+    {
+        var state = new SavedState
+        {
+            Search = _searchQuery,
+            Sorts = _sorts.Select(s => new SavedSort(s.Col.Title, s.Asc)).ToList(),
+            Group = _groupBy?.Title,
+            Filters = _columns.Where(c => !string.IsNullOrWhiteSpace(c.CurrentFilterValue)).ToDictionary(c => c.Title, c => c.CurrentFilterValue),
+            PageSize = PageSize,
+            Hidden = _columns.Where(c => !c.Visible).Select(c => c.Title).ToList()
+        };
+        try { await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, JsonSerializer.Serialize(state)); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+    }
+
+    private static string GetAlignClass(string align) => align.ToLowerInvariant() switch
+    {
+        "center" => "justify-center text-center",
+        "right" => "justify-end text-right",
+        _ => "justify-start text-left"
+    };
+}

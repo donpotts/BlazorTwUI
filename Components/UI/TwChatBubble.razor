@@ -1,0 +1,71 @@
+<div class="@TwMerge.Merge("flex items-end gap-2.5", IsEnd ? "flex-row-reverse" : "flex-row", Class)">
+    <!-- Avatar -->
+    <div class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center font-bold text-xs text-white shadow-xs @(IsEnd ? "bg-brand-600" : "bg-slate-700 dark:bg-slate-600")">
+        @Initials
+    </div>
+
+    <!-- Bubble Stack -->
+    <div class="flex flex-col max-w-[78%] sm:max-w-[70%] @(IsEnd ? "items-end" : "items-start")">
+        @if (!string.IsNullOrWhiteSpace(Sender) || !string.IsNullOrWhiteSpace(Timestamp))
+        {
+            <div class="flex items-center gap-1.5 mb-1 px-1 text-[11px]">
+                @if (!string.IsNullOrWhiteSpace(Sender))
+                {
+                    <span class="font-bold text-slate-700 dark:text-slate-300">@Sender</span>
+                }
+                @if (!string.IsNullOrWhiteSpace(Timestamp))
+                {
+                    <time class="text-slate-400 dark:text-slate-500 font-mono text-[10px]">@Timestamp</time>
+                }
+            </div>
+        }
+
+        <div class="px-4 py-2.5 text-xs sm:text-sm leading-relaxed shadow-xs @BubbleRadiusClass @BubbleColorClass">
+            @if (ChildContent is not null)
+            {
+                @ChildContent
+            }
+            else
+            {
+                @Message
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(FooterStatus))
+        {
+            <span class="mt-1 px-1 text-[10px] text-slate-400 dark:text-slate-500 font-medium">@FooterStatus</span>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Sender { get; set; }
+    [Parameter] public string Initials { get; set; } = "AI";
+    [Parameter] public string? Timestamp { get; set; }
+    [Parameter] public string? Message { get; set; }
+    [Parameter] public string? FooterStatus { get; set; }
+    [Parameter] public bool IsEnd { get; set; }
+    [Parameter] public SemanticVariant Variant { get; set; } = SemanticVariant.Default;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string BubbleRadiusClass => IsEnd
+        ? "rounded-2xl rounded-br-xs"
+        : "rounded-2xl rounded-bl-xs";
+
+    private string BubbleColorClass
+    {
+        get
+        {
+            if (Variant == SemanticVariant.Primary || (Variant == SemanticVariant.Default && IsEnd))
+                return "bg-brand-600 text-white";
+            if (Variant == SemanticVariant.Success)
+                return "bg-emerald-600 text-white";
+            if (Variant == SemanticVariant.Warning)
+                return "bg-amber-500 text-slate-950 font-medium";
+            if (Variant == SemanticVariant.Danger)
+                return "bg-rose-600 text-white";
+            return "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200/70 dark:border-slate-700/70";
+        }
+    }
+}

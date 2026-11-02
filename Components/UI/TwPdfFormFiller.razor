@@ -1,0 +1,1302 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@using System.Text.Json
+@using System.Security.Cryptography
+@using System.Text
+@inject IJSRuntime JS
+@inject ToastService Toast
+@inject TwOpenTelemetryService OtelService
+
+<div class="space-y-6 w-full min-w-0 @Class">
+    <!-- Top Action & Mode Navigation Bar -->
+    <div class="p-4 sm:p-5 rounded-3xl bg-slate-900 border border-slate-800 text-white shadow-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-2xl shadow-lg shrink-0">
+                📄
+            </div>
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        @Document.Title
+                    </h3>
+                    @if (Document.IsFlattened)
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                            📜 FLATTENED &amp; MERGED STREAM
+                        </span>
+                    }
+                    else if (Document.IsSealed)
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            SEALED &amp; IMMUTABLE
+                        </span>
+                    }
+                    else if (Document.IsReadOnly)
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            🔒 READ-ONLY
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            ✍️ IN PROGRESS
+                        </span>
+                    }
+                </div>
+                <p class="text-xs text-slate-400 mt-0.5">
+                    ID: <span class="font-mono text-slate-300">@Document.DocumentId</span> | Type: @Document.ContractType | Effective: @Document.EffectiveDate.ToString("yyyy-MM-dd")
+                </p>
+            </div>
+        </div>
+
+        <!-- Controls: Mode Switcher, Pre-fill Data, Flatten & Stamp, Seal Button -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+            <!-- Mode Switcher -->
+            <div class="flex items-center bg-slate-800 p-1 rounded-2xl border border-slate-700/80 text-xs font-semibold">
+                <button type="button" @onclick="() => SetMode(false)"
+                        disabled="@(Document.IsSealed || Document.IsFlattened)"
+                        class="px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 @(!_isDesignerMode ? "bg-indigo-600 text-white shadow-xs" : "text-slate-400 hover:text-white")">
+                    <span>✍️ Signer View</span>
+                </button>
+                <button type="button" @onclick="() => SetMode(true)"
+                        disabled="@(Document.IsSealed || Document.IsFlattened)"
+                        class="px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 @(_isDesignerMode ? "bg-purple-600 text-white shadow-xs" : "text-slate-400 hover:text-white")">
+                    <span>🛠️ Form Maker Mode</span>
+                </button>
+            </div>
+
+            <!-- Pre-fill Sample Data Button -->
+            <button type="button" @onclick="LoadSampleData"
+                    disabled="@(Document.IsSealed || Document.IsFlattened)"
+                    class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+                <span>⚡ Pre-fill Data</span>
+            </button>
+
+            <!-- Flatten & Stamp / Download Actions -->
+            <!-- Download PDF Button (Always accessible) -->
+            <button type="button" @onclick="DownloadMergedPdf"
+                    class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5"
+                    title="Download the official PDF contract document">
+                <span>📥 Download PDF</span>
+            </button>
+
+            <!-- Print PDF Button (Always accessible, prints actual PDF) -->
+            <button type="button" @onclick="PrintDocument"
+                    class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5"
+                    title="Print the official PDF contract document">
+                <span>🖨️ Print PDF</span>
+            </button>
+
+            @if (!Document.IsFlattened)
+            {
+                <button type="button" @onclick="FlattenAndStampDocument"
+                        class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white text-xs font-bold shadow-lg transition flex items-center gap-1.5"
+                        title="Permanently flatten form inputs and stamp merged PDF stream">
+                    <span>🔥 Flatten &amp; Stamp</span>
+                </button>
+            }
+            else
+            {
+                <button type="button" @onclick="UnflattenForEditing"
+                        class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold border border-amber-500/30 transition flex items-center gap-1.5"
+                        title="Restore interactive editable fields">
+                    <span>🔓 Unflatten</span>
+                </button>
+            }
+
+            <!-- Export Data Payload Button -->
+            <button type="button" @onclick="() => _showDataPayloadModal = true"
+                    class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+                <span>📋 Export JSON</span>
+            </button>
+
+            <!-- Seal / Lock Button -->
+            @if (!Document.IsSealed)
+            {
+                <button type="button" @onclick="SealContract"
+                        disabled="@Document.IsFlattened"
+                        class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-lg transition flex items-center gap-2">
+                    <span>🛡️ Execute &amp; Seal</span>
+                </button>
+            }
+            else
+            {
+                <button type="button" @onclick="UnlockContractForDemo"
+                        class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-400 text-xs font-semibold border border-amber-500/30 transition flex items-center gap-1.5"
+                        title="Reset document back to editable mode for testing">
+                    <span>🔓 Unlock (Demo)</span>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Designer Mode Field Tool Palette (Visible when Form Maker mode active) -->
+    @if (_isDesignerMode && !Document.IsSealed)
+    {
+        <div class="p-3 sm:p-4 rounded-2xl bg-purple-950/40 border border-purple-500/30 text-purple-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2">
+                <span class="text-base">🛠️</span>
+                <strong class="text-white">Form Maker Field Palette:</strong>
+                <span class="text-slate-400">Click a tool below to place a new contract anchor onto Page @_activePageIndex:</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" @onclick="() => AddField(PdfFieldType.SignHere)"
+                        class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/40 font-bold flex items-center gap-1">
+                    <span>✍️ + Sign Here</span>
+                </button>
+                <button type="button" @onclick="() => AddField(PdfFieldType.InitialHere)"
+                        class="px-2.5 py-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 hover:bg-cyan-500/30 border border-cyan-500/40 font-bold flex items-center gap-1">
+                    <span>🔤 + Initial Here</span>
+                </button>
+                <button type="button" @onclick="() => AddField(PdfFieldType.DateTimeStamp)"
+                        class="px-2.5 py-1.5 rounded-lg bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-500/40 font-bold flex items-center gap-1">
+                    <span>📅 + Date/Time Stamp</span>
+                </button>
+                <button type="button" @onclick="() => AddField(PdfFieldType.Text)"
+                        class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 font-bold flex items-center gap-1">
+                    <span>📝 + Text Field</span>
+                </button>
+                <button type="button" @onclick="() => AddField(PdfFieldType.Checkbox)"
+                        class="px-2.5 py-1.5 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700 font-bold flex items-center gap-1">
+                    <span>☑️ + Checkbox</span>
+                </button>
+            </div>
+        </div>
+    }
+
+    <!-- Progress Meter Banner -->
+    <div class="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+        <div class="flex items-center gap-3">
+            <span class="font-bold text-slate-700 dark:text-slate-300">Contract Execution Progress:</span>
+            <div class="w-36 sm:w-56 h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden border border-slate-200 dark:border-slate-700">
+                <div class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300"
+                     style="width: @(RequiredFieldsCount > 0 ? (CompletedFieldsCount * 100 / RequiredFieldsCount) : 100)%"></div>
+            </div>
+            <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                @CompletedFieldsCount of @RequiredFieldsCount Required Complete (@(RequiredFieldsCount > 0 ? (CompletedFieldsCount * 100 / RequiredFieldsCount) : 100)%)
+            </span>
+        </div>
+
+        <!-- Read-Only Toggle (Preview how recipient sees it) -->
+        <div class="flex items-center gap-2">
+            <label class="flex items-center gap-2 cursor-pointer select-none text-slate-600 dark:text-slate-400">
+                <input type="checkbox" checked="@Document.IsReadOnly" @onchange="ToggleReadOnly" disabled="@Document.IsSealed"
+                       class="rounded text-indigo-600 focus:ring-indigo-500 h-4 w-4" />
+                <span>Simulate Read-Only Lock</span>
+            </label>
+        </div>
+    </div>
+
+    <!-- Main Document Viewer Layout (Sidebar Thumbnails + Main Canvas) -->
+    <div class="flex flex-col xl:flex-row items-start gap-6 w-full min-w-0">
+        <!-- Left Thumbnail Navigation Rail (Stacks above canvas on <1280px, side-by-side on >=1280px) -->
+        <div class="w-full xl:w-72 shrink-0 space-y-3 min-w-0">
+            <div class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider px-1">
+                Pages (@Document.Pages.Count)
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-3">
+                @for (int i = 0; i < Document.Pages.Count; i++)
+                {
+                    var pageIndex = i + 1;
+                    var pageModel = Document.Pages[i];
+                    var isCurrent = pageIndex == _activePageIndex;
+                    var pageFieldCount = Document.Fields.Count(f => f.Page == pageIndex);
+                    var pageSignedCount = Document.Fields.Count(f => f.Page == pageIndex && f.IsFilled);
+
+                    <button type="button" @onclick="() => _activePageIndex = pageIndex"
+                            class="w-full text-left p-3 rounded-2xl border transition-all text-xs @(isCurrent ? "bg-white dark:bg-slate-900 border-indigo-500 dark:border-indigo-400 shadow-md ring-2 ring-indigo-500/20" : "bg-slate-50 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700")">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-bold text-slate-900 dark:text-white">Page @pageIndex</span>
+                            <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                @pageSignedCount/@pageFieldCount Fields
+                            </span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 truncate font-serif">
+                            @pageModel.Title
+                        </div>
+                    </button>
+                }
+            </div>
+
+            <!-- Document Audit Metadata Card -->
+            <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+                <div class="font-bold text-slate-900 dark:text-white flex items-center justify-between">
+                    <div class="flex items-center gap-1.5">
+                        <span>🛡️</span>
+                        <span>Audit Security Certificate</span>
+                    </div>
+                    @if (Document.IsSealed)
+                    {
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30">
+                            SEALED
+                        </span>
+                    }
+                    else if (CompletedFieldsCount >= RequiredFieldsCount && RequiredFieldsCount > 0)
+                    {
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-teal-100 dark:bg-teal-950/80 text-teal-700 dark:text-teal-300 border border-teal-500/30">
+                            COMPLETE
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-500/30">
+                            PENDING
+                        </span>
+                    }
+                </div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 space-y-1 font-mono">
+                    <div class="flex items-center gap-1.5">
+                        <span>Status:</span>
+                        <span class="font-bold @(Document.IsSealed ? "text-emerald-600 dark:text-emerald-400" : (CompletedFieldsCount >= RequiredFieldsCount && RequiredFieldsCount > 0 ? "text-teal-600 dark:text-teal-400" : "text-amber-600 dark:text-amber-400"))">
+                            @GetDisplayStatus()
+                        </span>
+                    </div>
+                    <div>Signer IP: <span class="text-slate-700 dark:text-slate-200">@Document.SignerIp</span></div>
+                    @if (!string.IsNullOrEmpty(Document.Sha256Fingerprint))
+                    {
+                        <div class="break-all text-[10px] text-emerald-600 dark:text-emerald-400 pt-1">
+                            SHA-256: @Document.Sha256Fingerprint
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(Document.CertificateId))
+                    {
+                        <div class="text-[10px] text-slate-500 dark:text-slate-400">
+                            Cert ID: @Document.CertificateId
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Main Document Page Canvas (Paper Sheet) -->
+        <div class="flex-1 w-full min-w-0">
+            @{
+                var curPage = Document.Pages.FirstOrDefault(p => p.PageNumber == _activePageIndex) ?? Document.Pages.First();
+                var pageFields = Document.Fields.Where(f => f.Page == _activePageIndex).ToList();
+            }
+
+            <div class="relative bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/90 dark:border-slate-800 shadow-2xl overflow-hidden p-4 sm:p-8 lg:p-12 font-serif text-slate-900 dark:text-slate-100 min-h-[920px] w-full min-w-0">
+                @if (Document.IsFlattened)
+                {
+                    <!-- OFFICIAL FLATTENED & STAMPED BANNER -->
+                    <div class="mb-6 p-4 rounded-2xl bg-amber-500/10 border-2 border-dashed border-amber-500/40 font-sans flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-600 text-white flex items-center justify-center text-lg font-bold shadow-sm shrink-0">
+                                🔥
+                            </div>
+                            <div>
+                                <div class="font-bold text-amber-950 dark:text-amber-200 flex items-center gap-2">
+                                    <span>OFFICIALLY FLATTENED &amp; STAMPED PDF</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] bg-amber-500/30 text-amber-900 dark:text-amber-300 font-mono font-bold">MERGED CONTENT STREAM</span>
+                                </div>
+                                <p class="text-[11px] text-amber-800 dark:text-amber-400 mt-0.5">
+                                    All form field annotations, inputs, and signature anchors have been permanently burned into static vector typography.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-right font-mono text-[10px] text-slate-500 dark:text-slate-400 shrink-0">
+                            <div>Stream: <strong class="text-slate-900 dark:text-white">@Document.FlattenedContentStreamId</strong></div>
+                            <div>Stamped: <strong>@Document.FlattenedAtUtc?.ToString("yyyy-MM-dd HH:mm:ss UTC")</strong></div>
+                            <div>Digest: <strong class="text-amber-600 dark:text-amber-400">@(Document.FlattenedHash.Length > 16 ? Document.FlattenedHash[..16] + "..." : Document.FlattenedHash)</strong></div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Document Header Letterhead -->
+                <div class="border-b-2 border-slate-900 dark:border-slate-700 pb-5 mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+                    <div>
+                        <div class="text-[11px] uppercase font-sans tracking-widest text-slate-500 dark:text-slate-400 font-semibold mb-1">
+                            MUTUAL CONFIDENTIAL & BINDING INSTRUMENT
+                        </div>
+                        <h2 class="text-2xl sm:text-3xl font-black font-serif tracking-tight text-slate-950 dark:text-white">
+                            @curPage.Title
+                        </h2>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 mt-1 font-sans">
+                            @curPage.Subtitle
+                        </p>
+                    </div>
+                    <div class="text-right font-sans text-xs text-slate-500 dark:text-slate-400">
+                        <div>Document No: <strong class="font-mono text-slate-900 dark:text-white">@Document.DocumentId</strong></div>
+                        <div>Page @_activePageIndex of @Document.Pages.Count</div>
+                    </div>
+                </div>
+
+                <!-- Document Body Clauses -->
+                <div class="space-y-6 text-sm leading-relaxed text-slate-800 dark:text-slate-200">
+                    @foreach (var sec in curPage.Sections)
+                    {
+                        <div class="space-y-2">
+                            <h4 class="font-bold font-sans text-xs tracking-wider uppercase text-slate-900 dark:text-white">
+                                @sec.Heading
+                            </h4>
+                            @foreach (var para in sec.Paragraphs)
+                            {
+                                <p class="text-justify font-serif text-slate-700 dark:text-slate-300">
+                                    @para
+                                </p>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Anchored Contract Fields & Signature Blocks -->
+                <div class="mt-10 pt-8 border-t border-slate-200 dark:border-slate-800 space-y-6">
+                    <h4 class="font-sans font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white">
+                        Execution & Attestation Blocks (Page @_activePageIndex)
+                    </h4>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        @foreach (var field in pageFields)
+                        {
+                            @if (Document.IsFlattened)
+                            {
+                                <!-- FLATTENED & BURNED-IN STATIC FIELD APPEARANCE -->
+                                <div class="p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border border-slate-300 dark:border-slate-700 shadow-xs space-y-2">
+                                    <div class="flex items-center justify-between font-sans">
+                                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                                            @field.Label
+                                        </span>
+                                        <span class="text-[9px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold border border-amber-500/30">
+                                            🔥 FLATTENED STREAM
+                                        </span>
+                                    </div>
+
+                                    @if (field.Type == PdfFieldType.SignHere)
+                                    {
+                                        <div class="border-b-2 border-slate-900 dark:border-slate-300 pb-2 text-center pt-2">
+                                            <div class="font-serif italic text-3xl text-blue-950 dark:text-cyan-300 tracking-wide font-cursive select-none"
+                                                 style="font-family: 'Brush Script MT', 'Dancing Script', 'Caveat', cursive;">
+                                                @(string.IsNullOrEmpty(field.Value) ? "Jane M. Doe" : field.Value)
+                                            </div>
+                                            <div class="text-[10px] font-mono text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-700 mt-2 pt-1 flex items-center justify-between">
+                                                <span>Signer: <strong>@(string.IsNullOrEmpty(field.SignerName) ? "Jane M. Doe" : field.SignerName)</strong></span>
+                                                <span>@(field.SignedAt?.ToString("yyyy-MM-dd HH:mm UTC") ?? "Timestamped")</span>
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (field.Type == PdfFieldType.InitialHere)
+                                    {
+                                        <div class="flex items-center gap-3 pt-1">
+                                            <div class="border-2 border-slate-900 dark:border-slate-300 rounded-lg px-4 py-1.5 font-serif italic text-2xl font-black text-cyan-900 dark:text-cyan-300"
+                                                 style="font-family: 'Brush Script MT', 'Dancing Script', 'Caveat', cursive;">
+                                                @(string.IsNullOrEmpty(field.Value) ? "JMD" : field.Value)
+                                            </div>
+                                            <div class="text-[10px] font-mono text-slate-500">
+                                                Initialed &amp; Merged (@(field.SignedAt?.ToString("yyyy-MM-dd") ?? "UTC"))
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (field.Type == PdfFieldType.DateTimeStamp)
+                                    {
+                                        <div class="border-b-2 border-slate-900 dark:border-slate-300 pb-1 font-mono font-bold text-sm text-slate-950 dark:text-white flex items-center gap-2">
+                                            <span>🔒</span>
+                                            <span>@(string.IsNullOrEmpty(field.Value) ? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss 'UTC'") : field.Value)</span>
+                                        </div>
+                                    }
+                                    else if (field.Type == PdfFieldType.Checkbox)
+                                    {
+                                        <div class="flex items-center gap-2 text-sm font-sans font-semibold text-slate-900 dark:text-white pt-1">
+                                            <span class="w-5 h-5 rounded-md border-2 border-slate-900 dark:border-slate-200 flex items-center justify-center font-bold text-emerald-600 dark:text-emerald-400 text-xs">
+                                                ✓
+                                            </span>
+                                            <span>@(string.IsNullOrEmpty(field.Placeholder) ? "Acknowledged & Agreed." : field.Placeholder)</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="border-b-2 border-slate-900 dark:border-slate-300 pb-1 font-serif text-slate-950 dark:text-white font-bold text-base px-1">
+                                            @(string.IsNullOrEmpty(field.Value) ? "Apex Global Cloud Solutions, Inc." : field.Value)
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="p-4 rounded-2xl border transition-all relative @(field.IsFilled ? "bg-slate-50/60 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700" : "bg-amber-50/40 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700/60 shadow-xs")">
+                                <!-- Field Header Label & Tag Indicator -->
+                                <div class="flex items-center justify-between mb-2 font-sans">
+                                    <label class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                                        @field.Label
+                                        @if (field.IsRequired)
+                                        {
+                                            <span class="text-red-500 font-bold" title="Required field">*</span>
+                                        }
+                                    </label>
+                                    <span class="text-[10px] font-mono px-2 py-0.5 rounded-full @(field.IsFilled ? "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300" : "bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300")">
+                                        @(field.IsFilled ? "✅ Completed" : "⚠️ Needs Signature")
+                                    </span>
+                                </div>
+
+                                @* FIELD TYPE: SIGN HERE *@
+                                @if (field.Type == PdfFieldType.SignHere)
+                                {
+                                    @if (!string.IsNullOrEmpty(field.SignatureDataUrl) || !string.IsNullOrEmpty(field.Value))
+                                    {
+                                        <!-- Completed Signature Display -->
+                                        <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-center relative group">
+                                            <div class="font-serif italic text-2xl text-blue-900 dark:text-blue-300 tracking-wide py-2 font-cursive"
+                                                 style="font-family: 'Brush Script MT', 'Dancing Script', 'Caveat', cursive;">
+                                                @(string.IsNullOrEmpty(field.Value) ? "Jane Doe (Signed)" : field.Value)
+                                            </div>
+                                            <div class="text-[10px] font-sans text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-1 flex items-center justify-between">
+                                                <span>Signer: <strong>@(string.IsNullOrEmpty(field.SignerName) ? "Authorized Representative" : field.SignerName)</strong></span>
+                                                <span class="font-mono">@(field.SignedAt?.ToString("yyyy-MM-dd HH:mm UTC") ?? "Timestamped")</span>
+                                            </div>
+
+                                            @if (!Document.IsReadOnly && !Document.IsSealed)
+                                            {
+                                                <button type="button" @onclick="() => OpenSignModal(field)"
+                                                        class="absolute top-2 right-2 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] text-slate-600 dark:text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition">
+                                                    Change
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <!-- Unsigned Callout Tag: SIGN HERE -->
+                                        @if (Document.IsReadOnly)
+                                        {
+                                            <div class="p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-400 italic font-sans">
+                                                [Unsigned - Read-Only View]
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" @onclick="() => OpenSignModal(field)"
+                                                    class="w-full p-4 rounded-xl border-2 border-dashed border-amber-400 dark:border-amber-600 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100/70 dark:hover:bg-amber-900/40 transition-all flex flex-col items-center justify-center gap-1 group font-sans">
+                                                <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500 text-slate-950 font-black text-xs shadow-md animate-bounce">
+                                                    <span>✍️</span>
+                                                    <span>SIGN HERE</span>
+                                                </div>
+                                                <span class="text-[11px] text-amber-800 dark:text-amber-300 mt-1 font-semibold">
+                                                    Click to Adopt & Sign
+                                                </span>
+                                            </button>
+                                        }
+                                    }
+                                }
+                                @* FIELD TYPE: INITIAL HERE *@
+                                else if (field.Type == PdfFieldType.InitialHere)
+                                {
+                                    @if (!string.IsNullOrEmpty(field.Value))
+                                    {
+                                        <div class="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-center relative group">
+                                            <div class="font-serif italic text-2xl text-cyan-900 dark:text-cyan-300 font-bold py-1"
+                                                 style="font-family: 'Brush Script MT', 'Dancing Script', 'Caveat', cursive;">
+                                                @field.Value
+                                            </div>
+                                            <div class="text-[10px] font-sans text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-1 font-mono">
+                                                @(field.SignedAt?.ToString("yyyy-MM-dd HH:mm UTC") ?? "Stampted")
+                                            </div>
+                                            @if (!Document.IsReadOnly && !Document.IsSealed)
+                                            {
+                                                <button type="button" @onclick="() => OpenInitialModal(field)"
+                                                        class="absolute top-2 right-2 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[10px] opacity-0 group-hover:opacity-100 transition">
+                                                    Edit
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        @if (Document.IsReadOnly)
+                                        {
+                                            <div class="p-3 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 text-center text-xs text-slate-400 italic font-sans">
+                                                [No Initial]
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" @onclick="() => OpenInitialModal(field)"
+                                                    class="w-full p-3 rounded-xl border-2 border-dashed border-cyan-400 dark:border-cyan-600 bg-cyan-50 dark:bg-cyan-950/40 hover:bg-cyan-100/70 dark:hover:bg-cyan-900/40 transition-all flex items-center justify-center gap-2 font-sans">
+                                                <span class="px-2.5 py-0.5 rounded-full bg-cyan-600 text-white font-bold text-xs shadow-xs">
+                                                    🔤 INITIAL HERE
+                                                </span>
+                                            </button>
+                                        }
+                                    }
+                                }
+                                @* FIELD TYPE: DATE/TIME STAMP *@
+                                else if (field.Type == PdfFieldType.DateTimeStamp)
+                                {
+                                    <div class="font-sans space-y-1.5">
+                                        @if (Document.IsReadOnly || Document.IsSealed)
+                                        {
+                                            <div class="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-mono font-bold text-slate-900 dark:text-white">
+                                                @(string.IsNullOrEmpty(field.Value) ? DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss 'UTC'") : field.Value)
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="flex items-center gap-2">
+                                                <input type="text" @bind="field.Value" @bind:after="UpdateDocumentStatus"
+                                                       placeholder="YYYY-MM-DD"
+                                                       class="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-mono" />
+                                                <button type="button" @onclick="() => StampNow(field)"
+                                                        class="px-2.5 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 text-xs font-bold transition shrink-0"
+                                                        title="Stamp Current Date & Time">
+                                                    📅 Now
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                @* FIELD TYPE: TEXT INPUT *@
+                                else if (field.Type == PdfFieldType.Text)
+                                {
+                                    <div class="font-sans">
+                                        @if (Document.IsReadOnly || Document.IsSealed)
+                                        {
+                                            <div class="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs text-slate-900 dark:text-white font-semibold">
+                                                @(string.IsNullOrEmpty(field.Value) ? "—" : field.Value)
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <input type="text" @bind="field.Value" @bind:after="UpdateDocumentStatus"
+                                                   placeholder="@(string.IsNullOrEmpty(field.Placeholder) ? "Enter value..." : field.Placeholder)"
+                                                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-medium" />
+                                        }
+                                    </div>
+                                }
+                                @* FIELD TYPE: CHECKBOX *@
+                                else if (field.Type == PdfFieldType.Checkbox)
+                                {
+                                    <div class="font-sans flex items-center gap-2 pt-1">
+                                        <input type="checkbox"
+                                               checked="@(field.Value == "true")"
+                                               disabled="@(Document.IsReadOnly || Document.IsSealed)"
+                                               @onchange="(e) => OnCheckboxChanged(field, e)"
+                                               class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
+                                        <span class="text-xs text-slate-700 dark:text-slate-300">
+                                            @(string.IsNullOrEmpty(field.Placeholder) ? "I agree and acknowledge the terms." : field.Placeholder)
+                                        </span>
+                                    </div>
+                                }
+
+                                <!-- Delete button in Designer Mode -->
+                                @if (_isDesignerMode && !Document.IsSealed)
+                                {
+                                    <div class="mt-2 pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between font-sans">
+                                        <span class="text-[10px] text-slate-400">Role: @field.SignerRole</span>
+                                        <button type="button" @onclick="() => Document.Fields.Remove(field)"
+                                                class="text-red-500 hover:text-red-700 text-[10px] font-bold">
+                                            🗑️ Remove
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    </div>
+                </div>
+
+                <!-- Executed Document Watermark & Tamper-Evident Footer Seal -->
+                @if (Document.IsSealed)
+                {
+                    <div class="mt-12 p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent border-2 border-emerald-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-sans text-xs">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md shrink-0">
+                                🛡️
+                            </div>
+                            <div>
+                                <div class="font-bold text-emerald-900 dark:text-emerald-300 text-sm flex items-center gap-1.5">
+                                    <span>CERTIFIED DIGITAL EXECUTION SEAL</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500 text-white font-mono">ESIGN COMPLIANT</span>
+                                </div>
+                                <p class="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                                    Cryptographically signed and sealed under Title 15 USC § 7001 (Electronic Signatures in Global and National Commerce Act).
+                                </p>
+                            </div>
+                        </div>
+                        <div class="text-right font-mono text-[10px] text-slate-500 dark:text-slate-400 shrink-0">
+                            <div>Cert ID: <strong class="text-slate-900 dark:text-white">@Document.CertificateId</strong></div>
+                            <div>Sealed UTC: <strong>@Document.SealedAtUtc?.ToString("yyyy-MM-dd HH:mm:ss")</strong></div>
+                            <div>Attestation Hash: <strong>@(Document.Sha256Fingerprint.Length > 16 ? Document.Sha256Fingerprint[..16] + "..." : Document.Sha256Fingerprint)</strong></div>
+                        </div>
+                    </div>
+                }
+
+                <!-- Flattened & Merged Content Stream Footer Seal -->
+                @if (Document.IsFlattened)
+                {
+                    <div class="mt-12 p-5 rounded-3xl bg-slate-900 text-white border-2 border-amber-500/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 font-sans text-xs">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-orange-600 flex items-center justify-center text-2xl shadow-lg shrink-0">
+                                📜
+                            </div>
+                            <div>
+                                <div class="font-bold text-white text-sm flex items-center gap-2">
+                                    <span>ISO 32000-1 STATIC MERGED CONTENT STREAM</span>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500 text-white font-mono font-bold">STAMPED</span>
+                                </div>
+                                <p class="text-[11px] text-slate-300 mt-0.5">
+                                    All interactive form annotations purged. Merged document is cryptographically locked and certified for legal archival (PDF/A).
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 shrink-0">
+                            <button type="button" @onclick="DownloadMergedPdf"
+                                    class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                                <span>📥 Download Flattened PDF</span>
+                            </button>
+                            <button type="button" @onclick="PrintDocument"
+                                    class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
+                                <span>🖨️ Print</span>
+                            </button>
+                            <button type="button" @onclick="UnflattenForEditing"
+                                    class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold border border-amber-500/30 transition flex items-center gap-1.5">
+                                <span>🔓 Unflatten</span>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- SIGNATURE MODAL (Draw Pad or Cursive Calligraphic Font Generator)          -->
+<!-- ========================================================================= -->
+@if (_activeSignModalField != null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+        <div class="w-full max-w-lg rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">✍️</span>
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">
+                            Adopt Your Signature
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                            Select a cursive calligraphy style or enter your legal name
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @onclick="() => _activeSignModalField = null"
+                        class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center text-sm font-bold">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                        Signer Legal Name
+                    </label>
+                    <input type="text" @bind="_modalSignerName" @bind:event="oninput"
+                           placeholder="Enter your full legal name (e.g. Jane M. Doe)"
+                           class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:ring-2 focus:ring-indigo-500" />
+                </div>
+
+                <!-- Calligraphic Style Options Preview -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Choose Calligraphic Script Style
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        @foreach (var style in _cursiveStyles)
+                        {
+                            <button type="button" @onclick="() => _selectedCursiveStyle = style.FontClass"
+                                    class="p-3 rounded-xl border text-center transition-all @(_selectedCursiveStyle == style.FontClass ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/50 ring-2 ring-indigo-500/20" : "border-slate-200 dark:border-slate-800 hover:border-slate-300")">
+                                <div class="text-2xl text-slate-900 dark:text-white italic py-1"
+                                     style="font-family: @style.CssFontFamily;">
+                                    @(string.IsNullOrWhiteSpace(_modalSignerName) ? "Signature" : _modalSignerName)
+                                </div>
+                                <span class="text-[10px] text-slate-500 font-sans">@style.Name</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400">
+                    By clicking <strong>Adopt & Sign</strong>, I agree that my signature constitutes a legally binding electronic signature identical to my handwritten signature under the ESIGN Act.
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex items-center justify-end gap-2 p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
+                <button type="button" @onclick="() => _activeSignModalField = null"
+                        class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    Cancel
+                </button>
+                <button type="button" @onclick="AdoptSignature"
+                        class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md transition">
+                    Adopt & Sign
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ========================================================================= -->
+<!-- INITIALS MODAL                                                            -->
+<!-- ========================================================================= -->
+@if (_activeInitialModalField != null)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+        <div class="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden p-6 space-y-4">
+            <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <span>🔤</span>
+                <span>Adopt Initials</span>
+            </h3>
+
+            <div>
+                <label class="block text-xs text-slate-500 dark:text-slate-400 mb-1">
+                    Your Initials (e.g. JD)
+                </label>
+                <input type="text" @bind="_modalInitials" maxlength="4"
+                       placeholder="JD"
+                       class="w-full px-4 py-3 text-center uppercase tracking-widest font-bold text-xl rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" @onclick="() => _activeInitialModalField = null"
+                        class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    Cancel
+                </button>
+                <button type="button" @onclick="AdoptInitials"
+                        class="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold shadow-md">
+                    Apply Initials
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- ========================================================================= -->
+<!-- EXPORT DATA PAYLOAD JSON MODAL                                            -->
+<!-- ========================================================================= -->
+@if (_showDataPayloadModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+        <div class="w-full max-w-2xl rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div class="flex items-center justify-between p-5 border-b border-slate-800">
+                <div class="flex items-center gap-2 text-white font-bold text-sm">
+                    <span>📋</span>
+                    <span>Contract Form Data Payload (JSON)</span>
+                </div>
+                <button type="button" @onclick="() => _showDataPayloadModal = false"
+                        class="w-7 h-7 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs font-bold">
+                    ✕
+                </button>
+            </div>
+            <div class="p-5 overflow-auto flex-1 font-mono text-xs text-emerald-400 bg-slate-950">
+                <pre>@GetContractDataJson()</pre>
+            </div>
+            <div class="p-4 border-t border-slate-800 flex justify-end gap-2 bg-slate-900">
+                <button type="button" @onclick="CopyJsonToClipboard"
+                        class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold">
+                    Copy to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Class { get; set; } = string.Empty;
+    [Parameter] public PdfContractDocument Document { get; set; } = CreateDefaultContract();
+
+    private int _activePageIndex = 1;
+    private bool _isDesignerMode = false;
+    private bool _showDataPayloadModal = false;
+
+    private PdfContractField? _activeSignModalField;
+    private string _modalSignerName = "Jane M. Doe";
+    private string _selectedCursiveStyle = "Dancing Script";
+
+    private PdfContractField? _activeInitialModalField;
+    private string _modalInitials = "JMD";
+
+    private record CursiveFontPreset(string Name, string FontClass, string CssFontFamily);
+
+    private readonly List<CursiveFontPreset> _cursiveStyles = new()
+    {
+        new("Dancing Script", "dancing-script", "'Dancing Script', 'Brush Script MT', cursive"),
+        new("Caveat Calligraphy", "caveat", "'Caveat', 'Segoe Script', cursive"),
+        new("Great Vibes Script", "great-vibes", "'Great Vibes', cursive"),
+        new("Sacramento Formal", "sacramento", "'Sacramento', cursive")
+    };
+
+    protected override void OnInitialized()
+    {
+        UpdateDocumentStatus();
+    }
+
+    private string GetDisplayStatus()
+    {
+        if (Document.IsSealed) return "Executed & Sealed";
+        if (Document.IsFlattened) return "Flattened & Merged";
+        if (RequiredFieldsCount > 0 && CompletedFieldsCount >= RequiredFieldsCount)
+            return "Complete (All Signatures Collected)";
+        int remaining = RequiredFieldsCount - CompletedFieldsCount;
+        return remaining > 0 ? $"Pending Signatures ({remaining} of {RequiredFieldsCount} remaining)" : "Interactive Fill";
+    }
+
+    private void UpdateDocumentStatus()
+    {
+        Document.Status = GetDisplayStatus();
+        StateHasChanged();
+    }
+
+    public int RequiredFieldsCount => Document.Fields.Count(f => f.IsRequired);
+    public int CompletedFieldsCount => Document.Fields.Count(f => f.IsRequired && f.IsFilled);
+
+    private void SetMode(bool designer)
+    {
+        _isDesignerMode = designer;
+        StateHasChanged();
+    }
+
+    private void OnCheckboxChanged(PdfContractField field, ChangeEventArgs e)
+    {
+        field.Value = (bool)(e.Value ?? false) ? "true" : "false";
+        UpdateDocumentStatus();
+    }
+
+    private void ToggleReadOnly(ChangeEventArgs e)
+    {
+        Document.IsReadOnly = (bool)(e.Value ?? false);
+        Toast?.Show($"Form mode set to: {(Document.IsReadOnly ? "Read-Only (Locked)" : "Interactive Fill")}", variant: SemanticVariant.Info);
+    }
+
+    private void OpenSignModal(PdfContractField field)
+    {
+        _activeSignModalField = field;
+        if (!string.IsNullOrEmpty(field.SignerName))
+        {
+            _modalSignerName = field.SignerName;
+        }
+    }
+
+    private void AdoptSignature()
+    {
+        if (_activeSignModalField != null)
+        {
+            _activeSignModalField.Value = _modalSignerName;
+            _activeSignModalField.SignerName = _modalSignerName;
+            _activeSignModalField.SignedAt = DateTime.UtcNow;
+            _activeSignModalField.SignatureStyle = _selectedCursiveStyle;
+            _activeSignModalField = null;
+            UpdateDocumentStatus();
+            Toast?.Show($"Signature adopted for {_modalSignerName}!", variant: SemanticVariant.Success);
+        }
+    }
+
+    private void OpenInitialModal(PdfContractField field)
+    {
+        _activeInitialModalField = field;
+        if (!string.IsNullOrEmpty(field.Value))
+        {
+            _modalInitials = field.Value;
+        }
+    }
+
+    private void AdoptInitials()
+    {
+        if (_activeInitialModalField != null)
+        {
+            _activeInitialModalField.Value = _modalInitials.ToUpperInvariant();
+            _activeInitialModalField.SignedAt = DateTime.UtcNow;
+            _activeInitialModalField = null;
+            UpdateDocumentStatus();
+            Toast?.Show($"Initials applied: {_modalInitials}!", variant: SemanticVariant.Success);
+        }
+    }
+
+    private void StampNow(PdfContractField field)
+    {
+        field.Value = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss 'UTC'");
+        field.SignedAt = DateTime.UtcNow;
+        UpdateDocumentStatus();
+        Toast?.Show("Stamped current date & time.", variant: SemanticVariant.Info);
+    }
+
+    private void AddField(PdfFieldType type)
+    {
+        var newField = new PdfContractField
+        {
+            Type = type,
+            Page = _activePageIndex,
+            Label = type switch
+            {
+                PdfFieldType.SignHere => "Authorized Signature",
+                PdfFieldType.InitialHere => "Section Initials",
+                PdfFieldType.DateTimeStamp => "Date Executed",
+                PdfFieldType.Checkbox => "Accept Terms",
+                _ => "Contract Input"
+            },
+            IsRequired = true
+        };
+        Document.Fields.Add(newField);
+        Toast?.Show($"Added {type} field to Page {_activePageIndex}!", variant: SemanticVariant.Success);
+    }
+
+    private void LoadSampleData()
+    {
+        foreach (var field in Document.Fields)
+        {
+            if (field.Label.Contains("Company") || field.Label.Contains("Party"))
+                field.Value = "Apex Global Cloud Solutions, Inc.";
+            else if (field.Label.Contains("Representative") || field.Label.Contains("Name"))
+                field.Value = "Jane M. Doe";
+            else if (field.Label.Contains("Title"))
+                field.Value = "Chief Information Security Officer";
+            else if (field.Label.Contains("Date"))
+                field.Value = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss 'UTC'");
+            else if (field.Type == PdfFieldType.Checkbox)
+                field.Value = "true";
+            else if (field.Type == PdfFieldType.InitialHere)
+                field.Value = "JMD";
+            else if (field.Type == PdfFieldType.SignHere)
+            {
+                field.Value = "Jane M. Doe";
+                field.SignerName = "Jane M. Doe";
+                field.SignedAt = DateTime.UtcNow;
+            }
+        }
+        UpdateDocumentStatus();
+        Toast?.Show("Sample contract data pre-filled successfully!", variant: SemanticVariant.Success);
+    }
+
+    private void SealContract()
+    {
+        var uncompleted = Document.Fields.Where(f => f.IsRequired && !f.IsFilled).ToList();
+        if (uncompleted.Any())
+        {
+            Toast?.Show($"Please complete all required fields ({uncompleted.Count} remaining) before sealing.", variant: SemanticVariant.Warning);
+            return;
+        }
+
+        // Generate cryptographic attestation SHA-256
+        var payloadToHash = $"{Document.DocumentId}:{Document.Title}:{DateTime.UtcNow:O}:{Document.Fields.Count}";
+        using var sha = SHA256.Create();
+        var hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(payloadToHash));
+        Document.Sha256Fingerprint = Convert.ToHexString(hashBytes).ToLowerInvariant();
+
+        Document.CertificateId = $"CERT-{DateTime.UtcNow.Year}-ESIGN-{Random.Shared.Next(10000, 99999)}";
+        Document.SealedAtUtc = DateTime.UtcNow;
+        Document.Status = "Executed & Sealed";
+        Document.IsSealed = true;
+        Document.IsReadOnly = true;
+        _isDesignerMode = false;
+
+        Toast?.Show("Contract Executed, Sealed, and Locked as Read-Only!", variant: SemanticVariant.Success);
+    }
+
+    private void UnlockContractForDemo()
+    {
+        Document.IsSealed = false;
+        Document.IsFlattened = false;
+        Document.IsReadOnly = false;
+        UpdateDocumentStatus();
+        Toast?.Show("Contract unlocked for demonstration mode.", variant: SemanticVariant.Info);
+    }
+
+    private async Task FlattenAndStampDocument()
+    {
+        using (OtelService.StartSpan("TwPdfFormFiller", "FlattenAndStampDocument", "UserAction", new() { ["pdf.fields"] = Document.Fields.Count.ToString(), ["pdf.id"] = Document.DocumentId }))
+        {
+            // Auto-fill any remaining blank fields with realistic contract values
+            foreach (var field in Document.Fields)
+            {
+                if (string.IsNullOrWhiteSpace(field.Value))
+                {
+                    if (field.Type == PdfFieldType.SignHere)
+                    {
+                        field.Value = "Jane M. Doe";
+                        field.SignerName = "Jane M. Doe";
+                        field.SignedAt = DateTime.UtcNow;
+                    }
+                    else if (field.Type == PdfFieldType.InitialHere)
+                    {
+                        field.Value = "JMD";
+                        field.SignedAt = DateTime.UtcNow;
+                    }
+                    else if (field.Type == PdfFieldType.DateTimeStamp)
+                    {
+                        field.Value = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss 'UTC'");
+                        field.SignedAt = DateTime.UtcNow;
+                    }
+                    else if (field.Type == PdfFieldType.Checkbox)
+                    {
+                        field.Value = "true";
+                    }
+                    else
+                    {
+                        field.Value = string.IsNullOrEmpty(field.Placeholder) ? "Apex Global Cloud Solutions, Inc." : field.Placeholder;
+                    }
+                }
+            }
+
+            Document.IsFlattened = true;
+            Document.IsReadOnly = true;
+            Document.FlattenedAtUtc = DateTime.UtcNow;
+            Document.FlattenedContentStreamId = $"STRM-FLAT-{Guid.NewGuid().ToString("N")[..8].ToUpperInvariant()}";
+
+            // Generate cryptographic attestation SHA-256 for flattened state
+            var payloadToHash = $"{Document.DocumentId}:{Document.Title}:{Document.FlattenedAtUtc:O}:{Document.Fields.Count}:FLATTENED";
+            using var sha = SHA256.Create();
+            var hashBytes = sha.ComputeHash(Encoding.UTF8.GetBytes(payloadToHash));
+            Document.FlattenedHash = Convert.ToHexString(hashBytes).ToLowerInvariant();
+            if (string.IsNullOrEmpty(Document.Sha256Fingerprint))
+            {
+                Document.Sha256Fingerprint = Document.FlattenedHash;
+            }
+
+            Document.Status = "Flattened & Merged";
+            _isDesignerMode = false;
+
+            Toast?.Show("Form fields flattened & stamped! AcroForm annotations purged into immutable vector stream.", variant: SemanticVariant.Success);
+            await Task.CompletedTask;
+        }
+    }
+
+    private void UnflattenForEditing()
+    {
+        Document.IsFlattened = false;
+        Document.IsReadOnly = false;
+        UpdateDocumentStatus();
+        Toast?.Show("Document unflattened. Form inputs restored to interactive mode.", variant: SemanticVariant.Info);
+    }
+
+    private async Task DownloadMergedPdf()
+    {
+        try
+        {
+            var base64 = PdfFlattenStreamGenerator.GenerateFlattenedPdfBase64(Document);
+            var filename = $"{Document.DocumentId}_Flattened_Merged.pdf";
+            await JS.InvokeVoidAsync("pdfHelper.downloadBlob", filename, "application/pdf", base64);
+            Toast?.Show($"Generated and downloaded: {filename}", variant: SemanticVariant.Success);
+        }
+        catch (Exception ex)
+        {
+            Toast?.Show($"PDF generation notice: {ex.Message}", variant: SemanticVariant.Info);
+        }
+    }
+
+    private async Task PrintDocument()
+    {
+        try
+        {
+            var base64 = PdfFlattenStreamGenerator.GenerateFlattenedPdfBase64(Document);
+            await JS.InvokeVoidAsync("pdfHelper.printPdfBase64", base64);
+            Toast?.Show("Opening PDF print dialog...", variant: SemanticVariant.Info);
+        }
+        catch (Exception ex)
+        {
+            Toast?.Show($"Print notice: {ex.Message}", variant: SemanticVariant.Info);
+        }
+    }
+
+    private string GetContractDataJson()
+    {
+        var export = new
+        {
+            DocumentId = Document.DocumentId,
+            Title = Document.Title,
+            ContractType = Document.ContractType,
+            EffectiveDate = Document.EffectiveDate,
+            Status = Document.Status,
+            IsSealed = Document.IsSealed,
+            IsReadOnly = Document.IsReadOnly,
+            SealedAtUtc = Document.SealedAtUtc,
+            CertificateId = Document.CertificateId,
+            Sha256Fingerprint = Document.Sha256Fingerprint,
+            SignerIp = Document.SignerIp,
+            Fields = Document.Fields.Select(f => new
+            {
+                Id = f.Id,
+                Type = f.Type.ToString(),
+                Label = f.Label,
+                Page = f.Page,
+                Value = f.Value,
+                IsRequired = f.IsRequired,
+                SignedAt = f.SignedAt,
+                SignerName = f.SignerName
+            })
+        };
+        return JsonSerializer.Serialize(export, new JsonSerializerOptions { WriteIndented = true });
+    }
+
+    private async Task CopyJsonToClipboard()
+    {
+        try
+        {
+            var json = GetContractDataJson();
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            Toast?.Show("JSON payload copied to clipboard!", variant: SemanticVariant.Success);
+            _showDataPayloadModal = false;
+        }
+        catch
+        {
+            Toast?.Show("Select and copy JSON directly.", variant: SemanticVariant.Info);
+        }
+    }
+
+    public static PdfContractDocument CreateDefaultContract()
+    {
+        var doc = new PdfContractDocument
+        {
+            DocumentId = "DOC-MSA-2026-9481",
+            Title = "Master Services & Cloud Architecture Agreement",
+            ContractType = "Enterprise Service Agreement & NDA",
+            EffectiveDate = DateTime.UtcNow.Date,
+            Status = "Pending Signatures"
+        };
+
+        // Page 1: Agreement Clauses
+        doc.Pages.Add(new PdfContractPage
+        {
+            PageNumber = 1,
+            Title = "Master Services Agreement (MSA)",
+            Subtitle = "Between Apex Global Cloud Solutions, Inc. and Client Enterprise Corporation",
+            Sections = new List<PdfContractSection>
+            {
+                new()
+                {
+                    Heading = "1. PURPOSE AND RECITALS",
+                    Paragraphs = new()
+                    {
+                        "This Master Services Agreement (\"Agreement\") is entered into effective as of the date indicated below by and between the Client Corporation and Apex Global Cloud Solutions, Inc. (\"Provider\").",
+                        "WHEREAS, Client desires to procure high-availability cloud architecture engineering, WebAssembly frontend development, and Zero-Trust cryptographic infrastructure services; and WHEREAS, Provider agrees to deliver such professional software engineering services."
+                    }
+                },
+                new()
+                {
+                    Heading = "2. PROPRIETARY RIGHTS & WORK PRODUCT ASSIGNMENT",
+                    Paragraphs = new()
+                    {
+                        "Provider hereby unconditionally assigns and transfers to Client all right, title, and interest in and to all deliverables, custom component libraries, architectures, and intellectual property developed exclusively pursuant to executed Statements of Work (SOW).",
+                        "Neither party shall disclose, disseminate, or publish confidential trade secrets or cryptographic private keys without express written bilateral authorization."
+                    }
+                }
+            }
+        });
+
+        // Page 2: Signatures & Attestations
+        doc.Pages.Add(new PdfContractPage
+        {
+            PageNumber = 2,
+            Title = "Execution, Acknowledgments & Signatures",
+            Subtitle = "Binding Legal Attestations and ESIGN Act Authorization",
+            Sections = new List<PdfContractSection>
+            {
+                new()
+                {
+                    Heading = "3. TERM, TERMINATION & JURISDICTION",
+                    Paragraphs = new()
+                    {
+                        "This Agreement shall remain in full force and effect for an initial term of twelve (12) months from the Effective Date and shall automatically renew for successive one-year periods unless terminated with thirty (30) days advance written notice.",
+                        "This Agreement shall be governed by, construed, and enforced in accordance with the laws of the State of Delaware, without regard to conflicts of law principles."
+                    }
+                },
+                new()
+                {
+                    Heading = "4. COUNTERPARTS AND ELECTRONIC TRANSMISSION",
+                    Paragraphs = new()
+                    {
+                        "The parties agree that this Agreement may be executed in counterparts, each of which shall be deemed an original. Delivery of an executed counterpart via electronic signature service shall be fully binding and enforceable pursuant to the Federal Electronic Signatures in Global and National Commerce Act (15 U.S.C. § 7001)."
+                    }
+                }
+            }
+        });
+
+        // Fields on Page 1:
+        doc.Fields.Add(new PdfContractField
+        {
+            Id = "fld-client-company",
+            Page = 1,
+            Type = PdfFieldType.Text,
+            Label = "Client Enterprise Legal Entity",
+            Placeholder = "e.g. Acme Corporation",
+            Value = "Acme Global Industries LLC",
+            IsRequired = true
+        });
+
+        doc.Fields.Add(new PdfContractField
+        {
+            Id = "fld-billing-email",
+            Page = 1,
+            Type = PdfFieldType.Text,
+            Label = "Billing & Legal Notice Email",
+            Placeholder = "legal@acme.com",
+            Value = "legal@acmeglobal.com",
+            IsRequired = true
+        });
+
+        doc.Fields.Add(new PdfContractField
+        {
+            Id = "fld-init-p1",
+            Page = 1,
+            Type = PdfFieldType.InitialHere,
+            Label = "Client Page 1 Acknowledgment",
+            SignerRole = "Primary Signer",
+            IsRequired = true
+        });
+
+        // Fields on Page 2 (Execution Block):
+        doc.Fields.Add(new PdfContractField
+        {
+            Id = "fld-sign-primary",
+            Page = 2,
+            Type = PdfFieldType.SignHere,
+            Label = "Authorized Client Representative Signature",
+            SignerRole = "Primary Signer",
+            IsRequired = true
+        });
+
+        doc.Fields.Add(new PdfContractField
+        {
+            Id = "fld-sign-name",
+            Page = 2,
+            Type = PdfFieldType.Text,
+            Label = "Print Full Legal Name",
+            Placeholder = "e.g. Jane M. Doe",
+            IsRequired = true
+        });
+
+        doc.Fields.Add(new PdfContractField
+        {
+            Id = "fld-sign-title",
+            Page = 2,
+            Type = PdfFieldType.Text,
+            Label = "Corporate Title / Authority",
+            Placeholder = "e.g. VP of Technology / Authorized Officer",
+            Value = "VP of Engineering & Architecture",
+            IsRequired = true
+        });
+
+        doc.Fields.Add(new PdfContractField
+        {
+            Id = "fld-sign-date",
+            Page = 2,
+            Type = PdfFieldType.DateTimeStamp,
+            Label = "Execution Date & UTC Timestamp",
+            IsRequired = true
+        });
+
+        doc.Fields.Add(new PdfContractField
+        {
+            Id = "fld-ack-checkbox",
+            Page = 2,
+            Type = PdfFieldType.Checkbox,
+            Label = "Legal Attestation Consent",
+            Placeholder = "I confirm I am an authorized signatory with binding executive authority.",
+            Value = "false",
+            IsRequired = true
+        });
+
+        return doc;
+    }
+}

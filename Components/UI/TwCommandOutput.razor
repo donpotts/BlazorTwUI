@@ -1,0 +1,36 @@
+@using BlazorTwUI.Services
+@* Terminal-style output of a command the agent ran computer/command-output; own implementation). Credentials are masked unless Redact is off. *@
+<figure class="rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 @Class" data-testid="command-output">
+    <figcaption class="flex items-center justify-between gap-3 px-4 py-2 bg-slate-900 border-b border-slate-700">
+        <code class="text-xs font-mono text-slate-100 truncate" data-testid="command-line"><span class="text-emerald-300" aria-hidden="true">$ </span>@ShownCommand</code>
+        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded @(ExitCode == 0 ? "bg-emerald-900 text-emerald-100" : "bg-red-900 text-red-100")" data-testid="command-exit">exit @ExitCode</span>
+    </figcaption>
+    <pre class="p-4 text-xs font-mono leading-relaxed text-slate-100 overflow-x-auto max-h-72" tabindex="0" aria-label="Command output" data-testid="command-text"><code>@ShownOutput</code></pre>
+    @if (Truncated)
+    {
+        <p class="px-4 pb-3 text-xs text-slate-300" data-testid="command-truncated">Output truncated to the last @MaxLines lines.</p>
+    }
+</figure>
+
+@code {
+    [Parameter, EditorRequired] public string Command { get; set; } = "";
+    [Parameter] public string Output { get; set; } = "";
+    [Parameter] public int ExitCode { get; set; }
+    [Parameter] public int MaxLines { get; set; } = 200;
+    [Parameter] public bool Redact { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    private string ShownCommand => Redact ? RedactionService.RedactText(Command) : Command;
+
+    private IEnumerable<string> Lines => (Output ?? "").ReplaceLineEndings("\n").TrimEnd('\n').Split('\n');
+    private bool Truncated => Lines.Count() > MaxLines;
+
+    private string ShownOutput
+    {
+        get
+        {
+            var text = string.Join('\n', Lines.TakeLast(MaxLines));
+            return Redact ? RedactionService.RedactText(text) : text;
+        }
+    }
+}

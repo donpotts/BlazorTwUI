@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <linearGradient id="dieGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4338ca" />
+      <stop offset="50%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#818cf8" />
+    </linearGradient>
+    <linearGradient id="goldTrace" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fbbf24" />
+      <stop offset="50%" stop-color="#fef08a" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#818cf8" flood-opacity="0.8" />
+    </filter>
+  </defs>
+
+  <rect width="800" height="450" fill="#050814" />
+
+  <!-- Ultra-Crisp Circuit Board Background -->
+  <rect x="100" y="50" width="600" height="350" rx="24" fill="#090d16" stroke="#1e293b" stroke-width="2" />
+  
+  <!-- Subtle High-Res Circuit Bus Lines -->
+  <g stroke="#0ea5e9" stroke-width="1.5" opacity="0.4" fill="none">
+    <path d="M120,70 L200,70 L230,100 L300,100" />
+    <path d="M120,90 L180,90 L210,120 L270,120" />
+    <path d="M680,70 L600,70 L570,100 L500,100" />
+    <path d="M680,380 L600,380 L570,350 L500,350" />
+    <path d="M120,380 L200,380 L230,350 L300,350" />
+  </g>
+
+  <!-- Chip Ceramic Package with Chamfered Edges -->
+  <rect x="250" y="110" width="300" height="230" rx="16" fill="#0f172a" stroke="#334155" stroke-width="3" filter="drop-shadow(0 15px 25px rgba(0,0,0,0.8))" />
+  
+  <!-- Metallic Heat Spreader / Silicon Die -->
+  <rect x="310" y="140" width="180" height="170" rx="10" fill="url(#dieGrad)" stroke="#c7d2fe" stroke-width="2" filter="url(#neonGlow)" />
+  
+  <!-- Micro Core Grid (Nanometer Scale Detail) -->
+  <g stroke="#ffffff" stroke-width="0.75" opacity="0.4">
+    <line x1="330" y1="140" x2="330" y2="310" />
+    <line x1="360" y1="140" x2="360" y2="310" />
+    <line x1="390" y1="140" x2="390" y2="310" />
+    <line x1="420" y1="140" x2="420" y2="310" />
+    <line x1="450" y1="140" x2="450" y2="310" />
+    <line x1="310" y1="170" x2="490" y2="170" />
+    <line x1="310" y1="200" x2="490" y2="200" />
+    <line x1="310" y1="230" x2="490" y2="230" />
+    <line x1="310" y1="260" x2="490" y2="260" />
+    <line x1="310" y1="290" x2="490" y2="290" />
+  </g>
+
+  <!-- Core Holographic Logo -->
+  <circle cx="400" cy="225" r="42" fill="#090d16" stroke="#38bdf8" stroke-width="2" />
+  <polygon points="400,195 425,240 375,240" fill="none" stroke="#a855f7" stroke-width="3" />
+  <circle cx="400" cy="225" r="8" fill="#38bdf8" />
+  <text x="400" y="272" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="13" letter-spacing="3" fill="#38bdf8" text-anchor="middle">NEURAL AGI-1</text>
+  <text x="400" y="287" font-family="monospace" font-weight="700" font-size="9" fill="#94a3b8" text-anchor="middle">4nm TSMC • 4K UPSCALE</text>
+
+  <!-- Precision Gold Wire-Bonds (Left & Right) -->
+  <g stroke="url(#goldTrace)" stroke-width="3" stroke-linecap="round">
+    <line x1="150" y1="140" x2="250" y2="140" />
+    <line x1="150" y1="180" x2="250" y2="180" />
+    <line x1="150" y1="220" x2="250" y2="220" />
+    <line x1="150" y1="260" x2="250" y2="260" />
+    <line x1="150" y1="300" x2="250" y2="300" />
+
+    <line x1="550" y1="140" x2="650" y2="140" />
+    <line x1="550" y1="180" x2="650" y2="180" />
+    <line x1="550" y1="220" x2="650" y2="220" />
+    <line x1="550" y1="260" x2="650" y2="260" />
+    <line x1="550" y1="300" x2="650" y2="300" />
+  </g>
+  <!-- Micro solder pads -->
+  <g fill="#fef08a">
+    <circle cx="250" cy="140" r="4" /><circle cx="250" cy="180" r="4" /><circle cx="250" cy="220" r="4" /><circle cx="250" cy="260" r="4" /><circle cx="250" cy="300" r="4" />
+    <circle cx="550" cy="140" r="4" /><circle cx="550" cy="180" r="4" /><circle cx="550" cy="220" r="4" /><circle cx="550" cy="260" r="4" /><circle cx="550" cy="300" r="4" />
+  </g>
+</svg>

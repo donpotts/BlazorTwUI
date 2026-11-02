@@ -1,0 +1,40 @@
+<button type="button"
+        aria-pressed="@(Active ? "true" : "false")"
+        @onclick="Toggle"
+        class="@TwMerge.Merge("relative inline-grid place-content-center cursor-pointer select-none p-2 rounded-xl transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/40", Class)">
+    <span class="col-start-1 row-start-1 transition-all duration-300 flex items-center justify-center @OnStateClasses">
+        @OnContent
+    </span>
+    <span class="col-start-1 row-start-1 transition-all duration-300 flex items-center justify-center @OffStateClasses">
+        @OffContent
+    </span>
+</button>
+
+@code {
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public EventCallback<bool> ActiveChanged { get; set; }
+    [Parameter] public SwapAnimation Animation { get; set; } = SwapAnimation.Rotate;
+    [Parameter] public RenderFragment? OnContent { get; set; }
+    [Parameter] public RenderFragment? OffContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private async Task Toggle()
+    {
+        Active = !Active;
+        await ActiveChanged.InvokeAsync(Active);
+    }
+
+    private string OnStateClasses => Animation switch
+    {
+        SwapAnimation.Rotate => Active ? "opacity-100 rotate-0 scale-100" : "opacity-0 rotate-45 scale-75 pointer-events-none",
+        SwapAnimation.Flip => Active ? "opacity-100 scale-x-100" : "opacity-0 -scale-x-100 pointer-events-none",
+        _ => Active ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"
+    };
+
+    private string OffStateClasses => Animation switch
+    {
+        SwapAnimation.Rotate => !Active ? "opacity-100 rotate-0 scale-100" : "opacity-0 -rotate-45 scale-75 pointer-events-none",
+        SwapAnimation.Flip => !Active ? "opacity-100 scale-x-100" : "opacity-0 -scale-x-100 pointer-events-none",
+        _ => !Active ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"
+    };
+}

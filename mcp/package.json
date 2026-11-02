@@ -1,0 +1,21 @@
+{
+  "name": "@donpo/blazor-tw-mcp",
+  "version": "0.3.0",
+  "description": "Official Model Context Protocol (MCP) server for BlazorTwUI component library, 100 enterprise forms, and Check 21 MICR tools.",
+  "main": "server.js",
+  "bin": {
+    "blazor-tw-mcp": "./server.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "blazor",
+    "tailwind",
+    "webassembly",
+    "cursor",
+    "claude",
+    "antigravity"
+  ],
+  "author": "BlazorTwUI Contributors",
+  "license": "MIT"
+}

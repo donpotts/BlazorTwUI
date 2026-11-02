@@ -1,0 +1,315 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Services
+@inject ToastService Toast
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden max-w-5xl mx-auto @CustomClass">
+    <!-- Header Banner -->
+    <div class="p-6 sm:p-10 bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-900 text-white relative overflow-hidden border-b border-indigo-500/20">
+        <div class="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-brand-500/15 blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-3 max-w-2xl">
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30 text-xs font-semibold">
+                        <span>🎯</span>
+                        <span>Annual Operating Plan (AOP)</span>
+                    </span>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-mono font-bold @GetStatusBadgeClass()">
+                        @Model.ApprovalStatus
+                    </span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                    Corporate Strategic Operating Plan
+                </h1>
+                <p class="text-slate-300 text-xs sm:text-sm leading-relaxed">
+                    Formulate executive objectives, define fiscal year OKRs, allocate departmental capital budgets, and establish audited governance milestones.
+                </p>
+            </div>
+
+            <!-- Quick Fiscal Target Summary Widget -->
+            <div class="p-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 shrink-0 space-y-2 min-w-52">
+                <span class="text-[11px] font-mono uppercase text-slate-300 block">FY@(Model.FiscalYear) Budget Cap</span>
+                <span class="text-2xl font-black text-emerald-400 font-mono block">$@(Model.TotalBudgetMillions.ToString("F1"))M USD</span>
+                <div class="flex items-center justify-between text-xs text-slate-300 font-mono pt-1 border-t border-white/10">
+                    <span>Headcount Target:</span>
+                    <span class="text-white font-bold">+@Model.NewHeadcountTarget hires</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Body -->
+    <form @onsubmit="HandleSubmit" class="p-6 sm:p-10 space-y-8">
+        <!-- 1. General Corporate Governance -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span class="text-base">🏢</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">1. Executive Governance & Planning Cycle</h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Company / Entity Legal Name</label>
+                    <input type="text" @bind="Model.CompanyName" required placeholder="e.g. Acme Technologies Inc."
+                           class="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Planning Fiscal Year</label>
+                    <select @bind="Model.FiscalYear" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none">
+                        <option value="2026">FY 2026</option>
+                        <option value="2027">FY 2027</option>
+                        <option value="2028">FY 2028</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Executive Sponsor (CEO / COO)</label>
+                    <input type="text" @bind="Model.ExecutiveSponsor" required placeholder="e.g. Sarah Connor, CEO"
+                           class="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Core Strategic Pillars (Multi-select) -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span class="text-base">🏛️</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">2. Strategic Pillars (Select all applicable focus areas)</h2>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                @foreach (var pillar in _availablePillars)
+                {
+                    var isSelected = Model.SelectedPillars.Contains(pillar);
+                    <button type="button" @onclick="() => TogglePillar(pillar)"
+                            class="p-3 rounded-2xl border text-left transition flex items-center justify-between gap-2 @(isSelected ? "border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 text-brand-700 dark:text-brand-300 ring-2 ring-brand-500/20 font-bold" : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850 hover:border-slate-300 dark:hover:border-slate-700 text-slate-700 dark:text-slate-300")">
+                        <span class="text-xs truncate">@pillar</span>
+                        <span class="text-xs font-mono">@(isSelected ? "✓" : "+")</span>
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- 3. Vision & Objectives (OKRs) -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span class="text-base">🔭</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">3. Strategic Vision & Primary Key Results</h2>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Company Long-Term North Star Vision</label>
+                <textarea @bind="Model.VisionStatement" rows="2" placeholder="State the 3-5 year transformative vision for the enterprise..."
+                          class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs sm:text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-2">
+                    <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">OKR #1: Growth & Revenue</label>
+                    <input type="text" @bind="Model.OkrRevenue" placeholder="e.g. Reach $50M ARR with 120% net dollar retention"
+                           class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-2">
+                    <label class="block text-xs font-bold text-slate-800 dark:text-slate-200">OKR #2: Engineering Velocity</label>
+                    <input type="text" @bind="Model.OkrEngineering" placeholder="e.g. Ship next-gen WASM architecture with 99.99% SLA"
+                           class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Budget Allocation & Resource Planning -->
+        <div class="space-y-4">
+            <div class="flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+                <span class="text-base">💰</span>
+                <h2 class="text-base font-bold text-slate-900 dark:text-white">4. Resource & Capital Allocation</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800">
+                <!-- Budget Slider -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-xs font-mono">
+                        <span class="font-bold text-slate-700 dark:text-slate-300">Total Capital Budget (OPEX + CAPEX):</span>
+                        <span class="text-brand-600 dark:text-brand-400 font-bold">$@(Model.TotalBudgetMillions.ToString("F1")) Million USD</span>
+                    </div>
+                    <input type="range" min="1.0" max="100.0" step="0.5" @bind="Model.TotalBudgetMillions" @bind:event="oninput"
+                           class="w-full accent-brand-600 cursor-pointer" />
+                    <div class="flex justify-between text-[10px] text-slate-400 font-mono">
+                        <span>$1.0M</span>
+                        <span>$50.0M</span>
+                        <span>$100.0M</span>
+                    </div>
+                </div>
+
+                <!-- Headcount Stepper -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between text-xs font-mono">
+                        <span class="font-bold text-slate-700 dark:text-slate-300">New Headcount Expansion:</span>
+                        <span class="text-emerald-600 dark:text-emerald-400 font-bold">+@Model.NewHeadcountTarget team members</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="button" @onclick="() => AdjustHeadcount(-5)" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700">-5</button>
+                        <input type="number" @bind="Model.NewHeadcountTarget" class="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-center text-sm font-mono font-bold" />
+                        <button type="button" @onclick="() => AdjustHeadcount(5)" class="px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-bold text-sm hover:bg-slate-100 dark:hover:bg-slate-700">+5</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Quarterly Deliverable Milestones -->
+        <div class="space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">📅</span>
+                    <h2 class="text-base font-bold text-slate-900 dark:text-white">5. Quarterly Strategic Milestones</h2>
+                </div>
+                <button type="button" @onclick="AddMilestone" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline">
+                    + Add Milestone
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                @for (int i = 0; i < Model.Milestones.Count; i++)
+                {
+                    var idx = i;
+                    var ms = Model.Milestones[idx];
+                    <div class="p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="px-2 py-0.5 rounded-md bg-brand-500/10 text-brand-600 dark:text-brand-400 font-mono text-[10px] font-bold">
+                                @ms.Quarter
+                            </span>
+                            @if (Model.Milestones.Count > 1)
+                            {
+                                <button type="button" @onclick="() => RemoveMilestone(idx)" class="text-slate-400 hover:text-rose-500 text-xs">✕</button>
+                            }
+                        </div>
+                        <input type="text" @bind="ms.Title" placeholder="Milestone objective..."
+                               class="w-full px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-xs text-slate-900 dark:text-white focus:outline-none" />
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Governance Certification & Action Bar -->
+        <div class="pt-6 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <input type="checkbox" id="planCert" @bind="Model.CertifiedByExecutive" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 cursor-pointer" />
+                <label for="planCert" class="text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+                    I affirm this operating plan aligns with enterprise fiduciary standards and bylaws.
+                </label>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button type="button" @onclick="ExportJson"
+                        class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition shadow-xs">
+                    Export JSON
+                </button>
+                <button type="submit"
+                        class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs sm:text-sm transition shadow-md shadow-brand-500/20 flex items-center gap-1.5">
+                    <span>Submit Plan to Board</span>
+                    <span>→</span>
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@code {
+    [Parameter] public CompanyPlanModel Model { get; set; } = new();
+    [Parameter] public EventCallback<CompanyPlanModel> OnPlanSubmitted { get; set; }
+    [Parameter] public string CustomClass { get; set; } = "";
+
+    public class MilestoneItem
+    {
+        public string Quarter { get; set; } = "Q1";
+        public string Title { get; set; } = "";
+    }
+
+    public class CompanyPlanModel
+    {
+        public string CompanyName { get; set; } = "Global Frontier Systems Inc.";
+        public string FiscalYear { get; set; } = "2026";
+        public string ExecutiveSponsor { get; set; } = "Helena Vance, Executive Chair";
+        public string VisionStatement { get; set; } = "To become the undisputed enterprise benchmark for high-performance WebAssembly application architecture worldwide.";
+        public string OkrRevenue { get; set; } = "Reach $45M in Annual Recurring Revenue with 125% Net Dollar Retention";
+        public string OkrEngineering { get; set; } = "Achieve zero-downtime continuous deployment with sub-millisecond Blazor WASM components";
+        public double TotalBudgetMillions { get; set; } = 28.5;
+        public int NewHeadcountTarget { get; set; } = 40;
+        public List<string> SelectedPillars { get; set; } = new() { "Zero-Trust Security", "Platform Scalability", "Operational Efficiency" };
+        public List<MilestoneItem> Milestones { get; set; } = new()
+        {
+            new() { Quarter = "Q1", Title = "Complete ISO 27001 & SOC2 Type II audit certification" },
+            new() { Quarter = "Q2", Title = "Ship BlazorTwUI Enterprise v2.0 suite worldwide" },
+            new() { Quarter = "Q3", Title = "Expand operations into EMEA and APAC enterprise accounts" },
+            new() { Quarter = "Q4", Title = "Attain positive EBITDA and celebrate annual team excellence" }
+        };
+        public bool CertifiedByExecutive { get; set; } = true;
+        public string ApprovalStatus { get; set; } = "Draft Ready for Board";
+    }
+
+    private readonly string[] _availablePillars = new[]
+    {
+        "Zero-Trust Security",
+        "Platform Scalability",
+        "Operational Efficiency",
+        "AI-First Automation",
+        "Global Enterprise Expansion",
+        "Developer Ergonomics & Joy"
+    };
+
+    private void TogglePillar(string pillar)
+    {
+        if (Model.SelectedPillars.Contains(pillar))
+            Model.SelectedPillars.Remove(pillar);
+        else
+            Model.SelectedPillars.Add(pillar);
+    }
+
+    private void AdjustHeadcount(int delta)
+    {
+        Model.NewHeadcountTarget = Math.Max(0, Model.NewHeadcountTarget + delta);
+    }
+
+    private void AddMilestone()
+    {
+        var qNum = (Model.Milestones.Count % 4) + 1;
+        Model.Milestones.Add(new MilestoneItem { Quarter = $"Q{qNum}", Title = "New strategic deliverable" });
+    }
+
+    private void RemoveMilestone(int idx)
+    {
+        if (idx >= 0 && idx < Model.Milestones.Count)
+        {
+            Model.Milestones.RemoveAt(idx);
+        }
+    }
+
+    private string GetStatusBadgeClass() => Model.ApprovalStatus switch
+    {
+        "Ratified by Board" => "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30",
+        "Pending Board Review" => "bg-amber-500/20 text-amber-400 border border-amber-500/30",
+        _ => "bg-brand-500/20 text-brand-300 border border-brand-500/30"
+    };
+
+    private async Task HandleSubmit()
+    {
+        if (!Model.CertifiedByExecutive)
+        {
+            Toast.Show("Certification Required", "Please certify the operating plan before submitting to the board.", SemanticVariant.Warning);
+            return;
+        }
+
+        Model.ApprovalStatus = "Pending Board Review";
+        Toast.Show("Operating Plan Submitted", $"FY{Model.FiscalYear} Strategic Plan for {Model.CompanyName} has been queued for board review.", SemanticVariant.Success);
+        if (OnPlanSubmitted.HasDelegate)
+        {
+            await OnPlanSubmitted.InvokeAsync(Model);
+        }
+    }
+
+    private void ExportJson()
+    {
+        var json = System.Text.Json.JsonSerializer.Serialize(Model, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+        Toast.Show("Plan Exported", $"Exported {json.Length} bytes of JSON data", SemanticVariant.Info);
+    }
+}

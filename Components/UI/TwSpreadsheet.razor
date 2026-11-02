@@ -1,0 +1,299 @@
+@namespace BlazorTwUI.Components.UI
+@using System.Text.RegularExpressions
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-4 @CustomClass">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-base">
+                📑
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        Formula Engine Active
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" @onclick="AddRow"
+                    class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition shadow-xs">
+                + Add Row
+            </button>
+            <button type="button" @onclick="AddColumn"
+                    class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 transition shadow-xs">
+                + Add Column
+            </button>
+            <button type="button" @onclick="ResetToSample"
+                    class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-xs font-mono text-slate-500 hover:text-slate-700 transition shadow-xs">
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- Excel-Style Formula Bar -->
+    <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-850/70 border border-slate-200 dark:border-slate-800 flex items-center gap-3 text-xs font-mono">
+        <!-- Active Coordinate Indicator (e.g. B4) -->
+        <div class="px-3 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-bold text-brand-600 dark:text-brand-400 min-w-14 text-center shadow-xs">
+            @_activeCoord
+        </div>
+        <span class="text-slate-400 font-bold italic select-none">fx</span>
+        <!-- Formula Input Box -->
+        <input type="text" @bind="_activeFormula" @bind:event="oninput" @onchange="CommitActiveFormula"
+               placeholder="Enter value or formula: =SUM(B1:B4), =AVG(C1:C4), =B1*1.1..."
+               class="flex-1 px-3 py-1 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+    </div>
+
+    <!-- Spreadsheet Matrix Table -->
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner">
+        <table class="w-full text-xs border-collapse">
+            <!-- Column Letters (A, B, C...) -->
+            <thead class="bg-slate-100 dark:bg-slate-850 text-slate-600 dark:text-slate-400 font-mono font-bold select-none border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                    <th class="w-12 p-2 text-center bg-slate-200/60 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700">#</th>
+                    @for (int c = 0; c < _colCount; c++)
+                    {
+                        var colLetter = GetColumnLetter(c);
+                        <th class="p-2 text-center border-r border-slate-200 dark:border-slate-700 min-w-[120px]">
+                            @colLetter
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                @for (int r = 0; r < _rowCount; r++)
+                {
+                    var rowIdx = r;
+                    <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-850/40">
+                        <!-- Row Number (1, 2, 3...) -->
+                        <td class="p-2 text-center bg-slate-100/70 dark:bg-slate-900 text-slate-400 font-bold select-none border-r border-slate-200 dark:border-slate-800">
+                            @(rowIdx + 1)
+                        </td>
+
+                        <!-- Cell Inputs -->
+                        @for (int c = 0; c < _colCount; c++)
+                        {
+                            var colIdx = c;
+                            var coord = $"{GetColumnLetter(colIdx)}{rowIdx + 1}";
+                            var isSelected = _activeCoord == coord;
+                            var cellVal = GetCalculatedValue(coord);
+
+                            <td class="p-0 border-r border-slate-100 dark:border-slate-800 relative @(isSelected ? "ring-2 ring-brand-500 z-10" : "")"
+                                @onclick="() => SelectCell(coord)">
+                                <input type="text"
+                                       value="@cellVal"
+                                       @onfocus="() => SelectCell(coord)"
+                                       @onchange="(ChangeEventArgs e) => UpdateCellValue(coord, e.Value?.ToString() ?? string.Empty)"
+                                       class="w-full h-full px-2.5 py-2 bg-transparent border-0 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:bg-white dark:focus:bg-slate-800 @(IsNumeric(cellVal) ? "text-right" : "text-left")" />
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Quick Formula Helpers -->
+    <div class="flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-slate-500 dark:text-slate-400 pt-1">
+        <div class="flex items-center gap-2">
+            <span class="text-[10px] uppercase font-bold text-slate-400">Supported Functions:</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400">=SUM(A1:A5)</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400">=AVG(B1:B5)</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400">=MAX(C1:C5)</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400">=COUNT(A1:D1)</span>
+        </div>
+        <span>Active Cells: <strong>@(_cells.Count)</strong></span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Enterprise Spreadsheet Matrix";
+    [Parameter] public string Subtitle { get; set; } = "Excel-compatible cell matrix with live arithmetic, range aggregations, and formula bar";
+    [Parameter] public string CustomClass { get; set; } = "";
+
+    private int _colCount = 5;
+    private int _rowCount = 8;
+    private string _activeCoord = "B5";
+    private string _activeFormula = "=SUM(B1:B4)";
+    private Dictionary<string, string> _cells = new();
+
+    protected override void OnInitialized()
+    {
+        ResetToSample();
+    }
+
+    private void AddRow() => _rowCount++;
+    private void AddColumn() => _colCount++;
+
+    private void SelectCell(string coord)
+    {
+        _activeCoord = coord;
+        _activeFormula = _cells.TryGetValue(coord, out var val) ? val : "";
+    }
+
+    private void CommitActiveFormula()
+    {
+        if (!string.IsNullOrEmpty(_activeCoord))
+        {
+            _cells[_activeCoord] = _activeFormula;
+        }
+    }
+
+    private void UpdateCellValue(string coord, string value)
+    {
+        _cells[coord] = value;
+        if (_activeCoord == coord)
+        {
+            _activeFormula = value;
+        }
+    }
+
+    private string GetCalculatedValue(string coord)
+    {
+        if (!_cells.TryGetValue(coord, out var raw) || string.IsNullOrEmpty(raw))
+            return "";
+
+        if (!raw.StartsWith("="))
+            return raw;
+
+        try
+        {
+            return EvaluateFormula(raw);
+        }
+        catch
+        {
+            return "#ERR!";
+        }
+    }
+
+    private string EvaluateFormula(string formula)
+    {
+        var expr = formula.Substring(1).Trim().ToUpper();
+
+        // 1. Range functions: SUM, AVG, MIN, MAX, COUNT
+        var match = Regex.Match(expr, @"^(SUM|AVG|MIN|MAX|COUNT)\(([A-Z]\d+):([A-Z]\d+)\)$");
+        if (match.Success)
+        {
+            var fn = match.Groups[1].Value;
+            var start = match.Groups[2].Value;
+            var end = match.Groups[3].Value;
+
+            var values = GetRangeValues(start, end);
+            if (!values.Any()) return "0";
+
+            decimal result = fn switch
+            {
+                "SUM" => values.Sum(),
+                "AVG" => values.Average(),
+                "MIN" => values.Min(),
+                "MAX" => values.Max(),
+                "COUNT" => values.Count,
+                _ => 0
+            };
+
+            return Math.Round(result, 2).ToString();
+        }
+
+        // 2. Simple two-cell arithmetic: =A1+B1, =A1*1.5
+        var arithMatch = Regex.Match(expr, @"^([A-Z]\d+|\d+(\.\d+)?)\s*([\+\-\*\/])\s*([A-Z]\d+|\d+(\.\d+)?)$");
+        if (arithMatch.Success)
+        {
+            var leftStr = arithMatch.Groups[1].Value;
+            var op = arithMatch.Groups[3].Value;
+            var rightStr = arithMatch.Groups[4].Value;
+
+            decimal left = ResolveNumeric(leftStr);
+            decimal right = ResolveNumeric(rightStr);
+
+            decimal res = op switch
+            {
+                "+" => left + right,
+                "-" => left - right,
+                "*" => left * right,
+                "/" => right != 0 ? left / right : 0,
+                _ => 0
+            };
+
+            return Math.Round(res, 2).ToString();
+        }
+
+        return expr;
+    }
+
+    private decimal ResolveNumeric(string token)
+    {
+        if (decimal.TryParse(token, out var n)) return n;
+        var cellVal = GetCalculatedValue(token);
+        if (decimal.TryParse(cellVal, out var val)) return val;
+        return 0;
+    }
+
+    private List<decimal> GetRangeValues(string startCoord, string endCoord)
+    {
+        var list = new List<decimal>();
+        var startCol = startCoord[0] - 'A';
+        var endCol = endCoord[0] - 'A';
+        var startRow = int.Parse(startCoord.Substring(1));
+        var endRow = int.Parse(endCoord.Substring(1));
+
+        for (int c = Math.Min(startCol, endCol); c <= Math.Max(startCol, endCol); c++)
+        {
+            for (int r = Math.Min(startRow, endRow); r <= Math.Max(startRow, endRow); r++)
+            {
+                var coord = $"{GetColumnLetter(c)}{r}";
+                var cell = GetCalculatedValue(coord);
+                if (decimal.TryParse(cell, out var val))
+                {
+                    list.Add(val);
+                }
+            }
+        }
+
+        return list;
+    }
+
+    private bool IsNumeric(string val) => decimal.TryParse(val, out _);
+
+    private string GetColumnLetter(int colIdx) => ((char)('A' + colIdx)).ToString();
+
+    private void ResetToSample()
+    {
+        _cells.Clear();
+        // Row 1
+        _cells["A1"] = "WASM Runtime";
+        _cells["B1"] = "24000";
+        _cells["C1"] = "18000";
+        _cells["D1"] = "=B1+C1";
+
+        // Row 2
+        _cells["A2"] = "Tailwind Styling";
+        _cells["B2"] = "19500";
+        _cells["C2"] = "14200";
+        _cells["D2"] = "=B2+C2";
+
+        // Row 3
+        _cells["A3"] = "Enterprise Forms";
+        _cells["B3"] = "31000";
+        _cells["C3"] = "22500";
+        _cells["D3"] = "=B3+C3";
+
+        // Row 4
+        _cells["A4"] = "Hardware Sensors";
+        _cells["B4"] = "15800";
+        _cells["C4"] = "12100";
+        _cells["D4"] = "=B4+C4";
+
+        // Row 5 (Totals)
+        _cells["A5"] = "Grand Total";
+        _cells["B5"] = "=SUM(B1:B4)";
+        _cells["C5"] = "=SUM(C1:C4)";
+        _cells["D5"] = "=SUM(D1:D4)";
+
+        _activeCoord = "B5";
+        _activeFormula = "=SUM(B1:B4)";
+    }
+}

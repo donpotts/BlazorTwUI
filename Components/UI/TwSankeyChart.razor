@@ -1,0 +1,231 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="flex flex-col gap-2 w-full @Class" @attributes="AdditionalAttributes">
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">@Title</h4>
+            @if (_selectedNode != null)
+            {
+                <span class="text-[11px] font-mono px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold">
+                    @_selectedNode.Label (Flow: @_selectedNodeValue.ToString("N0"))
+                </span>
+            }
+        </div>
+    }
+
+    <div class="relative w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm overflow-hidden flex items-center justify-center">
+        <svg viewBox="0 0 @Width @Height" class="w-full h-auto max-h-[380px] select-none" role="img" aria-label="Sankey Flow Diagram">
+            <defs>
+                @foreach (var link in ComputedLinks)
+                {
+                    <linearGradient id="@link.GradientId" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="@link.SourceColor" stop-opacity="0.45" />
+                        <stop offset="100%" stop-color="@link.TargetColor" stop-opacity="0.45" />
+                    </linearGradient>
+                }
+            </defs>
+
+            @* Render Flow Ribbons *@
+            @foreach (var link in ComputedLinks)
+            {
+                <path d="@link.PathData"
+                      fill="url(#@link.GradientId)"
+                      class="transition-opacity duration-200 hover:opacity-90 cursor-pointer"
+                      @onclick="() => HandleLinkClick(link)">
+                    <title>@link.Source.Label → @link.Target.Label: @link.Value.ToString("N0")</title>
+                </path>
+            }
+
+            @* Render Nodes (Columns of Rectangles) *@
+            @foreach (var node in ComputedNodes)
+            {
+                var isSelected = _selectedNode?.Id == node.Item.Id;
+                <g class="cursor-pointer transition-transform group" @onclick="() => HandleNodeClick(node)">
+                    <rect x="@node.X"
+                          y="@node.Y"
+                          width="@node.Width"
+                          height="@Math.Max(6.0, node.Height)"
+                          rx="4"
+                          fill="@node.Color"
+                          class="transition-all duration-200 group-hover:brightness-110 @(isSelected ? "stroke-2 stroke-white dark:stroke-slate-900 drop-shadow-md" : "")" />
+
+                    @* Node Text Label *@
+                    <text x="@(node.IsSourceColumn ? node.X - 8 : node.X + node.Width + 8)"
+                          y="@(node.Y + (node.Height / 2.0))"
+                          font-size="11"
+                          font-weight="bold"
+                          fill="currentColor"
+                          text-anchor="@(node.IsSourceColumn ? "end" : "start")"
+                          dominant-baseline="middle"
+                          class="fill-slate-700 dark:fill-slate-200 text-xs">
+                        @node.Item.Label
+                    </text>
+                </g>
+            }
+        </svg>
+
+        @if (Nodes.Count == 0 || Links.Count == 0)
+        {
+            <div class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+                No flow data available
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    public sealed record SankeyNode(string Id, string Label, string? Color = null);
+    public sealed record SankeyLink(string SourceId, string TargetId, double Value);
+
+    private sealed record ComputedNode(SankeyNode Item, double X, double Y, double Width, double Height, string Color, bool IsSourceColumn, double TotalValue);
+    private sealed record ComputedLink(SankeyNode Source, SankeyNode Target, double Value, string PathData, string SourceColor, string TargetColor, string GradientId);
+
+    [Parameter] public IReadOnlyList<SankeyNode> Nodes { get; set; } = Array.Empty<SankeyNode>();
+    [Parameter] public IReadOnlyList<SankeyLink> Links { get; set; } = Array.Empty<SankeyLink>();
+    [Parameter] public string? Title { get; set; } = "Enterprise Pipeline & Resource Flow";
+    [Parameter] public int Width { get; set; } = 700;
+    [Parameter] public int Height { get; set; } = 360;
+    [Parameter] public EventCallback<SankeyNode> OnNodeClick { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private SankeyNode? _selectedNode;
+    private double _selectedNodeValue;
+
+    private static readonly string[] Palette =
+    {
+        "#6366f1", "#10b981", "#3b82f6", "#f59e0b", "#8b5cf6", "#ec4899", "#06b6d4", "#14b8a6"
+    };
+
+    private IReadOnlyList<ComputedNode> ComputedNodes { get; set; } = Array.Empty<ComputedNode>();
+    private IReadOnlyList<ComputedLink> ComputedLinks { get; set; } = Array.Empty<ComputedLink>();
+
+    protected override void OnParametersSet()
+    {
+        CalculateLayout();
+    }
+
+    private void CalculateLayout()
+    {
+        if (Nodes.Count == 0 || Links.Count == 0)
+        {
+            ComputedNodes = Array.Empty<ComputedNode>();
+            ComputedLinks = Array.Empty<ComputedLink>();
+            return;
+        }
+
+        var nodeMap = Nodes.ToDictionary(n => n.Id);
+        var sourceIds = Links.Select(l => l.SourceId).Distinct().ToHashSet();
+        var targetIds = Links.Select(l => l.TargetId).Distinct().ToHashSet();
+
+        // Separate into 2 columns: sources on left, targets on right
+        var leftNodes = Nodes.Where(n => sourceIds.Contains(n.Id) && !targetIds.Contains(n.Id)).ToList();
+        var rightNodes = Nodes.Where(n => targetIds.Contains(n.Id)).ToList();
+
+        if (leftNodes.Count == 0) leftNodes = Nodes.Take(Nodes.Count / 2).ToList();
+        if (rightNodes.Count == 0) rightNodes = Nodes.Skip(leftNodes.Count).ToList();
+
+        double nodeWidth = 16.0;
+        double leftX = 140.0;
+        double rightX = Width - 140.0 - nodeWidth;
+        double paddingY = 16.0;
+        double availableHeight = Height - 60.0;
+
+        // Compute total values
+        var nodeValues = new Dictionary<string, double>();
+        foreach (var node in Nodes)
+        {
+            var outVal = Links.Where(l => l.SourceId == node.Id).Sum(l => l.Value);
+            var inVal = Links.Where(l => l.TargetId == node.Id).Sum(l => l.Value);
+            nodeValues[node.Id] = Math.Max(outVal, inVal);
+        }
+
+        double leftTotal = leftNodes.Sum(n => nodeValues.GetValueOrDefault(n.Id, 1.0));
+        double rightTotal = rightNodes.Sum(n => nodeValues.GetValueOrDefault(n.Id, 1.0));
+
+        var computedNodesList = new List<ComputedNode>();
+        var nodeLayoutMap = new Dictionary<string, ComputedNode>();
+
+        // Layout Left Column
+        double currentY = 30.0;
+        for (int i = 0; i < leftNodes.Count; i++)
+        {
+            var node = leftNodes[i];
+            double val = nodeValues.GetValueOrDefault(node.Id, 1.0);
+            double nodeHeight = Math.Max(12.0, (val / Math.Max(1.0, leftTotal)) * (availableHeight - (leftNodes.Count * paddingY)));
+            var color = node.Color ?? Palette[i % Palette.Length];
+
+            var cNode = new ComputedNode(node, leftX, currentY, nodeWidth, nodeHeight, color, true, val);
+            computedNodesList.Add(cNode);
+            nodeLayoutMap[node.Id] = cNode;
+            currentY += nodeHeight + paddingY;
+        }
+
+        // Layout Right Column
+        currentY = 30.0;
+        for (int i = 0; i < rightNodes.Count; i++)
+        {
+            var node = rightNodes[i];
+            double val = nodeValues.GetValueOrDefault(node.Id, 1.0);
+            double nodeHeight = Math.Max(12.0, (val / Math.Max(1.0, rightTotal)) * (availableHeight - (rightNodes.Count * paddingY)));
+            var color = node.Color ?? Palette[(i + 3) % Palette.Length];
+
+            var cNode = new ComputedNode(node, rightX, currentY, nodeWidth, nodeHeight, color, false, val);
+            computedNodesList.Add(cNode);
+            nodeLayoutMap[node.Id] = cNode;
+            currentY += nodeHeight + paddingY;
+        }
+
+        ComputedNodes = computedNodesList;
+
+        // Compute Links (curved ribbons)
+        var computedLinksList = new List<ComputedLink>();
+        var sourceOffsets = new Dictionary<string, double>();
+        var targetOffsets = new Dictionary<string, double>();
+
+        for (int i = 0; i < Links.Count; i++)
+        {
+            var link = Links[i];
+            if (!nodeLayoutMap.TryGetValue(link.SourceId, out var sNode) || !nodeLayoutMap.TryGetValue(link.TargetId, out var tNode))
+                continue;
+
+            double sOff = sourceOffsets.GetValueOrDefault(link.SourceId, 0.0);
+            double tOff = targetOffsets.GetValueOrDefault(link.TargetId, 0.0);
+
+            double linkHeightSource = Math.Max(3.0, (link.Value / Math.Max(1.0, sNode.TotalValue)) * sNode.Height);
+            double linkHeightTarget = Math.Max(3.0, (link.Value / Math.Max(1.0, tNode.TotalValue)) * tNode.Height);
+
+            double x0 = sNode.X + sNode.Width;
+            double y0 = sNode.Y + sOff;
+            double x1 = tNode.X;
+            double y1 = tNode.Y + tOff;
+
+            double dx = (x1 - x0) / 2.0;
+            var path = $"M {x0} {y0} C {x0 + dx} {y0}, {x1 - dx} {y1}, {x1} {y1} L {x1} {y1 + linkHeightTarget} C {x1 - dx} {y1 + linkHeightTarget}, {x0 + dx} {y0 + linkHeightSource}, {x0} {y0 + linkHeightSource} Z";
+
+            string gradId = $"sankey-grad-{i}";
+            computedLinksList.Add(new ComputedLink(sNode.Item, tNode.Item, link.Value, path, sNode.Color, tNode.Color, gradId));
+
+            sourceOffsets[link.SourceId] = sOff + linkHeightSource;
+            targetOffsets[link.TargetId] = tOff + linkHeightTarget;
+        }
+
+        ComputedLinks = computedLinksList;
+    }
+
+    private async Task HandleNodeClick(ComputedNode node)
+    {
+        _selectedNode = node.Item;
+        _selectedNodeValue = node.TotalValue;
+        await OnNodeClick.InvokeAsync(node.Item);
+    }
+
+    private void HandleLinkClick(ComputedLink link)
+    {
+        _selectedNode = link.Source;
+        _selectedNodeValue = link.Value;
+    }
+}

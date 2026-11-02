@@ -1,0 +1,50 @@
+@* Concentric 270-degree bars, one per value, with a legend that carries the exact numbers (the chart alone is never the only source). *@
+<figure class="inline-flex flex-col sm:flex-row items-center gap-4 @Class" data-testid="bar-gauge">
+    <svg viewBox="0 0 120 120" class="w-44 h-44 shrink-0" role="img" aria-label="@Summary">
+        @for (var i = 0; i < Items.Count; i++)
+        {
+            var r = 52 - i * Step;
+            if (r < 6) break;
+            var c = 2 * Math.PI * r;
+            var track = c * Sweep;
+            var frac = Fraction(Items[i].Value);
+            <circle cx="60" cy="60" r="@r.ToString("0.##", Inv)" fill="none" stroke-width="@Stroke.ToString("0.##", Inv)" stroke-linecap="round"
+                    class="stroke-slate-200 dark:stroke-slate-700" stroke-dasharray="@track.ToString("0.###", Inv) @c.ToString("0.###", Inv)" transform="rotate(135 60 60)" />
+            <circle cx="60" cy="60" r="@r.ToString("0.##", Inv)" fill="none" stroke-width="@Stroke.ToString("0.##", Inv)" stroke-linecap="round"
+                    stroke="@Color(i)" stroke-dasharray="@((track * frac).ToString("0.###", Inv)) @c.ToString("0.###", Inv)" transform="rotate(135 60 60)"
+                    data-testid="bar-gauge-arc" data-label="@Items[i].Label" data-fraction="@frac.ToString("0.###", Inv)" />
+        }
+    </svg>
+    <figcaption>
+        <ul class="space-y-1.5">
+            @for (var i = 0; i < Items.Count; i++)
+            {
+                <li class="flex items-center gap-2 text-sm text-slate-900 dark:text-slate-100" data-testid="bar-gauge-legend">
+                    <span class="w-3 h-3 rounded-full shrink-0" style="background:@Color(i)" aria-hidden="true"></span>
+                    <span class="font-semibold">@Items[i].Label</span>
+                    <span class="tabular-nums text-slate-700 dark:text-slate-300">@Items[i].Value.ToString("0.##", Inv)@Unit</span>
+                </li>
+            }
+        </ul>
+    </figcaption>
+</figure>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+    private static readonly string[] Palette = { "#4f46e5", "#0891b2", "#059669", "#d97706", "#db2777", "#7c3aed" };
+    private const double Sweep = 0.75, Stroke = 7, Step = 11;
+
+    public sealed record GaugeItem(string Label, double Value);
+
+    [Parameter, EditorRequired] public IReadOnlyList<GaugeItem> Items { get; set; } = Array.Empty<GaugeItem>();
+    [Parameter] public double Min { get; set; }
+    [Parameter] public double Max { get; set; } = 100;
+    [Parameter] public string Unit { get; set; } = "";
+    [Parameter] public string? Class { get; set; }
+
+    private double Fraction(double v) => Max <= Min ? 0 : Math.Clamp((v - Min) / (Max - Min), 0, 1);
+
+    private static string Color(int i) => Palette[i % Palette.Length];
+
+    private string Summary => string.Join(", ", Items.Select(i => $"{i.Label} {i.Value.ToString("0.##", Inv)}{Unit}"));
+}

@@ -1,0 +1,47 @@
+@* Facts the agent remembers about you, each with its source, searchable and forgettable memory; own implementation). *@
+<section aria-label="Agent memory" class="space-y-3 @Class" data-testid="memory-list">
+    <div class="flex items-center gap-2">
+        <label for="@_id" class="sr-only">Search memories</label>
+        <input id="@_id" type="search" placeholder="Search memories" @bind="_query" @bind:event="oninput" data-testid="memory-search"
+               class="flex-1 min-h-[40px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" />
+        <span class="text-xs text-slate-600 dark:text-slate-400" data-testid="memory-count" aria-live="polite">@Visible().Count() of @Items.Count</span>
+    </div>
+    <ul class="space-y-2">
+        @foreach (var m in Visible())
+        {
+            <li class="flex items-start gap-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3" data-testid="memory-item" data-memory="@m.Id">
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm text-slate-900 dark:text-slate-100" data-testid="memory-text">@m.Text</p>
+                    <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">From @m.Source · <time datetime="@m.LearnedUtc.ToString("O")">@m.LearnedUtc.ToLocalTime().ToString("MMM d")</time></p>
+                </div>
+                <button type="button" @onclick="() => ForgetAsync(m)" aria-label="@($"Forget: {m.Text}")" data-testid="memory-forget"
+                        class="px-2.5 min-h-[32px] rounded-lg text-xs font-semibold text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">Forget</button>
+            </li>
+        }
+    </ul>
+    @if (!Visible().Any())
+    {
+        <p class="text-sm text-slate-600 dark:text-slate-400" data-testid="memory-empty">@(Items.Count == 0 ? "The agent has not learned anything yet." : "No memories match.")</p>
+    }
+</section>
+
+@code {
+    public sealed record Memory(string Id, string Text, string Source, DateTime LearnedUtc);
+
+    private readonly string _id = "mem-" + Guid.NewGuid().ToString("N")[..6];
+    private string _query = "";
+
+    [Parameter, EditorRequired] public List<Memory> Items { get; set; } = new();
+    [Parameter] public EventCallback<Memory> OnForget { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private IEnumerable<Memory> Visible() => string.IsNullOrWhiteSpace(_query)
+        ? Items
+        : Items.Where(m => m.Text.Contains(_query, StringComparison.OrdinalIgnoreCase) || m.Source.Contains(_query, StringComparison.OrdinalIgnoreCase));
+
+    private async Task ForgetAsync(Memory m)
+    {
+        Items.RemoveAll(i => i.Id == m.Id); // edit the caller's list so a parent re-render cannot resurrect it
+        await OnForget.InvokeAsync(m);
+    }
+}

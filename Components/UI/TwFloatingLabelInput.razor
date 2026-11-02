@@ -1,0 +1,236 @@
+@implements IDisposable
+
+<div class="@TwMerge.Merge("w-full", Classes?.Base, Class)">
+    <div class="relative">
+        <input id="@_inputId"
+               type="@Type"
+               value="@Value"
+               disabled="@Disabled"
+               placeholder=" "
+               @oninput="HandleInput"
+               @onblur="HandleBlur"
+               class="@ComputedInputClasses" />
+        <label for="@_inputId" class="@ComputedLabelClasses">
+            @Label
+            @if (Required)
+            {
+                <span class="text-rose-500 ml-0.5">*</span>
+            }
+        </label>
+
+        @if (CurrentStatus != ValidationStatus.None)
+        {
+            <div class="absolute inset-y-0 right-0 flex items-center pr-3.5 pointer-events-none">
+                @if (CurrentStatus == ValidationStatus.Valid)
+                {
+                    <svg class="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                }
+                else if (CurrentStatus == ValidationStatus.Invalid)
+                {
+                    <svg class="w-4 h-4 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                }
+            </div>
+        }
+    </div>
+
+    @if (CurrentStatus == ValidationStatus.Invalid && !string.IsNullOrWhiteSpace(EffectiveErrorMessage))
+    {
+        <p class="@TwMerge.Merge("mt-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 flex items-center gap-1", Classes?.Feedback)">
+            @EffectiveErrorMessage
+        </p>
+    }
+    else if (CurrentStatus == ValidationStatus.Valid && !string.IsNullOrWhiteSpace(SuccessMessage))
+    {
+        <p class="@TwMerge.Merge("mt-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1", Classes?.Feedback)">
+            @SuccessMessage
+        </p>
+    }
+    else if (!string.IsNullOrWhiteSpace(HelperText))
+    {
+        <p class="@TwMerge.Merge("mt-1.5 text-xs text-slate-500 dark:text-slate-400", Classes?.Feedback)">
+            @HelperText
+        </p>
+    }
+</div>
+
+@code {
+    private readonly string _inputId = $"tw-fl-{Guid.NewGuid():N}";
+    private bool _touched;
+    private string? _ruleError;
+
+    [CascadingParameter] public TwValidatorGroup? ValidatorGroup { get; set; }
+
+    [Parameter] public string Label { get; set; } = "Floating Label";
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string Type { get; set; } = "text";
+    [Parameter] public FloatingLabelVariant Variant { get; set; } = FloatingLabelVariant.Outlined;
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public int? MinLength { get; set; }
+    [Parameter] public string? Pattern { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? HelperText { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+    [Parameter] public string? SuccessMessage { get; set; }
+    /// <summary>Custom validation rule returning null/empty when valid or an error string when invalid</summary>
+    [Parameter] public Func<string?, string?>? Validator { get; set; }
+    [Parameter] public ValidationStatus Status { get; set; } = ValidationStatus.None;
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public TwFloatingInputSlots? Classes { get; set; }
+
+    public ValidationStatus CurrentStatus { get; private set; } = ValidationStatus.None;
+    private string? EffectiveErrorMessage => !string.IsNullOrWhiteSpace(_ruleError) ? _ruleError : ErrorMessage;
+
+    protected override void OnInitialized()
+    {
+        ValidatorGroup?.Register(this);
+        if (Status != ValidationStatus.None)
+        {
+            CurrentStatus = Status;
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Status != ValidationStatus.None && !_touched)
+        {
+            CurrentStatus = Status;
+        }
+    }
+
+    private async Task HandleInput(ChangeEventArgs e)
+    {
+        Value = e.Value?.ToString();
+        _touched = true;
+        await ValueChanged.InvokeAsync(Value);
+        Validate();
+    }
+
+    private void HandleBlur()
+    {
+        _touched = true;
+        Validate();
+    }
+
+    public bool Validate()
+    {
+        _ruleError = null;
+
+        if (Validator is not null)
+        {
+            var customErr = Validator(Value);
+            if (!string.IsNullOrWhiteSpace(customErr))
+            {
+                _ruleError = customErr;
+                CurrentStatus = ValidationStatus.Invalid;
+                ValidatorGroup?.NotifyStateChanged();
+                StateHasChanged();
+                return false;
+            }
+        }
+
+        if (Required && string.IsNullOrWhiteSpace(Value))
+        {
+            _ruleError = ErrorMessage ?? $"{Label} is required.";
+            CurrentStatus = ValidationStatus.Invalid;
+            ValidatorGroup?.NotifyStateChanged();
+            StateHasChanged();
+            return false;
+        }
+
+        if (MinLength.HasValue && (Value?.Length ?? 0) < MinLength.Value)
+        {
+            _ruleError = ErrorMessage ?? $"{Label} must be at least {MinLength.Value} characters.";
+            CurrentStatus = ValidationStatus.Invalid;
+            ValidatorGroup?.NotifyStateChanged();
+            StateHasChanged();
+            return false;
+        }
+
+        if (!string.IsNullOrWhiteSpace(Pattern) && !string.IsNullOrWhiteSpace(Value))
+        {
+            if (!System.Text.RegularExpressions.Regex.IsMatch(Value, Pattern))
+            {
+                _ruleError = ErrorMessage ?? $"{Label} format is invalid.";
+                CurrentStatus = ValidationStatus.Invalid;
+                ValidatorGroup?.NotifyStateChanged();
+                StateHasChanged();
+                return false;
+            }
+        }
+
+        if (Required || MinLength.HasValue || !string.IsNullOrWhiteSpace(Pattern) || Validator is not null)
+        {
+            CurrentStatus = ValidationStatus.Valid;
+        }
+        else
+        {
+            CurrentStatus = Status;
+        }
+
+        ValidatorGroup?.NotifyStateChanged();
+        StateHasChanged();
+        return CurrentStatus != ValidationStatus.Invalid;
+    }
+
+    public void ResetValidation()
+    {
+        _touched = false;
+        _ruleError = null;
+        CurrentStatus = ValidationStatus.None;
+        StateHasChanged();
+    }
+
+    private string ComputedInputClasses
+    {
+        get
+        {
+            var borderColors = CurrentStatus switch
+            {
+                ValidationStatus.Valid => "border-emerald-500 dark:border-emerald-500 focus:border-emerald-500 focus:ring-emerald-500/20",
+                ValidationStatus.Invalid => "border-rose-500 dark:border-rose-500 focus:border-rose-500 focus:ring-rose-500/20",
+                _ => "border-slate-300 dark:border-slate-700 focus:border-brand-500 dark:focus:border-brand-400 focus:ring-brand-500/20"
+            };
+
+            var variantBase = Variant switch
+            {
+                FloatingLabelVariant.Filled => $"block rounded-t-xl px-3.5 pb-2.5 pt-5 w-full text-sm text-slate-900 bg-slate-100/90 dark:bg-slate-800/90 border-0 border-b-2 appearance-none dark:text-white focus:outline-none focus:ring-0 peer {borderColors}",
+                FloatingLabelVariant.Standard => $"block pt-4 pb-2 px-0 w-full text-sm text-slate-900 bg-transparent border-0 border-b-2 appearance-none dark:text-white focus:outline-none focus:ring-0 peer {borderColors}",
+                _ => $"block px-3.5 pb-2.5 pt-4 w-full text-sm text-slate-900 bg-transparent rounded-xl border appearance-none dark:text-white focus:outline-none focus:ring-2 peer {borderColors}"
+            };
+
+            return TwMerge.Merge(variantBase, CurrentStatus != ValidationStatus.None ? "pr-10" : "", Classes?.Input);
+        }
+    }
+
+    private string ComputedLabelClasses
+    {
+        get
+        {
+            var labelColors = CurrentStatus switch
+            {
+                ValidationStatus.Valid => "text-emerald-600 dark:text-emerald-400 peer-focus:text-emerald-600",
+                ValidationStatus.Invalid => "text-rose-600 dark:text-rose-400 peer-focus:text-rose-600",
+                _ => "text-slate-500 dark:text-slate-400 peer-focus:text-brand-600 dark:peer-focus:text-brand-400"
+            };
+
+            var variantLabel = Variant switch
+            {
+                FloatingLabelVariant.Filled => $"absolute text-xs duration-150 transform -translate-y-4 scale-75 top-4 z-10 origin-[0] start-3.5 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-4 pointer-events-none font-medium {labelColors}",
+                FloatingLabelVariant.Standard => $"absolute text-xs duration-150 transform -translate-y-4 scale-75 top-3 z-10 origin-[0] start-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-4 pointer-events-none font-medium {labelColors}",
+                _ => $"absolute text-xs duration-150 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-slate-900 px-2 peer-focus:px-2 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 start-2.5 pointer-events-none font-medium {labelColors}"
+            };
+
+            return TwMerge.Merge(variantLabel, Classes?.Label);
+        }
+    }
+
+    public void Dispose()
+    {
+        ValidatorGroup?.Unregister(this);
+    }
+}

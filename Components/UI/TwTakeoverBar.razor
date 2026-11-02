@@ -1,0 +1,52 @@
+@inherits TwSessionComponentBase
+@using BlazorTwUI.Models
+
+<div class="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3 @Class" data-testid="takeover-bar">
+    <div class="flex items-center gap-2" role="status" aria-live="polite">
+        <span class="w-2.5 h-2.5 rounded-full @DotClass" aria-hidden="true"></span>
+        <span class="text-sm font-semibold text-slate-900 dark:text-white" data-testid="run-status">@Label</span>
+    </div>
+
+    <div class="ms-auto flex flex-wrap gap-2">
+        @if (Session.TakeoverRequested)
+        {
+            <button type="button" @onclick="Session.HandBack" data-testid="handback"
+                    class="min-h-[44px] px-4 rounded-xl bg-brand-700 text-white text-sm font-bold hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-500">
+                Hand back to agent
+            </button>
+        }
+        else
+        {
+            <button type="button" @onclick="Session.TakeOver" disabled="@(!Session.IsActive)" data-testid="takeover"
+                    class="min-h-[44px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                Take over
+            </button>
+        }
+        <button type="button" @onclick="Session.Cancel" disabled="@(!Session.IsActive)" data-testid="cancel"
+                class="min-h-[44px] px-4 rounded-xl border border-rose-300 dark:border-rose-500/50 text-rose-800 dark:text-rose-200 text-sm font-bold hover:bg-rose-50 dark:hover:bg-rose-500/10 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500">
+            Stop
+        </button>
+    </div>
+</div>
+
+@code {
+    private string Label => Session.Status switch
+    {
+        AgentRunStatus.Idle => "Idle",
+        AgentRunStatus.Running => Session.TakeoverRequested ? "You have control; agent pausing…" : "Agent running",
+        AgentRunStatus.AwaitingApproval => "Waiting for your approval",
+        AgentRunStatus.Paused => "Paused: you have control",
+        AgentRunStatus.Finished => "Finished",
+        AgentRunStatus.Failed => "Failed",
+        _ => "Stopped"
+    };
+
+    private string DotClass => Session.Status switch
+    {
+        AgentRunStatus.Running => "bg-emerald-500 animate-pulse motion-reduce:animate-none",
+        AgentRunStatus.AwaitingApproval => "bg-amber-500",
+        AgentRunStatus.Paused => "bg-sky-500",
+        AgentRunStatus.Failed => "bg-rose-500",
+        _ => "bg-slate-400"
+    };
+}

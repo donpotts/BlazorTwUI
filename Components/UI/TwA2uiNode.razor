@@ -1,0 +1,218 @@
+@using System.Text.Json.Nodes
+@using BlazorTwUI.Services
+@* One node of an A2UI surface. Looks itself up by id, so an agent can update a single component and only the tree below re-renders. *@
+@if (Surface.Components.TryGetValue(Id, out var c))
+{
+    var type = (string?)c["component"] ?? "";
+    switch (type)
+    {
+        case "Text":
+            <p class="@TextClass((string?)c["variant"])" data-a2ui="Text" data-id="@Id">@Surface.Resolve(c["text"])</p>
+            break;
+
+        case "Column":
+        case "Row":
+            <div class="flex @(type == "Column" ? "flex-col" : "flex-row flex-wrap items-center") gap-3 @Justify((string?)c["justify"])" data-a2ui="@type" data-id="@Id">
+                @foreach (var child in Children(c))
+                {
+                    <TwA2uiNode Surface="Surface" Id="@child" Depth="Depth + 1" />
+                }
+            </div>
+            break;
+
+        case "Card":
+            <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-sm" data-a2ui="Card" data-id="@Id">
+                @foreach (var child in Children(c))
+                {
+                    <TwA2uiNode Surface="Surface" Id="@child" Depth="Depth + 1" />
+                }
+            </div>
+            break;
+
+        case "Divider":
+            <hr class="border-slate-200 dark:border-slate-700" data-a2ui="Divider" data-id="@Id" />
+            break;
+
+        case "Image":
+            <img src="@Surface.Resolve(c["url"])" alt="@Surface.Resolve(c["description"])" class="max-w-full rounded-xl" data-a2ui="Image" data-id="@Id" />
+            break;
+
+        case "Icon":
+            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-500/20 text-brand-900 dark:text-brand-100 text-xs font-bold" role="img" aria-label="@Surface.Resolve(c["name"])" data-a2ui="Icon" data-id="@Id">
+                @IconGlyph(Surface.Resolve(c["name"]))
+            </span>
+            break;
+
+        case "Button":
+            <button type="button" @onclick="() => Surface.Raise(Id)" data-a2ui="Button" data-id="@Id"
+                    class="min-h-[40px] px-4 rounded-xl text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-500 @((string?)c["variant"] == "borderless" ? "text-brand-800 dark:text-brand-200 hover:bg-brand-50 dark:hover:bg-brand-500/10" : "bg-brand-700 text-white hover:bg-brand-600")">
+                @if (c["child"] is not null)
+                {
+                    <TwA2uiNode Surface="Surface" Id="@((string?)c["child"] ?? "")" Depth="Depth + 1" />
+                }
+                else
+                {
+                    @Surface.Resolve(c["label"])
+                }
+            </button>
+            break;
+
+        case "TextField":
+            var tfPath = PathOf(c["value"]);
+            <div class="flex flex-col gap-1" data-a2ui="TextField" data-id="@Id">
+                <label for="@InputId" class="text-xs font-semibold text-slate-800 dark:text-slate-200">@Surface.Resolve(c["label"])</label>
+                <input id="@InputId" type="@((string?)c["variant"] == "obscured" ? "password" : "text")" value="@Surface.Resolve(c["value"])"
+                       @onchange="e => SetText(tfPath!, e.Value)" disabled="@(tfPath is null)"
+                       class="min-h-[40px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" />
+            </div>
+            break;
+
+        case "CheckBox":
+            var cbPath = PathOf(c["value"]);
+            <label class="inline-flex items-center gap-2 text-sm text-slate-900 dark:text-slate-100" data-a2ui="CheckBox" data-id="@Id">
+                <input type="checkbox" checked="@Surface.ResolveBool(c["value"])" disabled="@(cbPath is null)"
+                       @onchange="e => Surface.SetPath(cbPath!, JsonValue.Create((bool)(e.Value ?? false)))"
+                       class="rounded border-slate-400 text-brand-600 focus:ring-brand-500" />
+                @Surface.Resolve(c["label"])
+            </label>
+            break;
+
+        case "Slider":
+            var slPath = PathOf(c["value"]);
+            var min = Surface.ResolveNumber(c["min"], 0);
+            var max = Surface.ResolveNumber(c["max"], 100);
+            <div class="flex flex-col gap-1" data-a2ui="Slider" data-id="@Id">
+                <label for="@InputId" class="text-xs font-semibold text-slate-800 dark:text-slate-200">@Surface.Resolve(c["label"]): <span data-testid="a2ui-slider-value">@Surface.Resolve(c["value"])</span></label>
+                <input id="@InputId" type="range" min="@min" max="@max" value="@Surface.ResolveNumber(c["value"], min)" disabled="@(slPath is null)"
+                       @onchange="e => SetNumber(slPath!, e.Value)"
+                       class="accent-brand-600" />
+            </div>
+            break;
+
+        case "ChoicePicker":
+            var cpPath = PathOf(c["value"]);
+            var multi = (string?)c["variant"] == "multipleSelection";
+            var chosen = Chosen(c["value"]);
+            <fieldset class="flex flex-col gap-1.5" data-a2ui="ChoicePicker" data-id="@Id">
+                <legend class="text-xs font-semibold text-slate-800 dark:text-slate-200">@Surface.Resolve(c["label"])</legend>
+                @foreach (var opt in Options(c))
+                {
+                    <label class="inline-flex items-center gap-2 text-sm text-slate-900 dark:text-slate-100">
+                        <input type="@(multi ? "checkbox" : "radio")" name="@InputId" checked="@chosen.Contains(opt.Value)" disabled="@(cpPath is null)"
+                               @onchange="() => Pick(cpPath!, opt.Value, multi, chosen)" data-option="@opt.Value"
+                               class="text-brand-600 focus:ring-brand-500" />
+                        @opt.Label
+                    </label>
+                }
+            </fieldset>
+            break;
+
+        case "Tabs":
+            var tabs = (c["tabs"] as JsonArray)?.OfType<JsonObject>().ToList() ?? new();
+            <div data-a2ui="Tabs" data-id="@Id">
+                <div role="tablist" class="flex gap-1 border-b border-slate-200 dark:border-slate-700">
+                    @for (var i = 0; i < tabs.Count; i++)
+                    {
+                        var idx = i;
+                        <button type="button" role="tab" aria-selected="@(_tab == idx ? "true" : "false")" @onclick="() => _tab = idx"
+                                class="px-3 min-h-[40px] text-sm font-semibold border-b-2 -mb-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 @(_tab == idx ? "border-brand-600 text-brand-800 dark:text-brand-200" : "border-transparent text-slate-700 dark:text-slate-300")">
+                            @Surface.Resolve(tabs[i]["title"])
+                        </button>
+                    }
+                </div>
+                @if (tabs.Count > 0)
+                {
+                    <div role="tabpanel" class="pt-3">
+                        <TwA2uiNode Surface="Surface" Id="@((string?)tabs[Math.Min(_tab, tabs.Count - 1)]["child"] ?? "")" Depth="Depth + 1" />
+                    </div>
+                }
+            </div>
+            break;
+
+        default:
+            <p class="text-xs text-amber-900 dark:text-amber-200" data-a2ui="Unsupported" data-id="@Id">Unsupported component: @type</p>
+            break;
+    }
+}
+
+@code {
+    private readonly string _inputBase = "a2ui-" + Guid.NewGuid().ToString("N")[..6];
+    private int _tab;
+
+    [Parameter, EditorRequired] public A2uiSurface Surface { get; set; } = default!;
+    [Parameter, EditorRequired] public string Id { get; set; } = "";
+    [Parameter] public int Depth { get; set; }
+
+    private string InputId => _inputBase + "-" + Id;
+
+    private static IEnumerable<string> Children(JsonObject c)
+    {
+        if (c["children"] is JsonArray arr) return arr.Select(n => (string?)n ?? "").Where(s => s.Length > 0);
+        if (c["child"] is { } one && (string?)one is { Length: > 0 } s) return new[] { s };
+        return Array.Empty<string>();
+    }
+
+    private static string? PathOf(JsonNode? v) => v is JsonObject o ? (string?)o["path"] : null;
+
+    private sealed record Opt(string Label, string Value);
+
+    private IEnumerable<Opt> Options(JsonObject c) =>
+        (c["options"] as JsonArray)?.OfType<JsonObject>().Select(o => new Opt(Surface.Resolve(o["label"]), Surface.Resolve(o["value"]))) ?? Enumerable.Empty<Opt>();
+
+    private HashSet<string> Chosen(JsonNode? value)
+    {
+        var node = value is JsonObject o && o["path"] is { } p ? Surface.Lookup((string?)p ?? "") : value;
+        return node switch
+        {
+            JsonArray a => a.Select(x => (string?)x ?? "").ToHashSet(),
+            null => new(),
+            _ => new() { Surface.Resolve(node) }
+        };
+    }
+
+    private void SetText(string path, object? raw) => Surface.SetPath(path, JsonValue.Create(raw?.ToString() ?? string.Empty));
+
+    private void SetNumber(string path, object? raw)
+    {
+        if (double.TryParse(raw?.ToString(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var d))
+            Surface.SetPath(path, JsonValue.Create(d));
+    }
+
+    private void Pick(string path, string value, bool multi, HashSet<string> current)
+    {
+        if (!multi) { Surface.SetPath(path, JsonValue.Create(value)); return; }
+        var next = new HashSet<string>(current);
+        if (!next.Remove(value)) next.Add(value);
+        var arr = new JsonArray();
+        foreach (var v in next) arr.Add(JsonValue.Create(v));
+        Surface.SetPath(path, arr);
+    }
+
+    private static string TextClass(string? variant) => variant switch
+    {
+        "h1" => "text-2xl font-black text-slate-900 dark:text-white",
+        "h2" => "text-xl font-extrabold text-slate-900 dark:text-white",
+        "h3" => "text-base font-bold text-slate-900 dark:text-white",
+        "caption" => "text-xs text-slate-700 dark:text-slate-300",
+        _ => "text-sm text-slate-900 dark:text-slate-100"
+    };
+
+    private static string Justify(string? j) => j switch
+    {
+        "center" => "justify-center",
+        "end" => "justify-end",
+        "spaceBetween" => "justify-between",
+        _ => "justify-start"
+    };
+
+    private static string IconGlyph(string name) => name.ToLowerInvariant() switch
+    {
+        "check" or "done" => "✓",
+        "close" or "cancel" => "✕",
+        "warning" => "!",
+        "info" => "i",
+        "star" or "favorite" => "★",
+        "mail" => "✉",
+        _ => name.Length > 0 ? name[..1].ToUpperInvariant() : "?"
+    };
+}

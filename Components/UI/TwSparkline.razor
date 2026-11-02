@@ -1,0 +1,168 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="inline-flex items-center gap-2 select-none @CustomClass" title="@GetTooltipText()">
+    <svg width="@Width" height="@Height" viewBox="0 0 @Width @Height" class="overflow-visible">
+        @switch (Type)
+        {
+            case SparklineType.Line:
+                @if (Points.Count > 1)
+                {
+                    <polyline fill="none"
+                              stroke="@GetStrokeColorHex()"
+                              stroke-width="@StrokeWidth"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              points="@GetSvgPoints()" />
+
+                    <!-- Min & Max Highlight Dots -->
+                    @if (ShowMinMaxDots && MinIndex >= 0 && MaxIndex >= 0)
+                    {
+                        var maxCoord = GetCoordinate(MaxIndex);
+                        var minCoord = GetCoordinate(MinIndex);
+                        <circle cx="@maxCoord.X" cy="@maxCoord.Y" r="2.5" fill="#10B981" />
+                        <circle cx="@minCoord.X" cy="@minCoord.Y" r="2.5" fill="#EF4444" />
+                    }
+                }
+                break;
+
+            case SparklineType.Area:
+                @if (Points.Count > 1)
+                {
+                    var gradientId = $"sparkline-grad-{_uniqueId}";
+                    <defs>
+                        <linearGradient id="@gradientId" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="@GetStrokeColorHex()" stop-opacity="0.35" />
+                            <stop offset="100%" stop-color="@GetStrokeColorHex()" stop-opacity="0.0" />
+                        </linearGradient>
+                    </defs>
+
+                    <polygon fill="url(#@gradientId)" points="@GetAreaPolygonPoints()" />
+                    <polyline fill="none"
+                              stroke="@GetStrokeColorHex()"
+                              stroke-width="@StrokeWidth"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              points="@GetSvgPoints()" />
+                }
+                break;
+
+            case SparklineType.Bar:
+                @for (int i = 0; i < Points.Count; i++)
+                {
+                    var rect = GetBarRect(i);
+                    <rect x="@rect.X" y="@rect.Y" width="@rect.Width" height="@rect.Height"
+                          rx="1"
+                          fill="@(Points[i] >= 0 ? GetStrokeColorHex() : "#EF4444")"
+                          opacity="@(i == Points.Count - 1 ? "1.0" : "0.75")" />
+                }
+                break;
+
+            case SparklineType.WinLoss:
+                @for (int i = 0; i < Points.Count; i++)
+                {
+                    var isWin = Points[i] > 0;
+                    var x = i * (Width / Math.Max(1, Points.Count));
+                    var barWidth = Math.Max(2, (Width / Math.Max(1, Points.Count)) - 1.5);
+                    var y = isWin ? 2 : Height / 2;
+                    var h = (Height / 2) - 2;
+
+                    <rect x="@x" y="@y" width="@barWidth" height="@h"
+                          rx="1"
+                          fill="@(isWin ? "#10B981" : "#EF4444")" />
+                }
+                break;
+        }
+    </svg>
+
+    @if (ShowValueBadge && Points.Any())
+    {
+        var last = Points.Last();
+        var first = Points.First();
+        var diff = last - first;
+        <span class="text-[10px] font-mono font-bold @(diff >= 0 ? "text-emerald-500" : "text-rose-500")">
+            @(diff >= 0 ? $"+{diff:F1}" : $"{diff:F1}")
+        </span>
+    }
+</div>
+
+@code {
+    public enum SparklineType
+    {
+        Line,
+        Area,
+        Bar,
+        WinLoss
+    }
+
+    [Parameter] public SparklineType Type { get; set; } = SparklineType.Line;
+    [Parameter] public List<double> Points { get; set; } = new() { 12, 18, 14, 22, 19, 28, 25, 34, 30, 42 };
+    [Parameter] public int Width { get; set; } = 110;
+    [Parameter] public int Height { get; set; } = 28;
+    [Parameter] public double StrokeWidth { get; set; } = 2.0;
+    [Parameter] public string Color { get; set; } = "brand"; // brand, emerald, rose, sky, amber
+    [Parameter] public bool ShowMinMaxDots { get; set; } = true;
+    [Parameter] public bool ShowValueBadge { get; set; } = false;
+    [Parameter] public string CustomClass { get; set; } = "";
+
+    private readonly string _uniqueId = Guid.NewGuid().ToString("N").Substring(0, 8);
+
+    private double MinValue => Points.Any() ? Points.Min() : 0;
+    private double MaxValue => Points.Any() ? Points.Max() : 1;
+    private int MinIndex => Points.IndexOf(MinValue);
+    private int MaxIndex => Points.IndexOf(MaxValue);
+
+    private (double X, double Y) GetCoordinate(int index)
+    {
+        if (Points.Count <= 1) return (0, Height / 2.0);
+        var x = (double)index / (Points.Count - 1) * (Width - 4) + 2;
+        var range = Math.Max(0.001, MaxValue - MinValue);
+        var y = Height - 4 - ((Points[index] - MinValue) / range * (Height - 8));
+        return (x, y);
+    }
+
+    private string GetSvgPoints()
+    {
+        var coords = new List<string>();
+        for (int i = 0; i < Points.Count; i++)
+        {
+            var (x, y) = GetCoordinate(i);
+            coords.Add($"{x:F1},{y:F1}");
+        }
+        return string.Join(" ", coords);
+    }
+
+    private string GetAreaPolygonPoints()
+    {
+        var svgPoints = GetSvgPoints();
+        if (string.IsNullOrEmpty(svgPoints)) return "";
+        var lastX = GetCoordinate(Points.Count - 1).X;
+        var firstX = GetCoordinate(0).X;
+        return $"{svgPoints} {lastX:F1},{Height} {firstX:F1},{Height}";
+    }
+
+    private (double X, double Y, double Width, double Height) GetBarRect(int index)
+    {
+        var barSpacing = Width / (double)Math.Max(1, Points.Count);
+        var barWidth = Math.Max(2.5, barSpacing - 2);
+        var x = index * barSpacing + 1;
+        var range = Math.Max(0.001, MaxValue - Math.Min(0, MinValue));
+        var h = Math.Max(2, (Points[index] / range) * (Height - 4));
+        var y = Height - h;
+        return (x, y, barWidth, h);
+    }
+
+    private string GetStrokeColorHex() => Color.ToLowerInvariant() switch
+    {
+        "emerald" => "#10B981",
+        "rose" => "#F43F5E",
+        "sky" => "#0284C7",
+        "amber" => "#F59E0B",
+        _ => "#6366F1" // brand indigo
+    };
+
+    private string GetTooltipText()
+    {
+        if (!Points.Any()) return "Sparkline";
+        return $"Latest: {Points.Last():F1} | Min: {MinValue:F1} | Max: {MaxValue:F1}";
+    }
+}

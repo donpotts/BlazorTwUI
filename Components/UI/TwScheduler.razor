@@ -1,0 +1,270 @@
+@using System.Globalization
+@* Day / Week / Month scheduler. Appointments can be moved by drag and drop or from the keyboard (Alt + arrows). Overlapping appointments share the column. *@
+<section aria-label="@Label" class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 @Class" data-testid="scheduler" data-view="@View.ToString().ToLowerInvariant()">
+    <header class="flex flex-wrap items-center justify-between gap-2 p-3 border-b border-slate-200 dark:border-slate-700">
+        <div class="flex items-center gap-1">
+            <button type="button" @onclick="() => Shift(-1)" aria-label="Previous @View.ToString().ToLowerInvariant()" data-testid="sch-prev" class="@NavBtn"><span aria-hidden="true" class="rtl:hidden">‹</span><span aria-hidden="true" class="hidden rtl:inline">›</span></button>
+            <button type="button" @onclick="GoToday" data-testid="sch-today" class="@NavBtn px-3 text-xs font-bold">Today</button>
+            <button type="button" @onclick="() => Shift(1)" aria-label="Next @View.ToString().ToLowerInvariant()" data-testid="sch-next" class="@NavBtn"><span aria-hidden="true" class="rtl:hidden">›</span><span aria-hidden="true" class="hidden rtl:inline">‹</span></button>
+        </div>
+        <h2 class="text-sm font-black text-slate-900 dark:text-white" aria-live="polite" data-testid="sch-title">@Title</h2>
+        <div role="group" aria-label="View" class="inline-flex rounded-xl border border-slate-300 dark:border-slate-600 overflow-hidden">
+            @foreach (var v in Enum.GetValues<SchedulerView>())
+            {
+                <button type="button" @onclick="() => SetViewAsync(v)" aria-pressed="@(View == v ? "true" : "false")" data-testid="sch-view" data-view="@v.ToString().ToLowerInvariant()"
+                        class="px-3 min-h-[32px] text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 @(View == v ? "bg-brand-700 text-white" : "text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800")">@v</button>
+            }
+        </div>
+    </header>
+
+    @if (View == SchedulerView.Month)
+    {
+        <div class="grid grid-cols-7 text-center text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700" role="row">
+            @foreach (var d in Enumerable.Range(0, 7).Select(i => WeekStart(Date).AddDays(i)))
+            {
+                <span class="py-1.5" role="columnheader">@d.ToString("ddd", Culture)</span>
+            }
+        </div>
+        <div class="grid grid-cols-7" data-testid="sch-month">
+            @foreach (var day in MonthDays())
+            {
+                var inMonth = day.Month == Date.Month;
+                var items = For(day).ToList();
+                <div class="min-h-[6.5rem] border-b border-e border-slate-100 dark:border-slate-800 p-1 @(inMonth ? "" : "bg-slate-50 dark:bg-slate-900/60")" data-testid="sch-cell" data-date="@day.ToString("yyyy-MM-dd")"
+                     @ondragover:preventDefault="true" @ondragover="() => { }" @ondrop="() => DropAsync(day.ToDateTime(TimeOnly.FromDateTime(DateTime.Today)))">
+                    <button type="button" @onclick="() => SlotAsync(day.ToDateTime(new TimeOnly(StartHour, 0)))" aria-label="@day.ToString("D", Culture)" aria-current="@(day == Today ? "date" : null)"
+                            class="w-7 h-7 rounded-full text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 @(day == Today ? "bg-brand-700 text-white" : inMonth ? "text-slate-900 dark:text-slate-100" : "text-slate-600 dark:text-slate-400")">@day.Day</button>
+                    @foreach (var a in items.Take(3))
+                    {
+                        @RenderAppointment(a, "block w-full text-start truncate rounded px-1.5 py-0.5 mt-0.5 text-[11px] font-semibold")
+                    }
+                    @if (items.Count > 3)
+                    {
+                        <button type="button" @onclick="() => OpenDay(day)" data-testid="sch-more" class="mt-0.5 text-[11px] font-bold text-brand-800 dark:text-brand-200 underline">+@(items.Count - 3) more</button>
+                    }
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        var days = View == SchedulerView.Day ? new[] { Date } : Enumerable.Range(0, 7).Select(i => WeekStart(Date).AddDays(i)).ToArray();
+        <div class="overflow-x-auto">
+            <div class="min-w-[36rem]">
+                <div class="grid border-b border-slate-200 dark:border-slate-700" style="grid-template-columns:3.5rem repeat(@days.Length, minmax(0,1fr))">
+                    <span></span>
+                    @foreach (var d in days)
+                    {
+                        <span class="py-1.5 text-center text-xs font-bold @(d == Today ? "text-brand-800 dark:text-brand-200" : "text-slate-800 dark:text-slate-200")" data-testid="sch-dayhead" data-date="@d.ToString("yyyy-MM-dd")">@d.ToString("ddd d", Culture)</span>
+                    }
+                </div>
+                <div class="grid" style="grid-template-columns:3.5rem repeat(@days.Length, minmax(0,1fr))" data-testid="sch-grid">
+                    <div>
+                        @for (var s = 0; s < SlotCount; s++)
+                        {
+                            <div class="h-8 pe-2 text-end text-[11px] text-slate-700 dark:text-slate-300">@(s % SlotsPerHour == 0 ? new TimeOnly(StartHour, 0).AddMinutes(s * SlotMinutes).ToString("t", Culture) : "")</div>
+                        }
+                    </div>
+                    @foreach (var d in days)
+                    {
+                        <div class="relative border-s border-slate-100 dark:border-slate-800" data-testid="sch-col" data-date="@d.ToString("yyyy-MM-dd")">
+                            @for (var s = 0; s < SlotCount; s++)
+                            {
+                                var when = d.ToDateTime(new TimeOnly(StartHour, 0).AddMinutes(s * SlotMinutes));
+                                <button type="button" @onclick="() => SlotAsync(when)" @ondragover:preventDefault="true" @ondragover="() => { }" @ondrop="() => DropAsync(when)"
+                                        aria-label="@when.ToString("f", Culture)" data-testid="sch-slot" data-start="@when.ToString("yyyy-MM-ddTHH:mm")"
+                                        class="block w-full h-8 border-b border-slate-100 dark:border-slate-800 hover:bg-brand-50 dark:hover:bg-brand-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 @(s % SlotsPerHour == SlotsPerHour - 1 ? "border-slate-200 dark:border-slate-700" : "")"></button>
+                            }
+                            @foreach (var p in Layout(For(d)))
+                            {
+                                var top = (Minutes(p.A.Start) - StartHour * 60) / (double)SlotMinutes * 32;
+                                var height = Math.Max(16, (p.A.End - p.A.Start).TotalMinutes / SlotMinutes * 32);
+                                <div class="absolute px-0.5" style="top:@top.ToString("0.#", CultureInfo.InvariantCulture)px;height:@height.ToString("0.#", CultureInfo.InvariantCulture)px;left:@((100.0 * p.Lane / p.Lanes).ToString("0.##", CultureInfo.InvariantCulture))%;width:@((100.0 / p.Lanes).ToString("0.##", CultureInfo.InvariantCulture))%">
+                                    @RenderAppointment(p.A, "block w-full h-full text-start overflow-hidden rounded-lg px-1.5 py-1 text-[11px] font-semibold leading-tight shadow-sm")
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+    <p class="px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 border-t border-slate-200 dark:border-slate-700">Drag an appointment to move it, or focus it and press Alt with the arrow keys.</p>
+</section>
+
+@code {
+    public enum SchedulerView { Day, Week, Month }
+
+    public sealed class Appointment
+    {
+        public string Id { get; init; } = Guid.NewGuid().ToString("N")[..6];
+        public string Title { get; set; } = "";
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
+        /// <summary>indigo, emerald, amber, rose or sky.</summary>
+        public string Color { get; set; } = "indigo";
+    }
+
+    private sealed record Placed(Appointment A, int Lane, int Lanes);
+
+    private const string NavBtn = "w-9 min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500";
+
+    private string? _dragId;
+
+    [Parameter] public IReadOnlyList<Appointment> Appointments { get; set; } = Array.Empty<Appointment>();
+    [Parameter] public DateOnly Date { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    [Parameter] public EventCallback<DateOnly> DateChanged { get; set; }
+    [Parameter] public SchedulerView View { get; set; } = SchedulerView.Week;
+    [Parameter] public EventCallback<SchedulerView> ViewChanged { get; set; }
+    [Parameter] public int StartHour { get; set; } = 8;
+    [Parameter] public int EndHour { get; set; } = 18;
+    [Parameter] public int SlotMinutes { get; set; } = 30;
+    [Parameter] public DayOfWeek FirstDayOfWeek { get; set; } = DayOfWeek.Monday;
+    [Parameter] public DateOnly? TodayOverride { get; set; }
+    [Parameter] public CultureInfo? CultureOverride { get; set; }
+    [Parameter] public string Label { get; set; } = "Schedule";
+    [Parameter] public EventCallback<DateTime> OnSlotClick { get; set; }
+    [Parameter] public EventCallback<Appointment> OnAppointmentClick { get; set; }
+    /// <summary>Fired after an appointment was moved (the appointment already carries its new times).</summary>
+    [Parameter] public EventCallback<Appointment> OnAppointmentMoved { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private CultureInfo Culture => CultureOverride ?? CultureInfo.CurrentUICulture;
+    private DateOnly Today => TodayOverride ?? DateOnly.FromDateTime(DateTime.Today);
+    private int SlotsPerHour => Math.Max(1, 60 / Math.Max(5, SlotMinutes));
+    private int SlotCount => Math.Max(1, (EndHour - StartHour) * 60 / Math.Max(5, SlotMinutes));
+
+    private string Title => View switch
+    {
+        SchedulerView.Day => Date.ToString("D", Culture),
+        SchedulerView.Week => $"{WeekStart(Date).ToString("MMM d", Culture)} – {WeekStart(Date).AddDays(6).ToString("MMM d, yyyy", Culture)}",
+        _ => Date.ToString("MMMM yyyy", Culture)
+    };
+
+    private DateOnly WeekStart(DateOnly d) => d.AddDays(-(((int)d.DayOfWeek - (int)FirstDayOfWeek + 7) % 7));
+
+    private IEnumerable<DateOnly> MonthDays()
+    {
+        var first = new DateOnly(Date.Year, Date.Month, 1);
+        var cursor = WeekStart(first);
+        var weeks = (int)Math.Ceiling((first.DayNumber - cursor.DayNumber + DateTime.DaysInMonth(Date.Year, Date.Month)) / 7.0);
+        for (var i = 0; i < weeks * 7; i++) yield return cursor.AddDays(i);
+    }
+
+    private static int Minutes(DateTime t) => t.Hour * 60 + t.Minute;
+
+    private IEnumerable<Appointment> For(DateOnly day) =>
+        Appointments.Where(a => DateOnly.FromDateTime(a.Start) == day).OrderBy(a => a.Start).ThenBy(a => a.End);
+
+    // Greedy lane assignment inside clusters of overlapping appointments.
+    private static List<Placed> Layout(IEnumerable<Appointment> items)
+    {
+        var result = new List<Placed>();
+        var cluster = new List<(Appointment A, int Lane)>();
+        var laneEnds = new List<DateTime>();
+        DateTime clusterEnd = DateTime.MinValue;
+
+        void Flush()
+        {
+            var lanes = Math.Max(1, laneEnds.Count);
+            result.AddRange(cluster.Select(c => new Placed(c.A, c.Lane, lanes)));
+            cluster.Clear();
+            laneEnds.Clear();
+        }
+
+        foreach (var a in items)
+        {
+            if (cluster.Count > 0 && a.Start >= clusterEnd) Flush();
+            var lane = laneEnds.FindIndex(e => e <= a.Start);
+            if (lane < 0) { laneEnds.Add(a.End); lane = laneEnds.Count - 1; }
+            else laneEnds[lane] = a.End;
+            cluster.Add((a, lane));
+            clusterEnd = a.End > clusterEnd ? a.End : clusterEnd;
+        }
+        Flush();
+        return result;
+    }
+
+    private RenderFragment RenderAppointment(Appointment a, string cls) => __builder =>
+    {
+        <button type="button" draggable="true" @ondragstart="() => _dragId = a.Id" @ondragend="() => _dragId = null" @onclick="() => OnAppointmentClick.InvokeAsync(a)"
+                @onkeydown="e => OnAppointmentKeyAsync(e, a)" @onclick:stopPropagation="true"
+                aria-label="@($"{a.Title}, {a.Start.ToString("f", Culture)} to {a.End.ToString("t", Culture)}")" data-testid="sch-appt" data-id="@a.Id" data-start="@a.Start.ToString("yyyy-MM-ddTHH:mm")"
+                class="@cls @ColorClass(a.Color) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-brand-600">
+            @a.Title
+        </button>
+    };
+
+    private static string ColorClass(string c) => c switch
+    {
+        "emerald" => "bg-emerald-200 text-emerald-950 dark:bg-emerald-500/30 dark:text-emerald-50",
+        "amber" => "bg-amber-200 text-amber-950 dark:bg-amber-500/30 dark:text-amber-50",
+        "rose" => "bg-rose-200 text-rose-950 dark:bg-rose-500/30 dark:text-rose-50",
+        "sky" => "bg-sky-200 text-sky-950 dark:bg-sky-500/30 dark:text-sky-50",
+        _ => "bg-indigo-200 text-indigo-950 dark:bg-indigo-500/30 dark:text-indigo-50"
+    };
+
+    private async Task Shift(int delta)
+    {
+        Date = View switch
+        {
+            SchedulerView.Day => Date.AddDays(delta),
+            SchedulerView.Week => Date.AddDays(7 * delta),
+            _ => Date.AddMonths(delta)
+        };
+        await DateChanged.InvokeAsync(Date);
+    }
+
+    private async Task GoToday()
+    {
+        Date = Today;
+        await DateChanged.InvokeAsync(Date);
+    }
+
+    private async Task SetViewAsync(SchedulerView v)
+    {
+        View = v;
+        await ViewChanged.InvokeAsync(v);
+    }
+
+    private async Task OpenDay(DateOnly day)
+    {
+        Date = day;
+        await DateChanged.InvokeAsync(day);
+        await SetViewAsync(SchedulerView.Day);
+    }
+
+    private Task SlotAsync(DateTime when) => OnSlotClick.InvokeAsync(when);
+
+    private async Task MoveAsync(Appointment a, DateTime newStart)
+    {
+        var length = a.End - a.Start;
+        a.Start = newStart;
+        a.End = newStart + length;
+        await OnAppointmentMoved.InvokeAsync(a);
+    }
+
+    private async Task DropAsync(DateTime when)
+    {
+        var a = Appointments.FirstOrDefault(x => x.Id == _dragId);
+        _dragId = null;
+        if (a is null) return;
+        // In month view the drop target is a whole day: keep the appointment's time of day.
+        var target = View == SchedulerView.Month ? DateOnly.FromDateTime(when).ToDateTime(TimeOnly.FromDateTime(a.Start)) : when;
+        await MoveAsync(a, target);
+    }
+
+    private async Task OnAppointmentKeyAsync(KeyboardEventArgs e, Appointment a)
+    {
+        if (!e.AltKey) return;
+        var next = e.Key switch
+        {
+            "ArrowUp" => a.Start.AddMinutes(-SlotMinutes),
+            "ArrowDown" => a.Start.AddMinutes(SlotMinutes),
+            "ArrowLeft" => a.Start.AddDays(-1),
+            "ArrowRight" => a.Start.AddDays(1),
+            _ => (DateTime?)null
+        };
+        if (next is not null) await MoveAsync(a, next.Value);
+    }
+}

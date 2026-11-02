@@ -1,0 +1,348 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@inject IJSRuntime JSRuntime
+
+<div class="flex flex-col h-[620px] rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden @Class" @attributes="AdditionalAttributes">
+    @* Chat Header *@
+    <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-md">
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900"></span>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">@Title</h3>
+                    <span class="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">@ModelBadge</span>
+                </div>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">@StatusSubtitle</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-1">
+            <button type="button" @onclick="ClearChatAsync" title="Clear conversation" class="p-2 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    @* Message Stream List *@
+    <div class="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth" @ref="_messagesContainer">
+        @if (Messages.Count == 0)
+        {
+            <div class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400">
+                <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-3 text-slate-400">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                </div>
+                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300">Start an AI Conversation</h4>
+                <p class="text-xs text-slate-500 max-w-sm mt-1">Select a suggestion below or type your prompt to start collaborating with the assistant.</p>
+            </div>
+        }
+        else
+        {
+            @foreach (var msg in Messages)
+            {
+                <div class="flex gap-3 @(msg.Role == ChatRole.User ? "justify-end" : "justify-start") group" id="msg-@msg.Id">
+                    @* Assistant Avatar *@
+                    @if (msg.Role != ChatRole.User)
+                    {
+                        <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm mt-0.5">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                        </div>
+                    }
+
+                    <div class="flex flex-col @(msg.Role == ChatRole.User ? "items-end" : "items-start") max-w-[82%]">
+                        @* Message Bubble *@
+                        <div class="p-3.5 rounded-2xl text-xs md:text-sm leading-relaxed @(msg.Role == ChatRole.User
+                            ? "bg-indigo-600 text-white rounded-br-xs shadow-md shadow-indigo-600/20"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-xs border border-slate-200/60 dark:border-slate-700/60")">
+
+                            <div class="whitespace-pre-wrap">@msg.Content</div>
+
+                            @* Attachments if present *@
+                            @if (msg.Attachments != null && msg.Attachments.Count > 0)
+                            {
+                                <div class="mt-2.5 pt-2 border-t border-slate-200/30 dark:border-slate-700/50 flex flex-wrap gap-1.5">
+                                    @foreach (var att in msg.Attachments)
+                                    {
+                                        <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium bg-black/10 dark:bg-white/10 text-inherit">
+                                            <svg class="w-3.5 h-3.5 opacity-70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                            </svg>
+                                            <span class="truncate max-w-[130px]">@att.Name</span>
+                                            <span class="opacity-60 text-[10px]">(@FormatBytes(att.SizeBytes))</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        @* Message Actions & Meta Toolbar *@
+                        <div class="flex items-center gap-2 mt-1 px-1 text-[11px] text-slate-400">
+                            <span>@msg.Timestamp.ToString("t")</span>
+
+                            @if (msg.Role != ChatRole.User)
+                            {
+                                <span class="text-slate-300 dark:text-slate-700">•</span>
+
+                                @* Copy button *@
+                                <button type="button" @onclick="() => CopyToClipboardAsync(msg.Content)" class="hover:text-slate-600 dark:hover:text-slate-200 transition-colors" title="Copy response">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                    </svg>
+                                </button>
+
+                                @* Like Button *@
+                                <button type="button" @onclick="() => ToggleReaction(msg, true)" class="transition-colors @(msg.FeedbackThumb == true ? "text-emerald-500 font-bold" : "hover:text-slate-600 dark:hover:text-slate-200")" title="Helpful">
+                                    <svg class="w-3.5 h-3.5" fill="@(msg.FeedbackThumb == true ? "currentColor" : "none")" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                    </svg>
+                                </button>
+
+                                @* Dislike Button *@
+                                <button type="button" @onclick="() => ToggleReaction(msg, false)" class="transition-colors @(msg.FeedbackThumb == false ? "text-rose-500 font-bold" : "hover:text-slate-600 dark:hover:text-slate-200")" title="Unhelpful">
+                                    <svg class="w-3.5 h-3.5" fill="@(msg.FeedbackThumb == false ? "currentColor" : "none")" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76 1.04m-7 9.9V19a2 2 0 002 2h.095c.5 0 .905-.405.905-.905 0-.714.211-1.412.608-2.006L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                    </svg>
+                                </button>
+
+                                @* Regenerate Button *@
+                                <button type="button" @onclick="() => RegenerateAsync(msg)" class="hover:text-indigo-500 transition-colors" title="Regenerate">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    @* User Avatar *@
+                    @if (msg.Role == ChatRole.User)
+                    {
+                        <div class="w-8 h-8 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-200 flex items-center justify-center flex-shrink-0 font-bold text-xs mt-0.5">
+                            U
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @* Harmonic Pulsing Typing Indicator *@
+        @if (IsTyping)
+        {
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                    <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                </div>
+                <div class="flex items-center gap-1.5 px-4 py-3 rounded-2xl bg-slate-100 dark:bg-slate-800 rounded-bl-xs border border-slate-200/60 dark:border-slate-700/60">
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 0ms"></span>
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 150ms"></span>
+                    <span class="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style="animation-delay: 300ms"></span>
+                    <span class="ml-2 text-xs font-medium text-slate-500 dark:text-slate-400">@TypingStatusText</span>
+                </div>
+            </div>
+        }
+    </div>
+
+    @* Suggestions Quick-Pills Area *@
+    @if (Suggestions != null && Suggestions.Count > 0)
+    {
+        <div class="px-4 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex items-center gap-2 overflow-x-auto no-scrollbar">
+            <span class="text-[11px] font-semibold text-slate-400 flex items-center gap-1 flex-shrink-0">
+                <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Suggestions:
+            </span>
+            @foreach (var prompt in Suggestions)
+            {
+                <button type="button"
+                        @onclick="() => SelectSuggestionAsync(prompt)"
+                        class="px-2.5 py-1 text-xs rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-400 flex-shrink-0 transition-colors shadow-xs">
+                    @prompt
+                </button>
+            }
+        </div>
+    }
+
+    @* Staged File Attachments Drawer *@
+    @if (_stagedAttachments.Count > 0)
+    {
+        <div class="px-4 py-2 border-t border-slate-200/80 dark:border-slate-800 bg-slate-100/60 dark:bg-slate-800/40 flex flex-wrap gap-2">
+            @foreach (var file in _stagedAttachments)
+            {
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-200 shadow-xs">
+                    <svg class="w-3.5 h-3.5 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span class="truncate max-w-[140px] font-medium">@file.Name</span>
+                    <span class="text-[10px] text-slate-400">@FormatBytes(file.SizeBytes)</span>
+                    <button type="button" @onclick="() => RemoveAttachment(file)" class="text-slate-400 hover:text-rose-500 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            }
+        </div>
+    }
+
+    @* Message Composer Area *@
+    <div class="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800">
+        <div class="relative flex items-end gap-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-xl p-2 focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition-all">
+
+            @* Attach File Button *@
+            <label class="cursor-pointer p-2 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors" title="Attach file">
+                <input type="file" multiple class="hidden" @onchange="HandleFilesSelected" />
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+            </label>
+
+            @* Text Composer Textarea *@
+            <textarea @bind="_inputText"
+                      @bind:event="oninput"
+                      @onkeydown="HandleKeyDown"
+                      placeholder="@Placeholder"
+                      rows="1"
+                      class="flex-1 bg-transparent border-0 resize-none text-xs md:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-0 max-h-32 py-1.5 leading-normal"></textarea>
+
+            @* Send Button *@
+            <button type="button"
+                    @onclick="SendMessageAsync"
+                    disabled="@(string.IsNullOrWhiteSpace(_inputText) && _stagedAttachments.Count == 0)"
+                    class="p-2 rounded-lg bg-indigo-600 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-indigo-500 active:scale-95 transition-all shadow-md shadow-indigo-600/20"
+                    title="Send message (Enter)">
+                <svg class="w-4 h-4 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+            </button>
+        </div>
+        <div class="flex items-center justify-between mt-1 px-1 text-[10px] text-slate-400">
+            <span>Press <kbd class="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">Enter</kbd> to send, <kbd class="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono">Shift+Enter</kbd> for new line</span>
+            <span>@_inputText.Length chars</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "AI Enterprise Studio";
+    [Parameter] public string ModelBadge { get; set; } = ".NET 10+ WASM";
+    [Parameter] public string StatusSubtitle { get; set; } = "Active • Ready for enterprise workloads";
+    [Parameter] public string Placeholder { get; set; } = "Type your prompt or question here...";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public List<ChatMessage> Messages { get; set; } = new();
+    [Parameter] public List<string> Suggestions { get; set; } = new();
+    [Parameter] public bool IsTyping { get; set; }
+    [Parameter] public string TypingStatusText { get; set; } = "AI is thinking...";
+
+    [Parameter] public EventCallback<ChatMessage> OnMessageSent { get; set; }
+    [Parameter] public EventCallback<ChatMessage> OnRegenerate { get; set; }
+    [Parameter] public EventCallback OnClearChat { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private ElementReference _messagesContainer;
+    private string _inputText = "";
+    private readonly List<ChatAttachment> _stagedAttachments = new();
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await SendMessageAsync();
+        }
+    }
+
+    private async Task SendMessageAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_inputText) && _stagedAttachments.Count == 0) return;
+
+        var message = new ChatMessage
+        {
+            Role = ChatRole.User,
+            Content = _inputText.Trim(),
+            Timestamp = DateTime.Now,
+            Attachments = _stagedAttachments.Count > 0 ? new List<ChatAttachment>(_stagedAttachments) : null
+        };
+
+        _inputText = "";
+        _stagedAttachments.Clear();
+
+        await OnMessageSent.InvokeAsync(message);
+    }
+
+    private async Task SelectSuggestionAsync(string prompt)
+    {
+        _inputText = prompt;
+        await SendMessageAsync();
+    }
+
+    private void HandleFilesSelected(ChangeEventArgs e)
+    {
+        // Add sample staged attachments for demonstration/enterprise handling
+        _stagedAttachments.Add(new ChatAttachment(
+            Guid.NewGuid().ToString("N"),
+            "data-audit-report.csv",
+            24576,
+            "text/csv"
+        ));
+    }
+
+    private void RemoveAttachment(ChatAttachment attachment)
+    {
+        _stagedAttachments.Remove(attachment);
+    }
+
+    private void ToggleReaction(ChatMessage msg, bool isLike)
+    {
+        if (msg.FeedbackThumb == isLike)
+            msg.FeedbackThumb = null;
+        else
+            msg.FeedbackThumb = isLike;
+    }
+
+    private async Task RegenerateAsync(ChatMessage msg)
+    {
+        await OnRegenerate.InvokeAsync(msg);
+    }
+
+    private async Task CopyToClipboardAsync(string content)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", content);
+        }
+        catch
+        {
+            // Clipboard fallback
+        }
+    }
+
+    private async Task ClearChatAsync()
+    {
+        Messages.Clear();
+        await OnClearChat.InvokeAsync();
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+}

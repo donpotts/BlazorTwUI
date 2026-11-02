@@ -1,0 +1,144 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject ToastService Toast
+
+<div class="space-y-3 @Class">
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-blue-500 text-sm">
+                ⚡
+            </span>
+            <input type="text"
+                   @bind="_naturalQuery"
+                   @bind:event="oninput"
+                   @onkeydown="HandleKeyDown"
+                   placeholder="Type natural language filter (e.g. 'salary > 120k and remote', 'status active in engineering')..."
+                   class="w-full pl-9 pr-24 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs" />
+
+            <button type="button"
+                    @onclick="ParseQuery"
+                    class="absolute inset-y-1.5 right-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-bold text-[11px] shadow-xs transition flex items-center gap-1">
+                <span>Filter</span>
+                <span>&rarr;</span>
+            </button>
+        </div>
+
+        @if (_activeChips.Count > 0)
+        {
+            <button type="button" @onclick="ClearAllChips"
+                    class="px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 transition">
+                Reset All (@_activeChips.Count)
+            </button>
+        }
+    </div>
+
+    <!-- Generated Smart Filter Chips -->
+    @if (_activeChips.Count > 0)
+    {
+        <div class="flex flex-wrap items-center gap-1.5 pt-1">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">Active Predicates:</span>
+            @foreach (var chip in _activeChips)
+            {
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300 shadow-xs">
+                    <span class="font-bold">@chip.Key:</span>
+                    <span>@chip.Value</span>
+                    <button type="button" @onclick="() => RemoveChip(chip.Key)" class="hover:text-rose-500 text-xs font-bold ml-0.5">&times;</button>
+                </span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public EventCallback<Dictionary<string, string>> OnFilterChanged { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+
+    private string _naturalQuery = "";
+    private Dictionary<string, string> _activeChips = new();
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            ParseQuery();
+        }
+    }
+
+    private void ParseQuery()
+    {
+        if (string.IsNullOrWhiteSpace(_naturalQuery)) return;
+
+        var text = _naturalQuery.ToLowerInvariant();
+        var newChips = new Dictionary<string, string>(_activeChips);
+
+        // Client-side natural query parsing heuristics
+        if (text.Contains("salary >") || text.Contains("salary over") || text.Contains(">"))
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(text, @"salary\s*(>|over|greater than)\s*(\$?\d+[kK]?)");
+            if (match.Success)
+            {
+                newChips["Salary"] = "> " + match.Groups[2].Value.ToUpper();
+            }
+        }
+
+        if (text.Contains("remote"))
+        {
+            newChips["Location"] = "Remote (100%)";
+        }
+        else if (text.Contains("hybrid"))
+        {
+            newChips["Location"] = "Hybrid";
+        }
+
+        if (text.Contains("engineering") || text.Contains("engineer"))
+        {
+            newChips["Department"] = "Engineering";
+        }
+        else if (text.Contains("design") || text.Contains("product"))
+        {
+            newChips["Department"] = "Product & Design";
+        }
+        else if (text.Contains("sales") || text.Contains("marketing"))
+        {
+            newChips["Department"] = "Sales & Marketing";
+        }
+
+        if (text.Contains("active"))
+        {
+            newChips["Status"] = "Active";
+        }
+        else if (text.Contains("pending") || text.Contains("review"))
+        {
+            newChips["Status"] = "Pending Review";
+        }
+
+        if (text.Contains("senior") || text.Contains("staff") || text.Contains("principal"))
+        {
+            newChips["Seniority"] = "Senior+";
+        }
+
+        if (newChips.Count == _activeChips.Count)
+        {
+            // fallback token chip
+            newChips["Query"] = _naturalQuery.Trim();
+        }
+
+        _activeChips = newChips;
+        _naturalQuery = "";
+        Toast.Show("Smart Filter Applied", $"Synthesized {_activeChips.Count} query predicates.", SemanticVariant.Info);
+        OnFilterChanged.InvokeAsync(_activeChips);
+    }
+
+    private void RemoveChip(string key)
+    {
+        _activeChips.Remove(key);
+        OnFilterChanged.InvokeAsync(_activeChips);
+    }
+
+    private void ClearAllChips()
+    {
+        _activeChips.Clear();
+        OnFilterChanged.InvokeAsync(_activeChips);
+    }
+}

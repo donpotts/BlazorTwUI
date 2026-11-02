@@ -1,0 +1,35 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="transition-all @CurrentClasses @Class" style="@Style">
+    @if (_rendered)
+    {
+        @ChildContent
+    }
+</div>
+
+@code {
+    [Parameter] public bool Show { get; set; } = true;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Enter { get; set; } = "transition duration-300 ease-out";
+    [Parameter] public string EnterFrom { get; set; } = "opacity-0 scale-95 -translate-y-2";
+    [Parameter] public string EnterTo { get; set; } = "opacity-100 scale-100 translate-y-0";
+    [Parameter] public string Leave { get; set; } = "transition duration-200 ease-in";
+    [Parameter] public string LeaveFrom { get; set; } = "opacity-100 scale-100 translate-y-0";
+    [Parameter] public string LeaveTo { get; set; } = "opacity-0 scale-95 -translate-y-2";
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public string? Style { get; set; }
+
+    private bool _rendered = true;
+
+    private string CurrentClasses
+    {
+        get
+        {
+            if (Show)
+            {
+                return $"{Enter} {EnterTo}";
+            }
+            return $"{Leave} {LeaveTo} pointer-events-none";
+        }
+    }
+}

@@ -1,0 +1,417 @@
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject ComponentCatalogService Catalog
+@inject ToastService Toast
+@inject IJSRuntime JS
+
+<div class="space-y-6">
+    <!-- Top Mode Switcher Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-3xl bg-gradient-to-r from-brand-600/10 via-indigo-600/10 to-transparent border border-brand-500/20">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-brand-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-brand-500/20">
+                <span>📖</span>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-lg font-bold text-slate-900 dark:text-white">Component Docs, Settings & Coaching Hub</h3>
+                    <TwBadge Variant="SemanticVariant.Primary">@Catalog.GetAll().Count Components</TwBadge>
+                </div>
+                <p class="text-xs text-slate-600 dark:text-slate-400">
+                    Comprehensive settings reference, architectural developer coaching, and copy-paste recipes.
+                </p>
+            </div>
+        </div>
+
+        <!-- Mode Pills -->
+        <div class="flex items-center p-1 rounded-2xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
+            <button type="button" @onclick='() => _activeView = "catalog"' 
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 @(_activeView == "catalog" ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+                <span>📚</span> Settings & Catalog
+            </button>
+            <button type="button" @onclick='() => _activeView = "coaching"' 
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 @(_activeView == "coaching" ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+                <span>🎓</span> Developer Coach
+            </button>
+            <button type="button" @onclick='() => _activeView = "help"' 
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 @(_activeView == "help" ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+                <span>💡</span> Recipes & Help
+            </button>
+        </div>
+    </div>
+
+    @if (_activeView == "catalog")
+    {
+        <!-- Catalog & Settings Inspector -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <!-- Sidebar: Search & Filter List -->
+            <div class="lg:col-span-4 space-y-4">
+                <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                    <!-- Search Input -->
+                    <div class="relative">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text"
+                               placeholder="@($"Search {Catalog.GetAll().Count} components & props...")"
+                               @bind="_searchQuery"
+                               @bind:event="oninput"
+                               class="w-full pl-9 pr-3 py-2 rounded-xl text-xs border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500" />
+                    </div>
+
+                    <!-- Category Filter Dropdown -->
+                    <div>
+                        <select value="@_selectedCategory" @onchange="OnCategoryChanged" class="w-full px-3 py-1.5 rounded-xl text-xs border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 font-medium text-slate-700 dark:text-slate-200 focus:outline-none">
+                            <option value="">All Categories (@Catalog.GetAll().Count components)</option>
+                            @foreach (var cat in Catalog.GetCategories())
+                            {
+                                <option value="@cat">@cat (@Catalog.GetAll().Count(c => c.Category == cat))</option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Component List -->
+                    <div class="space-y-1 max-h-[560px] overflow-y-auto pr-1">
+                        @foreach (var comp in FilteredComponents)
+                        {
+                            var isSelected = comp.Name == _selectedComponent?.Name;
+                            <button type="button"
+                                    @onclick="() => SelectComponent(comp)"
+                                    class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-semibold transition @(isSelected ? "bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 border border-brand-500/30" : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60")">
+                                <div class="flex items-center gap-2 truncate">
+                                    <span class="font-mono text-[11px] font-bold">@comp.Name</span>
+                                </div>
+                                <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">@comp.Parameters.Count props</span>
+                            </button>
+                        }
+
+                        @if (!FilteredComponents.Any())
+                        {
+                            <div class="p-4 text-center text-xs text-slate-400 dark:text-slate-500">
+                                No components match "@_searchQuery"
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Pane: Selected Component Details & Settings -->
+            <div class="lg:col-span-8 space-y-6">
+                @if (_selectedComponent != null)
+                {
+                    <TwCard Title="@_selectedComponent.Name" Subtitle="@_selectedComponent.Category">
+                        <HeaderContent>
+                            <TwBadge Variant="SemanticVariant.Info">
+                                @(_selectedComponent.Parameters.Count) Parameters
+                            </TwBadge>
+                        </HeaderContent>
+                        <ChildContent>
+                            <div class="space-y-6">
+                                <!-- Description -->
+                                <p class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                                    @_selectedComponent.Description
+                                </p>
+
+                                <!-- Razor Usage Example Snippet -->
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Razor Usage Snippet</span>
+                                        <button type="button" @onclick="() => CopySnippet(_selectedComponent.RazorSnippet)" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                                            Copy Snippet
+                                        </button>
+                                    </div>
+                                    <div class="rounded-xl bg-slate-950 p-3 font-mono text-[12px] text-emerald-400 border border-slate-800 overflow-x-auto shadow-inner">
+                                        <code>@_selectedComponent.RazorSnippet</code>
+                                    </div>
+                                </div>
+
+                                <!-- Parameters & Settings Table -->
+                                <div class="space-y-2">
+                                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Component Parameters & Settings</span>
+                                    @if (_selectedComponent.Parameters.Any())
+                                    {
+                                        <div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-800">
+                                            <table class="w-full text-left text-xs">
+                                                <thead class="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                                                    <tr>
+                                                        <th class="px-3.5 py-2.5 font-semibold">Parameter</th>
+                                                        <th class="px-3.5 py-2.5 font-semibold">Type</th>
+                                                        <th class="px-3.5 py-2.5 font-semibold">Default</th>
+                                                        <th class="px-3.5 py-2.5 font-semibold">Description</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-200">
+                                                    @foreach (var param in _selectedComponent.Parameters)
+                                                    {
+                                                        <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                                                            <td class="px-3.5 py-2.5 font-mono font-semibold text-brand-600 dark:text-brand-400">@param.Name</td>
+                                                            <td class="px-3.5 py-2.5 font-mono text-[11px] text-indigo-600 dark:text-indigo-400">@param.Type</td>
+                                                            <td class="px-3.5 py-2.5 font-mono text-[11px] text-slate-500 dark:text-slate-400">@param.DefaultValue</td>
+                                                            <td class="px-3.5 py-2.5 text-xs text-slate-600 dark:text-slate-300">@param.Description</td>
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="p-3 text-xs text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800">
+                                            This component accepts child markup or structural slots directly.
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </ChildContent>
+                    </TwCard>
+                }
+            </div>
+        </div>
+    }
+    else if (_activeView == "coaching")
+    {
+        <!-- Developer Coaching Curriculum & Architectural Rules -->
+        <div class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                <!-- Principle 1 -->
+                <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                    <div class="w-8 h-8 rounded-xl bg-brand-100 dark:bg-brand-950 text-brand-600 dark:text-brand-400 flex items-center justify-center font-bold text-sm">
+                        1
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">Mobile-First Touch Architecture</h4>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Interactive elements (buttons, inputs, select options) must guarantee minimum 44×44px tap targets according to mobile interface standards. Use <code class="font-mono bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 px-1 py-0.5 rounded">min-h-[44px]</code> and viewport bottom padding <code class="font-mono bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 px-1 py-0.5 rounded">pb-safe</code>.
+                    </p>
+                </div>
+
+                <!-- Principle 2 -->
+                <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold text-sm">
+                        2
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">Zero-FOUC Theme Synchronization</h4>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Avoid light-mode flash on page reloads by executing early theme restoration in the document <code class="font-mono bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 px-1 py-0.5 rounded">&lt;head&gt;</code> before CSS parses. Keep state synchronized with WebAssembly through <code class="font-mono bg-slate-100 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 px-1 py-0.5 rounded">ThemeService</code>.
+                    </p>
+                </div>
+
+                <!-- Principle 3 -->
+                <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
+                        3
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">Adaptive Data Transformation</h4>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Dense desktop tables cause horizontal overflow on mobile screens. <code class="font-mono bg-slate-100 dark:bg-slate-800 text-indigo-600 dark:text-indigo-400 px-1 py-0.5 rounded">TwDataGrid</code> automatically transforms rows into stacked touch cards with prominent tap targets on screens below 768px.
+                    </p>
+                </div>
+
+                <!-- Principle 4 -->
+                <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                    <div class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold text-sm">
+                        4
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">Native C# SVG Visualizations</h4>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Never pull in bulky external JS charting bundles. <code class="font-mono bg-slate-100 dark:bg-slate-800 text-purple-600 dark:text-purple-400 px-1 py-0.5 rounded">TwChart</code> and <code class="font-mono bg-slate-100 dark:bg-slate-800 text-purple-600 dark:text-purple-400 px-1 py-0.5 rounded">TwGauge</code> compute arc geometry, circumferences, and stroke dashes directly in C# WebAssembly with instant zero-overhead rendering.
+                    </p>
+                </div>
+
+                <!-- Principle 5 -->
+                <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                    <div class="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-sm">
+                        5
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">Bento Grids & Dynamic Glows</h4>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Construct modern asymmetric marketing layouts with <code class="font-mono bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded">TwBentoGrid</code>. Utilize CSS custom properties (<code class="font-mono bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded">--mouse-x</code>, <code class="font-mono bg-slate-100 dark:bg-slate-800 text-amber-600 dark:text-amber-400 px-1 py-0.5 rounded">--mouse-y</code>) for hardware-accelerated radial spotlight effects without canvas redrawing.
+                    </p>
+                </div>
+
+                <!-- Principle 6 -->
+                <div class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+                    <div class="w-8 h-8 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center font-bold text-sm">
+                        6
+                    </div>
+                    <h4 class="text-sm font-bold text-slate-900 dark:text-white">Universal Keyboard & A11y Nav</h4>
+                    <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                        Every overlay, modal, and drawer must listen for <code class="font-mono bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-1 py-0.5 rounded">Escape</code> to dismiss, trap focus when open, and support global shortcuts like <code class="font-mono bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-1 py-0.5 rounded">Ctrl+K</code> / <code class="font-mono bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-1 py-0.5 rounded">Cmd+K</code> via <code class="font-mono bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-1 py-0.5 rounded">TwCommandPalette</code>.
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+    else if (_activeView == "help")
+    {
+        <!-- Help, Recipes & Global Shortcuts -->
+        <div class="space-y-6">
+            <!-- Global Keyboard Shortcuts Table -->
+            <TwCard Title="Global Keyboard Shortcuts" Subtitle="System-wide hotkeys active across the application">
+                <ChildContent>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Command Palette</span>
+                            <div class="flex items-center gap-1">
+                                <TwKbd Key="cmd" Size="xs" />
+                                <TwKbd Key="K" Size="xs" />
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Open Docs & Coach</span>
+                            <div class="flex items-center gap-1">
+                                <TwKbd Key="cmd" Size="xs" />
+                                <TwKbd Key="D" Size="xs" />
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Dismiss Modal / Drawer</span>
+                            <TwKbd Key="esc" Size="xs" />
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Interactive Image Slider</span>
+                            <div class="flex items-center gap-1">
+                                <TwKbd Key="left" Size="xs" />
+                                <TwKbd Key="right" Size="xs" />
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Trigger Confetti Burst</span>
+                            <div class="flex items-center gap-1">
+                                <TwKbd Key="cmd" Size="xs" />
+                                <TwKbd Key="enter" Size="xs" />
+                            </div>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">Toggle Theme Mode</span>
+                            <div class="flex items-center gap-1">
+                                <TwKbd Key="cmd" Size="xs" />
+                                <TwKbd Key="shift" Size="xs" />
+                                <TwKbd Key="T" Size="xs" />
+                            </div>
+                        </div>
+                    </div>
+                </ChildContent>
+            </TwCard>
+
+            <!-- Recipes Matrix -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <TwCard Title="Recipe: Visual Before / After Slider" Subtitle="Interactive image comparison with touch and keyboard dragging">
+                    <ChildContent>
+                        <div class="space-y-3">
+                            <div class="rounded-xl bg-slate-950 p-3 font-mono text-[11px] text-emerald-400 border border-slate-800 overflow-x-auto whitespace-pre shadow-inner">@RecipeImageCompare</div>
+                            <button type="button" @onclick="() => CopySnippet(RecipeImageCompare)" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline">
+                                Copy Recipe
+                            </button>
+                        </div>
+                    </ChildContent>
+                </TwCard>
+
+                <TwCard Title="Recipe: Infinite Marquee Ticker" Subtitle="Continuous horizontal ticker with edge gradient masks">
+                    <ChildContent>
+                        <div class="space-y-3">
+                            <div class="rounded-xl bg-slate-950 p-3 font-mono text-[11px] text-emerald-400 border border-slate-800 overflow-x-auto whitespace-pre shadow-inner">@RecipeMarquee</div>
+                            <button type="button" @onclick="() => CopySnippet(RecipeMarquee)" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline">
+                                Copy Recipe
+                            </button>
+                        </div>
+                    </ChildContent>
+                </TwCard>
+
+                <TwCard Title="Recipe: Vector QR & Barcode Pair" Subtitle="Scalable SVG generation with zero external fonts or CDN images">
+                    <ChildContent>
+                        <div class="space-y-3">
+                            <div class="rounded-xl bg-slate-950 p-3 font-mono text-[11px] text-emerald-400 border border-slate-800 overflow-x-auto whitespace-pre shadow-inner">@RecipeQrBarcode</div>
+                            <button type="button" @onclick="() => CopySnippet(RecipeQrBarcode)" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline">
+                                Copy Recipe
+                            </button>
+                        </div>
+                    </ChildContent>
+                </TwCard>
+
+                <TwCard Title="Recipe: Celebration Confetti Burst" Subtitle="Canvas physics particle explosion with programmatic trigger">
+                    <ChildContent>
+                        <div class="space-y-3">
+                            <div class="rounded-xl bg-slate-950 p-3 font-mono text-[11px] text-emerald-400 border border-slate-800 overflow-x-auto whitespace-pre shadow-inner">@RecipeConfetti</div>
+                            <button type="button" @onclick="() => CopySnippet(RecipeConfetti)" class="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline">
+                                Copy Recipe
+                            </button>
+                        </div>
+                    </ChildContent>
+                </TwCard>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private const string RecipeImageCompare = "<TwImageCompare BeforeSrc=\"images/compare-before.jpg\"\n                AfterSrc=\"images/compare-after.jpg\"\n                BeforeLabel=\"Original\"\n                AfterLabel=\"Optimized\"\n                @bind-Position=\"sliderPos\" />";
+
+    private const string RecipeMarquee = "<TwMarquee DurationSeconds=\"20\" PauseOnHover=\"true\" FadeEdges=\"true\">\n    <span class=\"mx-4 font-bold\">.NET 10+ WebAssembly</span>\n    <span class=\"mx-4 font-bold\">Tailwind CSS v3.4+</span>\n</TwMarquee>";
+
+    private const string RecipeQrBarcode = "<TwQrCode Value=\"https://tailwindcss.com\" Size=\"160\" DotShape=\"TwQrCode.QrDotShape.Rounded\" />\n<TwBarcode Value=\"SKU-98471\" BarHeight=\"50\" />";
+
+    private const string RecipeConfetti = "<TwConfetti @ref=\"confettiRef\" ParticleCount=\"120\" />\n<TwButton OnClick=\"() => confettiRef.FireAsync()\">Celebrate</TwButton>";
+
+    private string _activeView = "catalog"; // "catalog" | "coaching" | "help"
+    private string _searchQuery = "";
+    private string _selectedCategory = "";
+    private ComponentDocItem? _selectedComponent;
+
+    protected override void OnInitialized()
+    {
+        _selectedComponent = Catalog.GetAll().FirstOrDefault();
+    }
+
+    private IEnumerable<ComponentDocItem> FilteredComponents
+    {
+        get
+        {
+            var items = Catalog.GetAll().AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(_selectedCategory))
+            {
+                items = items.Where(i => i.Category.Equals(_selectedCategory, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (!string.IsNullOrWhiteSpace(_searchQuery))
+            {
+                var q = _searchQuery.Trim().ToLowerInvariant();
+                items = items.Where(i =>
+                    i.Name.ToLowerInvariant().Contains(q) ||
+                    i.Category.ToLowerInvariant().Contains(q) ||
+                    i.Description.ToLowerInvariant().Contains(q) ||
+                    i.Parameters.Any(p => p.Name.ToLowerInvariant().Contains(q) || p.Type.ToLowerInvariant().Contains(q)));
+            }
+
+            return items;
+        }
+    }
+
+    private void SelectComponent(ComponentDocItem comp)
+    {
+        _selectedComponent = comp;
+    }
+
+    private void OnCategoryChanged(ChangeEventArgs e)
+    {
+        _selectedCategory = e.Value?.ToString() ?? "";
+        var first = FilteredComponents.FirstOrDefault();
+        if (first != null)
+        {
+            _selectedComponent = first;
+        }
+    }
+
+    private async Task CopySnippet(string snippet)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", snippet);
+            Toast.Show("Snippet Copied", "Markup snippet copied to clipboard!", SemanticVariant.Success);
+        }
+        catch
+        {
+            Toast.Show("Copy Error", "Unable to copy to clipboard", SemanticVariant.Warning);
+        }
+    }
+}

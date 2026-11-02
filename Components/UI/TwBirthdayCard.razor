@@ -1,0 +1,459 @@
+@namespace BlazorTwUI.Components.UI
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="space-y-6 @Class">
+    <!-- Embedded Confetti for Live Opening Burst -->
+    <TwConfetti @ref="_confettiRef" FullScreen="false" Class="absolute inset-0 w-full h-full pointer-events-none z-30" />
+
+    <!-- Role Preset Selector Toolbar -->
+    <div class="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3">
+            <div>
+                <span class="text-xs font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                    🎂 Role-Themed Birthday Celebrations
+                </span>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">
+                    Select Role to Preview Tailored Birthday Experience
+                </h3>
+            </div>
+            <span class="text-xs text-slate-500 font-mono">
+                @_roles.Count Preset Roles Available
+            </span>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            @for (int i = 0; i < _roles.Count; i++)
+            {
+                var roleIndex = i;
+                var role = _roles[roleIndex];
+                var isSelected = _selectedRoleIndex == roleIndex;
+
+                <button type="button"
+                        id="@($"role-btn-{roleIndex}")"
+                        @onclick="() => SwitchRole(roleIndex)"
+                        class="role-selector-btn p-2.5 rounded-2xl border text-left transition flex flex-col items-start gap-1 @(isSelected ? "bg-amber-500/10 border-amber-500 text-amber-900 dark:text-amber-200 ring-2 ring-amber-500/20" : "bg-slate-50 dark:bg-slate-850 border-slate-200 dark:border-slate-800 hover:border-slate-300 text-slate-700 dark:text-slate-300")">
+                    <span class="text-xl">@role.AvatarEmoji</span>
+                    <div class="truncate w-full">
+                        <div class="font-bold text-xs truncate">@role.Name</div>
+                        <div class="text-[10px] text-slate-500 truncate">@role.ShortRole</div>
+                    </div>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Interactive Card Workspace -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <!-- Left: The Interactive Birthday Card (Cover / Opened Spread) -->
+        <div class="lg:col-span-7">
+            <div class="relative rounded-3xl bg-slate-950 border border-slate-800 overflow-hidden shadow-2xl min-h-[460px] flex flex-col justify-between p-6 sm:p-8">
+                <!-- Ambient Backdrop Aura -->
+                <div class="absolute -top-16 -right-16 w-56 h-56 rounded-full @ActiveRole.AuraGradient blur-3xl opacity-30 pointer-events-none"></div>
+
+                @if (!_isCardOpened)
+                {
+                    <!-- Card Cover State: Embossed Wax Seal & Ribbon -->
+                    <div class="flex-1 flex flex-col items-center justify-center text-center space-y-6 z-10 py-8">
+                        <div class="relative">
+                            <!-- Golden Ribbon Stripes -->
+                            <div class="w-24 h-24 rounded-3xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-200 p-1 shadow-2xl flex items-center justify-center animate-pulse">
+                                <div class="w-full h-full rounded-[20px] bg-slate-900 flex items-center justify-center text-4xl select-none">
+                                    @ActiveRole.AvatarEmoji
+                                </div>
+                            </div>
+                            <span class="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-rose-600 text-white font-mono font-bold text-[10px] uppercase shadow-md">
+                                SEALED
+                            </span>
+                        </div>
+
+                        <div class="space-y-1.5 max-w-sm">
+                            <span class="text-xs font-mono font-bold uppercase tracking-widest text-amber-400">
+                                Special Delivery for @ActiveRole.Name
+                            </span>
+                            <h3 class="text-xl sm:text-2xl font-black text-white">
+                                An Exclusive Birthday Card from Your Team
+                            </h3>
+                            <p class="text-xs text-slate-400">
+                                Crafted specifically for your role as <strong>@ActiveRole.Title</strong>. Click below to unwrap!
+                            </p>
+                        </div>
+
+                        <button type="button"
+                                @onclick="OpenCard"
+                                class="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:from-amber-600 hover:to-purple-700 text-white font-black text-sm tracking-wider uppercase shadow-xl shadow-amber-500/25 transition transform hover:scale-105 active:scale-95 flex items-center gap-2">
+                            <span>🎁</span>
+                            <span>Unwrap & Open Birthday Card</span>
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <!-- Card Opened State: Role Greeting Spread -->
+                    <div class="space-y-6 z-10 animate-fade-in">
+                        <!-- Card Header & Badge -->
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-rose-400 flex items-center justify-center text-2xl shadow-lg">
+                                    @ActiveRole.AvatarEmoji
+                                </div>
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <h4 class="text-base font-black text-white">@ActiveRole.Name</h4>
+                                        <span class="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold font-mono">
+                                            @ActiveRole.Tenure
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-400">@ActiveRole.Title • @ActiveRole.Department</p>
+                                </div>
+                            </div>
+
+                            <button type="button"
+                                    @onclick="TriggerCelebrationBurst"
+                                    class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs transition border border-slate-700 flex items-center gap-1.5">
+                                <span>🎆</span>
+                                <span>Re-Celebrate</span>
+                            </button>
+                        </div>
+
+                        <!-- Role-Tailored Birthday Poem & Inside Humor -->
+                        <div class="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                            <div class="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider font-mono">
+                                <span>✨</span>
+                                <span>Role Birthday Tribute</span>
+                            </div>
+                            <blockquote class="text-sm sm:text-base font-medium italic text-slate-200 leading-relaxed">
+                                "@ActiveRole.RoleHumorGreeting"
+                            </blockquote>
+                            <p class="text-xs text-slate-400 pt-1">
+                                — With gratitude from the entire engineering & company leadership team.
+                            </p>
+                        </div>
+
+                        <!-- Special Company Birthday Perk Grant -->
+                        <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-transparent border border-amber-500/30 flex items-center gap-3.5">
+                            <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-2xl shrink-0">
+                                🎁
+                            </div>
+                            <div class="truncate">
+                                <span class="text-[10px] font-mono font-bold uppercase text-amber-400 tracking-wider">Company Morale Grant</span>
+                                <h5 class="text-sm font-black text-white truncate">@ActiveRole.PerkGrantTitle</h5>
+                                <p class="text-xs text-slate-400 truncate">@ActiveRole.PerkGrantDescription</p>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 flex items-center justify-between text-xs text-slate-400">
+                            <span>🎂 Birthday Card ID: <strong class="font-mono text-slate-300">BTUI-BDAY-@(ActiveRole.Name.Replace(" ", "").ToUpperInvariant())</strong></span>
+                            <button type="button" @onclick="() => _isCardOpened = false" class="hover:text-white underline">
+                                Close Envelope
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Right: Team Wishing Wall & Interactive Signing Book -->
+        <div class="lg:col-span-5 space-y-4">
+            <div class="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span>✍️</span> Digital Signing Wall (@ActiveRole.Signatures.Count)
+                        </h4>
+                        <p class="text-[11px] text-slate-500">Peer wishes & inside jokes from teammates</p>
+                    </div>
+                    <span class="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        Live Wall
+                    </span>
+                </div>
+
+                <!-- Scrollable Signatures List -->
+                <div class="space-y-2.5 max-h-[260px] overflow-y-auto pr-1">
+                    @foreach (var sig in ActiveRole.Signatures)
+                    {
+                        <div class="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-base">@sig.Emoji</span>
+                                    <span class="text-xs font-bold text-slate-900 dark:text-white">@sig.AuthorName</span>
+                                    <span class="text-[10px] text-slate-500 font-mono">(@sig.AuthorRole)</span>
+                                </div>
+                                <span class="text-[9px] text-slate-400">@sig.TimeAgo</span>
+                            </div>
+                            <p class="text-xs text-slate-700 dark:text-slate-300 pl-6 italic">
+                                "@sig.Message"
+                            </p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Interactive Form: Add Your Own Signature -->
+                <div class="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                        Sign @ActiveRole.Name's Birthday Card
+                    </span>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text"
+                               placeholder="Your Name"
+                               @bind="_newAuthorName"
+                               class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+
+                        <input type="text"
+                               placeholder="Your Role"
+                               @bind="_newAuthorRole"
+                               class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                    </div>
+
+                    <!-- Emoji Reaction Picker -->
+                    <div class="flex items-center gap-1.5">
+                        @foreach (var emoji in _availableEmojis)
+                        {
+                            <button type="button"
+                                    @onclick="() => _selectedSigEmoji = emoji"
+                                    class="w-7 h-7 rounded-lg text-sm flex items-center justify-center transition @(_selectedSigEmoji == emoji ? "bg-amber-500/20 ring-2 ring-amber-500" : "hover:bg-slate-100 dark:hover:bg-slate-800")">
+                                @emoji
+                            </button>
+                        }
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text"
+                               placeholder="Write a warm birthday note or inside joke..."
+                               @bind="_newMessage"
+                               @bind:event="oninput"
+                               @onkeydown="HandleKeyDown"
+                               class="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-750 bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+
+                        <button type="button"
+                                id="btn-sign-wall"
+                                @onclick="SubmitSignature"
+                                disabled="@(string.IsNullOrWhiteSpace(_newMessage))"
+                                class="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-rose-500 hover:from-amber-600 hover:to-rose-600 disabled:opacity-40 text-white font-bold text-xs transition shadow-sm flex items-center gap-1 shrink-0">
+                            <span>✍️</span>
+                            <span>Sign</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Class { get; set; }
+
+    private TwConfetti? _confettiRef;
+    private bool _isCardOpened = false;
+    private int _selectedRoleIndex = 0;
+
+    private string _newAuthorName = "Alex Rivera";
+    private string _newAuthorRole = "Lead Architect";
+    private string _selectedSigEmoji = "🎂";
+    private string _newMessage = "";
+
+    private readonly string[] _availableEmojis = new[] { "🎂", "🥳", "🚀", "❤️", "☕", "🌟", "🍕" };
+
+    public class RoleProfile
+    {
+        public string Name { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string ShortRole { get; set; } = "";
+        public string Department { get; set; } = "";
+        public string Tenure { get; set; } = "";
+        public string AvatarEmoji { get; set; } = "👩‍💻";
+        public string AuraGradient { get; set; } = "bg-indigo-500";
+        public TwConfetti.CelebrationStyle ConfettiStyle { get; set; } = TwConfetti.CelebrationStyle.Fireworks;
+        public string RoleHumorGreeting { get; set; } = "";
+        public string PerkGrantTitle { get; set; } = "";
+        public string PerkGrantDescription { get; set; } = "";
+        public List<TeamSignature> Signatures { get; set; } = new();
+    }
+
+    public class TeamSignature
+    {
+        public string AuthorName { get; set; } = "";
+        public string AuthorRole { get; set; } = "";
+        public string Emoji { get; set; } = "🎂";
+        public string Message { get; set; } = "";
+        public string TimeAgo { get; set; } = "1h ago";
+    }
+
+    private RoleProfile ActiveRole => _roles[_selectedRoleIndex];
+
+    private readonly List<RoleProfile> _roles = new()
+    {
+        new()
+        {
+            Name = "Sarah Jenkins",
+            Title = "Staff Cloud & Platform Architect",
+            ShortRole = "Cloud / DevOps",
+            Department = "Infrastructure Engineering",
+            Tenure = "Year 4 at Company",
+            AvatarEmoji = "👩‍💻",
+            AuraGradient = "bg-indigo-500",
+            ConfettiStyle = TwConfetti.CelebrationStyle.Fireworks,
+            RoleHumorGreeting = "May your Kubernetes clusters auto-scale like poetry, your Terraform never drift, and your PagerDuty remain peacefully silent all night long!",
+            PerkGrantTitle = "$75 Artisan Cake & Coffee Grant + 1 Floating PTO Day",
+            PerkGrantDescription = "Approved by People Operations. Voucher auto-deposited into your Morale Perks balance.",
+            Signatures = new()
+            {
+                new() { AuthorName = "Marcus Vance", AuthorRole = "VP Engineering", Emoji = "🚀", Message = "Happy birthday Sarah! Thanks for keeping us at 99.999% uptime through Black Friday!", TimeAgo = "2h ago" },
+                new() { AuthorName = "Chloe Zhang", AuthorRole = "Security Lead", Emoji = "🎂", Message = "Here is to another year of zero zero-days and lightning fast deployments!", TimeAgo = "4h ago" },
+                new() { AuthorName = "David Kim", AuthorRole = "Frontend Staff", Emoji = "☕", Message = "Have the best birthday! Drinks and cold brew on the team this Friday!", TimeAgo = "5h ago" }
+            }
+        },
+        new()
+        {
+            Name = "David Kim",
+            Title = "Senior Full-Stack & UI Engineer",
+            ShortRole = "Software Eng",
+            Department = "Product Engineering",
+            Tenure = "Year 2 at Company",
+            AvatarEmoji = "👨‍💻",
+            AuraGradient = "bg-emerald-500",
+            ConfettiStyle = TwConfetti.CelebrationStyle.Confetti,
+            RoleHumorGreeting = "May your Pull Requests be blessed with immediate LGTM approvals, zero merge conflicts, and test suites that pass on the very first run!",
+            PerkGrantTitle = "Top-Tier Mechanical Keyboard Grant + $50 Dining Credit",
+            PerkGrantDescription = "Choice of custom switch keyboard or developer ergonomics stipend.",
+            Signatures = new()
+            {
+                new() { AuthorName = "Sarah Jenkins", AuthorRole = "DevOps Lead", Emoji = "🥳", Message = "Happy birthday David! Your CSS grid work makes our dashboards look incredible!", TimeAgo = "1h ago" },
+                new() { AuthorName = "Maya Patel", AuthorRole = "Design Lead", Emoji = "❤️", Message = "The best engineer to partner with on UI tokens! Have an amazing birthday!", TimeAgo = "3h ago" }
+            }
+        },
+        new()
+        {
+            Name = "Maya Patel",
+            Title = "Principal Product Designer",
+            ShortRole = "Product Design",
+            Department = "Design & UX",
+            Tenure = "Year 3 at Company",
+            AvatarEmoji = "🎨",
+            AuraGradient = "bg-rose-500",
+            ConfettiStyle = TwConfetti.CelebrationStyle.Stars,
+            RoleHumorGreeting = "May your Figma components never detach, your typography scales stay harmonious, and client feedback always be 'No changes needed, pure perfection'!",
+            PerkGrantTitle = "Artisan Design Studio Books + Gourmet Chocolates Basket",
+            PerkGrantDescription = "Delivered to your home office with anniversary congratulations.",
+            Signatures = new()
+            {
+                new() { AuthorName = "Jordan Hayes", AuthorRole = "Lead PM", Emoji = "🌟", Message = "Happy birthday Maya! You transform complex requirements into pure elegance!", TimeAgo = "2h ago" },
+                new() { AuthorName = "Elena Rostova", AuthorRole = "Culture Dir", Emoji = "🎂", Message = "Wishing you a vibrant year full of inspiration and well-deserved celebration!", TimeAgo = "6h ago" }
+            }
+        },
+        new()
+        {
+            Name = "Jordan Hayes",
+            Title = "Lead Product Manager",
+            ShortRole = "Product Lead",
+            Department = "Product Strategy",
+            Tenure = "Year 3 at Company",
+            AvatarEmoji = "📊",
+            AuraGradient = "bg-amber-500",
+            ConfettiStyle = TwConfetti.CelebrationStyle.Coins,
+            RoleHumorGreeting = "May your roadmaps stay crystal clear, sprint velocity set new team records, and customer satisfaction scores remain at an unbroken 100%!",
+            PerkGrantTitle = "Weekend Getaway Travel Voucher ($150) + Morale Points",
+            PerkGrantDescription = "Exclusive recharge voucher for dedicated product leadership.",
+            Signatures = new()
+            {
+                new() { AuthorName = "Liam O'Connor", AuthorRole = "Enterprise Growth", Emoji = "🚀", Message = "Happy birthday Jordan! Customers love the features you've prioritized!", TimeAgo = "1h ago" },
+                new() { AuthorName = "Marcus Vance", AuthorRole = "VP Engineering", Emoji = "🍕", Message = "Enjoy your special day Jordan, well earned and much deserved!", TimeAgo = "3h ago" }
+            }
+        },
+        new()
+        {
+            Name = "Elena Rostova",
+            Title = "People & Culture Director",
+            ShortRole = "People & HR",
+            Department = "People & Culture",
+            Tenure = "Year 5 at Company",
+            AvatarEmoji = "🤝",
+            AuraGradient = "bg-fuchsia-500",
+            ConfettiStyle = TwConfetti.CelebrationStyle.Emojis,
+            RoleHumorGreeting = "May you receive back the immense joy and warmth you bring to every single person in this company every single day of the year!",
+            PerkGrantTitle = "Luxury Day Spa Retreat Package + Floral Arrangement",
+            PerkGrantDescription = "A wholehearted thank you for nurturing our extraordinary workplace culture.",
+            Signatures = new()
+            {
+                new() { AuthorName = "Sarah Jenkins", AuthorRole = "Cloud Lead", Emoji = "❤️", Message = "Happy birthday Elena! You make our company feel like a genuine community!", TimeAgo = "30m ago" },
+                new() { AuthorName = "David Kim", AuthorRole = "Senior Eng", Emoji = "🎂", Message = "The best People Lead in the industry! Have a joyful celebration!", TimeAgo = "2h ago" }
+            }
+        },
+        new()
+        {
+            Name = "Liam O'Connor",
+            Title = "Enterprise Growth & Sales Lead",
+            ShortRole = "Growth / Sales",
+            Department = "Global Sales",
+            Tenure = "Year 2 at Company",
+            AvatarEmoji = "🏆",
+            AuraGradient = "bg-teal-500",
+            ConfettiStyle = TwConfetti.CelebrationStyle.Streamers,
+            RoleHumorGreeting = "May your sales pipeline overflow, enterprise deals close ahead of quarter end, and the office victory gong ring all afternoon long!",
+            PerkGrantTitle = "Master Sommelier Wine Selection + Gourmet Dinner Voucher",
+            PerkGrantDescription = "Reward package for relentless energy and client dedication.",
+            Signatures = new()
+            {
+                new() { AuthorName = "Jordan Hayes", AuthorRole = "Lead PM", Emoji = "🍾", Message = "Happy birthday Liam! Ring the gong loud and proud today!", TimeAgo = "45m ago" },
+                new() { AuthorName = "Marcus Vance", AuthorRole = "VP Engineering", Emoji = "🎉", Message = "Have a fantastic celebration Liam, cheers from the whole crew!", TimeAgo = "1h ago" }
+            }
+        }
+    };
+
+    private void SwitchRole(int index)
+    {
+        _selectedRoleIndex = index;
+        _isCardOpened = false;
+    }
+
+    private async Task OpenCard()
+    {
+        _isCardOpened = true;
+        await TriggerCelebrationBurst();
+    }
+
+    private async Task TriggerCelebrationBurst()
+    {
+        if (_confettiRef != null)
+        {
+            await _confettiRef.FireStyleAsync(ActiveRole.ConfettiStyle, 0.5, 0.45, 160);
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("playWheelSound", "select");
+        }
+        catch {}
+
+        Toast.Show($"Happy Birthday {ActiveRole.Name}!", $"Celebrated {ActiveRole.Title} with {ActiveRole.ConfettiStyle} particles.", SemanticVariant.Success);
+    }
+
+    private void HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_newMessage))
+        {
+            SubmitSignature();
+        }
+    }
+
+    private void SubmitSignature()
+    {
+        if (string.IsNullOrWhiteSpace(_newMessage)) return;
+
+        var author = string.IsNullOrWhiteSpace(_newAuthorName) ? "Teammate" : _newAuthorName.Trim();
+        var role = string.IsNullOrWhiteSpace(_newAuthorRole) ? "Colleague" : _newAuthorRole.Trim();
+
+        ActiveRole.Signatures.Insert(0, new TeamSignature
+        {
+            AuthorName = author,
+            AuthorRole = role,
+            Emoji = _selectedSigEmoji,
+            Message = _newMessage.Trim(),
+            TimeAgo = "Just now"
+        });
+
+        _newMessage = "";
+        Toast.Show("Wishes Posted!", $"Added your birthday message to {ActiveRole.Name}'s digital card.", SemanticVariant.Success);
+    }
+}

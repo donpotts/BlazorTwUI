@@ -1,0 +1,114 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@* Rich-text editor on a contenteditable surface. Everything that comes out is rebuilt from an allowlist in the browser (no scripts, handlers, styles or
+   unsafe links), and pasted content is reduced to plain text. Value is the sanitized HTML. *@
+<div class="rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 @Class" data-testid="html-editor">
+    <div role="toolbar" aria-label="Formatting" class="flex flex-wrap items-center gap-1 p-1.5 border-b border-slate-200 dark:border-slate-700">
+        @foreach (var b in Buttons)
+        {
+            <button type="button" @onmousedown:preventDefault="true" @onclick="() => CommandAsync(b.Cmd, b.Arg)" aria-label="@b.Label" title="@b.Label" data-testid="editor-cmd" data-cmd="@(b.Cmd + b.Arg)"
+                    class="w-9 h-9 rounded-lg text-sm font-bold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                <span aria-hidden="true">@b.Glyph</span>
+            </button>
+        }
+        <button type="button" @onmousedown:preventDefault="true" @onclick="() => _linkOpen = !_linkOpen" aria-expanded="@_linkOpen.ToString().ToLowerInvariant()" aria-label="Link" title="Link" data-testid="editor-link-toggle"
+                class="w-9 h-9 rounded-lg text-sm font-bold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><span aria-hidden="true">🔗</span></button>
+        @if (_linkOpen)
+        {
+            <label for="@_urlId" class="sr-only">Link address</label>
+            <input id="@_urlId" type="url" placeholder="https://" @bind="_url" @bind:event="oninput" data-testid="editor-url"
+                   class="min-h-[36px] w-52 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-2 text-sm text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" />
+            <button type="button" @onclick="ApplyLinkAsync" data-testid="editor-link-apply" class="px-3 min-h-[36px] rounded-lg bg-brand-700 text-white text-xs font-bold hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Apply</button>
+            @if (_linkError is not null)
+            {
+                <span role="alert" class="text-xs font-semibold text-red-700 dark:text-red-300" data-testid="editor-link-error">@_linkError</span>
+            }
+        }
+    </div>
+    <div @ref="_surface" contenteditable="true" role="textbox" aria-multiline="true" aria-label="@Label" tabindex="0" data-testid="editor-surface"
+         class="prose-sm max-w-none p-3 text-sm text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 [&_a]:text-brand-800 dark:[&_a]:text-brand-200 [&_a]:underline [&_ul]:list-disc [&_ol]:list-decimal [&_ul]:ps-6 [&_ol]:ps-6 [&_h2]:text-lg [&_h2]:font-bold [&_h3]:font-bold [&_blockquote]:border-s-4 [&_blockquote]:ps-3 [&_blockquote]:text-slate-700 dark:[&_blockquote]:text-slate-300"
+         style="min-height:@(MinHeight)"></div>
+    <p class="px-3 py-1 border-t border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300" role="status" data-testid="editor-chars">@PlainLength characters</p>
+</div>
+
+@code {
+    private sealed record Btn(string Cmd, string? Arg, string Label, string Glyph);
+
+    private static readonly Btn[] Buttons =
+    {
+        new("bold", null, "Bold", "B"), new("italic", null, "Italic", "I"), new("underline", null, "Underline", "U"),
+        new("formatBlock", "h2", "Heading", "H"), new("insertUnorderedList", null, "Bulleted list", "•"), new("insertOrderedList", null, "Numbered list", "1."),
+        new("formatBlock", "blockquote", "Quote", "”"), new("removeFormat", null, "Clear formatting", "⌫")
+    };
+
+    private readonly string _urlId = "url-" + Guid.NewGuid().ToString("N")[..6];
+    private ElementReference _surface;
+    private DotNetObjectReference<TwHtmlEditor>? _self;
+    private bool _attached, _linkOpen;
+    private string _url = "https://";
+    private string? _linkError;
+    private string? _lastSent;
+
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string Label { get; set; } = "Rich text";
+    [Parameter] public string MinHeight { get; set; } = "10rem";
+    [Parameter] public string? Class { get; set; }
+
+    private int PlainLength => System.Text.RegularExpressions.Regex.Replace(Value ?? "", "<[^>]*>", "").Length;
+
+    /// <summary>True for http, https and mailto addresses only. Everything else (javascript:, data:, relative paths) is refused.</summary>
+    public static bool IsSafeUrl(string? url) =>
+        !string.IsNullOrWhiteSpace(url) && Uri.TryCreate(url.Trim(), UriKind.Absolute, out var u) && u.Scheme is "http" or "https" or "mailto";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        try
+        {
+            if (!_attached)
+            {
+                _attached = true;
+                _self = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("twEnterprise.attachEditor", _surface, _self, Value ?? "");
+                _lastSent = Value;
+            }
+            else if (Value != _lastSent)
+            {
+                // The host changed Value (not the user typing): push it into the editor.
+                _lastSent = Value;
+                await JS.InvokeVoidAsync("twEnterprise.setEditorHtml", _surface, Value ?? "");
+            }
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
+    [JSInvokable]
+    public async Task OnHtmlChanged(string html)
+    {
+        _lastSent = html;
+        Value = html;
+        await ValueChanged.InvokeAsync(html);
+        StateHasChanged();
+    }
+
+    private async Task CommandAsync(string cmd, string? arg)
+    {
+        try { await JS.InvokeVoidAsync("twEnterprise.editorCommand", _surface, cmd, arg); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
+    private async Task ApplyLinkAsync()
+    {
+        if (!IsSafeUrl(_url)) { _linkError = "Use an http, https or mailto address."; return; }
+        _linkError = null;
+        await CommandAsync("createLink", _url.Trim());
+        _linkOpen = false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { if (_attached) await JS.InvokeVoidAsync("twEnterprise.detachEditor", _surface); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+        _self?.Dispose();
+    }
+}

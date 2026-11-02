@@ -1,0 +1,171 @@
+@namespace BlazorTwUI.Components
+@using System.ComponentModel.DataAnnotations
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject ToastService Toast
+
+<div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden flex flex-col @Class">
+    <!-- Header with Fullstack Mode Switcher -->
+    <div class="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-sm">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white">@Title</h3>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider @(_simulatedMode == RenderModeKind.StaticSsr ? "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800" : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800")">
+                        @(_simulatedMode == RenderModeKind.StaticSsr ? "Static SSR (Enhanced Form POST)" : "Interactive Auto (Client RPC)")
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Render Mode Switcher -->
+        <div class="flex items-center gap-2">
+            <button type="button" 
+                    @onclick="() => _simulatedMode = RenderModeKind.InteractiveAuto" 
+                    class="px-2.5 py-1 rounded-lg text-xs font-semibold transition @(_simulatedMode == RenderModeKind.InteractiveAuto ? "bg-brand-600 text-white shadow-xs" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900")">
+                Interactive Auto
+            </button>
+            <button type="button" 
+                    @onclick="() => _simulatedMode = RenderModeKind.StaticSsr" 
+                    class="px-2.5 py-1 rounded-lg text-xs font-semibold transition @(_simulatedMode == RenderModeKind.StaticSsr ? "bg-amber-600 text-white shadow-xs" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:text-slate-900")">
+                Static SSR Enhanced
+            </button>
+        </div>
+    </div>
+
+    <!-- Form Content -->
+    <div class="p-5">
+        <EditForm Model="@_model" OnValidSubmit="HandleValidSubmit" class="space-y-4">
+            <DataAnnotationsValidator />
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Employee Name</label>
+                    <InputText @bind-Value="_model.FullName" placeholder="e.g. Jane Doe" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    <ValidationMessage For="@(() => _model.FullName)" class="text-[11px] text-rose-500 mt-1" />
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Corporate Email</label>
+                    <InputText @bind-Value="_model.Email" placeholder="jane@enterprise.org" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    <ValidationMessage For="@(() => _model.Email)" class="text-[11px] text-rose-500 mt-1" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Department</label>
+                    <InputSelect @bind-Value="_model.Department" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20">
+                        <option value="Engineering">Engineering</option>
+                        <option value="Product">Product & Design</option>
+                        <option value="Finance">Corporate Finance</option>
+                        <option value="Security">InfoSec & Compliance</option>
+                    </InputSelect>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Discretionary Spending Budget ($)</label>
+                    <InputNumber @bind-Value="_model.SpendingBudget" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    <ValidationMessage For="@(() => _model.SpendingBudget)" class="text-[11px] text-rose-500 mt-1" />
+                </div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs">
+                <div>
+                    <span class="font-semibold text-slate-800 dark:text-slate-200">Require Hardware Token (YubiKey / Passkey)</span>
+                    <p class="text-[11px] text-slate-500">Enforces FIDO2 / WebAuthn biometric approval on sensitive expenditures.</p>
+                </div>
+                <InputCheckbox @bind-Value="_model.RequireHardwareMfa" class="w-4 h-4 rounded text-brand-600 focus:ring-brand-500 border-slate-300 dark:border-slate-600 dark:bg-slate-800" />
+            </div>
+
+            <!-- Submit Action -->
+            <div class="flex items-center justify-between pt-2">
+                <div class="text-xs text-slate-500 dark:text-slate-400">
+                    @if (_isSubmitting)
+                    {
+                        <span class="inline-flex items-center gap-1.5 text-brand-600 dark:text-brand-400 font-semibold animate-pulse">
+                            <span class="w-2 h-2 rounded-full bg-brand-600 animate-ping"></span>
+                            @(_simulatedMode == RenderModeKind.StaticSsr ? "Simulating Enhanced POST..." : "Executing Direct Client RPC...")
+                        </span>
+                    }
+                    else if (_lastSubmittedAt != null)
+                    {
+                        <span class="text-emerald-600 dark:text-emerald-400 font-medium">
+                            ✓ Submitted at @_lastSubmittedAt.Value.ToString("HH:mm:ss") via @_lastExecutionMethod
+                        </span>
+                    }
+                </div>
+
+                <button type="submit" disabled="@_isSubmitting" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-semibold text-xs transition flex items-center gap-2 shadow-sm disabled:opacity-50">
+                    @if (_isSubmitting)
+                    {
+                        <svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg>
+                        <span>Dispatching...</span>
+                    }
+                    else
+                    {
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        <span>Submit Fullstack Form</span>
+                    }
+                </button>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Universal Fullstack Form Engine";
+    [Parameter] public string Subtitle { get; set; } = "Dual-mode form handling supporting Static SSR Enhanced POST and Interactive Auto Client RPC seamlessly";
+    [Parameter] public string Class { get; set; } = "";
+
+    private RenderModeKind _simulatedMode = RenderModeKind.InteractiveAuto;
+    private FullstackFormModel _model = new();
+    private bool _isSubmitting = false;
+    private DateTime? _lastSubmittedAt;
+    private string _lastExecutionMethod = "";
+
+    public class FullstackFormModel
+    {
+        [Required(ErrorMessage = "Full Name is required.")]
+        [StringLength(60, MinimumLength = 2, ErrorMessage = "Name must be between 2 and 60 characters.")]
+        public string FullName { get; set; } = "Alex Rivera";
+
+        [Required(ErrorMessage = "Corporate Email is required.")]
+        [EmailAddress(ErrorMessage = "Must be a valid email address.")]
+        public string Email { get; set; } = "alex.rivera@enterprise.corp";
+
+        public string Department { get; set; } = "Engineering";
+
+        [Range(100, 250000, ErrorMessage = "Budget must be between $100 and $250,000.")]
+        public decimal SpendingBudget { get; set; } = 45000;
+
+        public bool RequireHardwareMfa { get; set; } = true;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        _isSubmitting = true;
+
+        if (_simulatedMode == RenderModeKind.StaticSsr)
+        {
+            // Simulate SSR server roundtrip with CSRF validation
+            await Task.Delay(380);
+            _lastExecutionMethod = "Server Static POST (Zero JS Fallback)";
+            Toast.Show("Static SSR Action Handled", $"Server Action handled for {_model.FullName}. Page state preserved.", SemanticVariant.Success);
+        }
+        else
+        {
+            // Interactive Auto direct client RPC
+            await Task.Delay(120);
+            _lastExecutionMethod = "Interactive Auto (Direct Client RPC)";
+            Toast.Show("Interactive Auto RPC Executed", $"Client RPC completed in 120ms for {_model.FullName}.", SemanticVariant.Success);
+        }
+
+        _isSubmitting = false;
+        _lastSubmittedAt = DateTime.UtcNow;
+    }
+}

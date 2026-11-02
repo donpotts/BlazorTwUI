@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" width="800" height="450">
+  <defs>
+    <!-- Low-resolution pixelation filter with blur and chunky color bands -->
+    <filter id="pixelate1x" x="0" y="0">
+      <feGaussianBlur stdDeviation="3.2" result="blur" />
+    </filter>
+    <pattern id="pixelGrid" width="16" height="16" patternUnits="userSpaceOnUse">
+      <rect width="16" height="16" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.08" />
+    </pattern>
+  </defs>
+
+  <rect width="800" height="450" fill="#0a0f1d" />
+
+  <g filter="url(#pixelate1x)">
+    <!-- Circuit Board Backdrop -->
+    <rect x="100" y="50" width="600" height="350" rx="24" fill="#0f172a" stroke="#1e293b" stroke-width="4" />
+    
+    <!-- Chip Center -->
+    <rect x="250" y="110" width="300" height="230" rx="16" fill="#1e1b4b" stroke="#4338ca" stroke-width="6" />
+    
+    <!-- Chip Die -->
+    <rect x="320" y="150" width="160" height="150" rx="8" fill="#312e81" stroke="#6366f1" stroke-width="4" />
+    <circle cx="400" cy="225" r="45" fill="#4f46e5" opacity="0.6" />
+    <text x="400" y="235" font-family="sans-serif" font-weight="900" font-size="28" fill="#a5b4fc" text-anchor="middle">AGI-1</text>
+    
+    <!-- Traces -->
+    <line x1="160" y1="140" x2="250" y2="140" stroke="#059669" stroke-width="8" />
+    <line x1="160" y1="180" x2="250" y2="180" stroke="#059669" stroke-width="8" />
+    <line x1="160" y1="220" x2="250" y2="220" stroke="#059669" stroke-width="8" />
+    <line x1="160" y1="260" x2="250" y2="260" stroke="#059669" stroke-width="8" />
+    
+    <line x1="550" y1="140" x2="640" y2="140" stroke="#059669" stroke-width="8" />
+    <line x1="550" y1="180" x2="640" y2="180" stroke="#059669" stroke-width="8" />
+    <line x1="550" y1="220" x2="640" y2="220" stroke="#059669" stroke-width="8" />
+    <line x1="550" y1="260" x2="640" y2="260" stroke="#059669" stroke-width="8" />
+  </g>
+
+  <!-- Visible Pixel Grid Overlay to emphasize 1x downsampling -->
+  <rect width="800" height="450" fill="url(#pixelGrid)" />
+</svg>

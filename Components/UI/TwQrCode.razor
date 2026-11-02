@@ -1,0 +1,320 @@
+@using QRCoder
+@using System.Collections
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="inline-flex flex-col items-center p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xl shadow-slate-200/40 dark:shadow-none transition-all @Class">
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        <div class="mb-3 text-center">
+            <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100">@Title</h4>
+            @if (!string.IsNullOrWhiteSpace(Subtitle))
+            {
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            }
+        </div>
+    }
+
+    <!-- SVG QR Canvas Container -->
+    <div class="relative p-3 rounded-2xl bg-white border border-slate-100 shadow-inner flex items-center justify-center overflow-hidden"
+         style="width: @(Size + 24)px; height: @(Size + 24)px;">
+        @if (_modules != null && _modules.Count > 0)
+        {
+            <svg viewBox="0 0 @_matrixSize @_matrixSize"
+                 width="@Size"
+                 height="@Size"
+                 class="block select-none"
+                 shape-rendering="geometricPrecision">
+                <!-- Background -->
+                @if (BackgroundColor != "transparent")
+                {
+                    <rect width="@_matrixSize" height="@_matrixSize" fill="@BackgroundColor" />
+                }
+
+                <!-- Modules (Dots / Rectangles) -->
+                @for (int y = 0; y < _modules.Count; y++)
+                {
+                    var row = _modules[y];
+                    for (int x = 0; x < row.Count; x++)
+                    {
+                        if (row[x])
+                        {
+                            // Skip center if logo is active and inside center radius
+                            if (HasCenterLogo && IsInsideCenter(x, y))
+                            {
+                                continue;
+                            }
+
+                            if (DotShape == QrDotShape.Circle)
+                            {
+                                <circle cx="@(x + 0.5)" cy="@(y + 0.5)" r="0.45" fill="@ForegroundColor" />
+                            }
+                            else if (DotShape == QrDotShape.Rounded)
+                            {
+                                <rect x="@x" y="@y" width="1.0" height="1.0" rx="0.3" ry="0.3" fill="@ForegroundColor" />
+                            }
+                            else
+                            {
+                                <rect x="@x" y="@y" width="1.0" height="1.0" fill="@ForegroundColor" />
+                            }
+                        }
+                    }
+                }
+
+                <!-- Center Logo / Cutout Badge -->
+                @if (HasCenterLogo)
+                {
+                    var centerBoxSize = Math.Max(5, (int)(_matrixSize * 0.24));
+                    var centerStart = (_matrixSize - centerBoxSize) / 2.0;
+                    var radius = centerBoxSize * 0.25;
+
+                    <!-- White protective background cutout -->
+                    <rect x="@centerStart"
+                          y="@centerStart"
+                          width="@centerBoxSize"
+                          height="@centerBoxSize"
+                          rx="@radius"
+                          ry="@radius"
+                          fill="@BackgroundColor"
+                          stroke="@ForegroundColor"
+                          stroke-width="0.3" />
+
+                    <!-- Center Icon Render -->
+                    <g transform="translate(@(centerStart + centerBoxSize * 0.15), @(centerStart + centerBoxSize * 0.15)) scale(@((centerBoxSize * 0.7) / 24.0))">
+                        @if (CenterIcon == QrCenterIcon.Wifi)
+                        {
+                            <path fill="@ForegroundColor" d="M12 4C7.31 4 3.07 5.9 0 8.98L12 21 24 8.98A16.88 16.88 0 0 0 12 4zm0 2.5a14.36 14.36 0 0 1 10.1 4.14L12 18.77 1.9 10.64A14.36 14.36 0 0 1 12 6.5zm0 4a10.36 10.36 0 0 1 7.24 3.02L12 16.54 4.76 13.52A10.36 10.36 0 0 1 12 10.5z" />
+                        }
+                        else if (CenterIcon == QrCenterIcon.Link)
+                        {
+                            <path fill="@ForegroundColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" />
+                        }
+                        else if (CenterIcon == QrCenterIcon.User)
+                        {
+                            <path fill="@ForegroundColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                        }
+                        else
+                        {
+                            <!-- Modern Lightning Bolt Icon -->
+                            <path fill="@ForegroundColor" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                        }
+                    </g>
+                }
+            </svg>
+        }
+        else
+        {
+            <div class="text-xs text-slate-400 font-mono">No data</div>
+        }
+    </div>
+
+    <!-- Quick Action Toolbar -->
+    @if (ShowActions)
+    {
+        <div class="mt-4 flex items-center gap-2">
+            <button type="button"
+                    @onclick="CopyPayloadAsync"
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5"
+                    title="Copy payload text to clipboard">
+                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <rect x="8" y="8" width="12" height="12" rx="2" />
+                    <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+                </svg>
+                Copy
+            </button>
+
+            <button type="button"
+                    @onclick="DownloadSvgAsync"
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-brand-500 hover:bg-brand-600 text-white transition-colors flex items-center gap-1.5 shadow-md shadow-brand-500/20"
+                    title="Download vector SVG file">
+                <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                SVG
+            </button>
+
+            <button type="button"
+                    @onclick="DownloadPngAsync"
+                    class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-1.5"
+                    title="Download high-res PNG file">
+                <svg class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                PNG
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    public enum QrDotShape
+    {
+        Square,
+        Rounded,
+        Circle
+    }
+
+    public enum QrCenterIcon
+    {
+        None,
+        Bolt,
+        Wifi,
+        Link,
+        User
+    }
+
+    public enum QrEccLevel
+    {
+        L, // 7%
+        M, // 15%
+        Q, // 25%
+        H  // 30%
+    }
+
+    [Parameter] public string Value { get; set; } = "https://tailwindcss.com";
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public int Size { get; set; } = 200;
+    [Parameter] public string ForegroundColor { get; set; } = "#0f172a";
+    [Parameter] public string BackgroundColor { get; set; } = "#ffffff";
+    [Parameter] public QrDotShape DotShape { get; set; } = QrDotShape.Rounded;
+    [Parameter] public QrCenterIcon CenterIcon { get; set; } = QrCenterIcon.None;
+    [Parameter] public QrEccLevel EccLevel { get; set; } = QrEccLevel.Q;
+    [Parameter] public bool ShowActions { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    private List<BitArray>? _modules;
+    private int _matrixSize = 0;
+    private string? _cachedValue;
+    private QrEccLevel _cachedEcc;
+
+    private bool HasCenterLogo => CenterIcon != QrCenterIcon.None;
+
+    protected override void OnParametersSet()
+    {
+        if (_cachedValue != Value || _cachedEcc != EccLevel || _modules == null)
+        {
+            GenerateMatrix();
+            _cachedValue = Value;
+            _cachedEcc = EccLevel;
+        }
+    }
+
+    private void GenerateMatrix()
+    {
+        if (string.IsNullOrEmpty(Value))
+        {
+            _modules = null;
+            _matrixSize = 0;
+            return;
+        }
+
+        try
+        {
+            using var generator = new QRCodeGenerator();
+            var ecc = HasCenterLogo ? QRCodeGenerator.ECCLevel.H : (QRCodeGenerator.ECCLevel)(int)EccLevel;
+            using var data = generator.CreateQrCode(Value, ecc);
+            _modules = data.ModuleMatrix;
+            _matrixSize = _modules.Count;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"QR Generation Error: {ex.Message}");
+            _modules = null;
+            _matrixSize = 0;
+        }
+    }
+
+    private bool IsInsideCenter(int x, int y)
+    {
+        var boxSize = Math.Max(5, (int)(_matrixSize * 0.24));
+        var start = (_matrixSize - boxSize) / 2;
+        var end = start + boxSize;
+        return x >= start && x < end && y >= start && y < end;
+    }
+
+    public async Task CopyPayloadAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", Value);
+            Toast.Show("Copied to Clipboard", Value, SemanticVariant.Success);
+        }
+        catch
+        {
+            Toast.Show("Clipboard copy failed", "Unable to access clipboard", SemanticVariant.Danger);
+        }
+    }
+
+    public async Task DownloadSvgAsync()
+    {
+        try
+        {
+            using var generator = new QRCodeGenerator();
+            var ecc = HasCenterLogo ? QRCodeGenerator.ECCLevel.H : (QRCodeGenerator.ECCLevel)(int)EccLevel;
+            using var data = generator.CreateQrCode(Value, ecc);
+            using var svgQr = new SvgQRCode(data);
+            var svgString = svgQr.GetGraphic(20, ForegroundColor, BackgroundColor, true);
+
+            var filename = $"qr-code-{DateTime.Now:yyyyMMddHHmmss}.svg";
+            await JS.InvokeVoidAsync("blazorBarcodeScanner.downloadFile", filename, svgString, "image/svg+xml");
+            Toast.Show("SVG Downloaded", filename, SemanticVariant.Success);
+        }
+        catch (Exception ex)
+        {
+            Toast.Show("Export failed", ex.Message, SemanticVariant.Danger);
+        }
+    }
+
+    public async Task DownloadPngAsync()
+    {
+        try
+        {
+            using var generator = new QRCodeGenerator();
+            var ecc = HasCenterLogo ? QRCodeGenerator.ECCLevel.H : (QRCodeGenerator.ECCLevel)(int)EccLevel;
+            using var data = generator.CreateQrCode(Value, ecc);
+            using var pngQr = new PngByteQRCode(data);
+
+            var darkColor = HexToRgba(ForegroundColor);
+            var lightColor = HexToRgba(BackgroundColor);
+            var pngBytes = pngQr.GetGraphic(20, darkColor, lightColor);
+
+            var base64 = Convert.ToBase64String(pngBytes);
+            var dataUrl = $"data:image/png;base64,{base64}";
+            var filename = $"qr-code-{DateTime.Now:yyyyMMddHHmmss}.png";
+            await JS.InvokeVoidAsync("blazorBarcodeScanner.downloadDataUrl", filename, dataUrl);
+            Toast.Show("PNG Downloaded", filename, SemanticVariant.Success);
+        }
+        catch (Exception ex)
+        {
+            Toast.Show("Export failed", ex.Message, SemanticVariant.Danger);
+        }
+    }
+
+    private byte[] HexToRgba(string hex)
+    {
+        hex = hex.TrimStart('#');
+        if (hex.Length == 6)
+        {
+            return new byte[]
+            {
+                Convert.ToByte(hex.Substring(0, 2), 16),
+                Convert.ToByte(hex.Substring(2, 2), 16),
+                Convert.ToByte(hex.Substring(4, 2), 16),
+                255
+            };
+        }
+        if (hex.Length == 8)
+        {
+            return new byte[]
+            {
+                Convert.ToByte(hex.Substring(0, 2), 16),
+                Convert.ToByte(hex.Substring(2, 2), 16),
+                Convert.ToByte(hex.Substring(4, 2), 16),
+                Convert.ToByte(hex.Substring(6, 2), 16)
+            };
+        }
+        return new byte[] { 0, 0, 0, 255 };
+    }
+}

@@ -1,0 +1,37 @@
+@using BlazorTwUI.Models
+
+<nav aria-label="Agents" class="@Class" data-testid="agent-roster">
+    <ul class="space-y-2">
+        @foreach (var agent in Agents)
+        {
+            var selected = agent.Id == SelectedId;
+            <li>
+                <button type="button" @onclick="() => OnSelect.InvokeAsync(agent)"
+                        aria-current="@(selected ? "true" : null)"
+                        data-testid="agent-item" data-agent="@agent.Id"
+                        class="w-full text-start flex items-start gap-3 rounded-2xl border p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 @(selected ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10" : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/60")">
+                    <span class="text-xl leading-none mt-0.5" aria-hidden="true">@agent.Icon</span>
+                    <span class="min-w-0 flex-1">
+                        <span class="flex items-center gap-2">
+                            <span class="text-sm font-bold text-slate-900 dark:text-white truncate">@agent.Name</span>
+                            @if (selected)
+                            {
+                                <span class="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200">@StatusText</span>
+                            }
+                        </span>
+                        <span class="block text-xs font-semibold text-brand-800 dark:text-brand-200">@agent.Role</span>
+                        <span class="block text-xs text-slate-600 dark:text-slate-400 mt-0.5">@agent.Description</span>
+                    </span>
+                </button>
+            </li>
+        }
+    </ul>
+</nav>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<AgentProfile> Agents { get; set; } = Array.Empty<AgentProfile>();
+    [Parameter] public string? SelectedId { get; set; }
+    [Parameter] public string StatusText { get; set; } = "Idle";
+    [Parameter] public EventCallback<AgentProfile> OnSelect { get; set; }
+    [Parameter] public string? Class { get; set; }
+}

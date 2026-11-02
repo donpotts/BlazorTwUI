@@ -1,0 +1,162 @@
+@namespace BlazorTwUI.Components.UI
+@inject IJSRuntime JS
+
+@if (IsOpen)
+{
+    <div class="fixed inset-0 z-50 overflow-y-auto">
+        <!-- Backdrop Overlay with Blur -->
+        <div class="fixed inset-0 bg-slate-950/70 backdrop-blur-md transition-opacity animate-fade-in"
+             @onclick="HandleClose"></div>
+
+        <!-- Fullscreen Canvas for Live Particle Animation -->
+        <div class="fixed inset-0 pointer-events-none z-10">
+            <TwConfetti @ref="_confettiRef" FullScreen="true" Style="@Style" ParticleCount="@ParticleCount" />
+        </div>
+
+        <!-- Center Modal Box Container -->
+        <div class="flex min-h-full items-center justify-center p-4 text-center z-20 relative">
+            <div class="relative w-full max-w-lg transform overflow-hidden rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 p-6 sm:p-8 text-left shadow-2xl transition-all animate-scale-up space-y-6 @Class">
+                <!-- Close Icon Button -->
+                <button type="button"
+                        @onclick="HandleClose"
+                        class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-white flex items-center justify-center transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <!-- Celebration Hero Graphic & Ray Halo -->
+                <div class="flex flex-col items-center text-center space-y-3 pt-2">
+                    <div class="relative flex items-center justify-center">
+                        <!-- Shimmer Ambient Glow -->
+                        <div class="absolute w-24 h-24 rounded-full bg-gradient-to-r from-amber-400 to-pink-500 filter blur-xl opacity-40 animate-pulse"></div>
+
+                        <!-- Trophy Badge Container -->
+                        <div class="relative w-20 h-20 rounded-3xl bg-gradient-to-tr from-amber-500 via-yellow-400 to-amber-200 border-4 border-white dark:border-slate-800 shadow-xl flex items-center justify-center text-4xl select-none animate-bounce">
+                            @BadgeEmoji
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <span class="text-xs font-mono font-bold tracking-widest uppercase text-amber-600 dark:text-amber-400">
+                            @HeaderBadge
+                        </span>
+                        <h3 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                            @Title
+                        </h3>
+                        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-sm">
+                            @Subtitle
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Custom Content / Reward Slot -->
+                @if (ChildContent != null)
+                {
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-2">
+                        @ChildContent
+                    </div>
+                }
+                else if (!string.IsNullOrEmpty(RewardTitle))
+                {
+                    <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-brand-500/10 to-transparent border border-amber-500/30 flex items-center gap-3.5">
+                        <div class="w-12 h-12 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold text-2xl shrink-0">
+                            @RewardEmoji
+                        </div>
+                        <div class="truncate">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">Claimable Item</span>
+                            <h4 class="text-sm font-black text-slate-900 dark:text-white truncate">@RewardTitle</h4>
+                            @if (!string.IsNullOrEmpty(RewardDescription))
+                            {
+                                <p class="text-xs text-slate-500 truncate">@RewardDescription</p>
+                            }
+                        </div>
+                    </div>
+                }
+
+                <!-- Action Controls (Beyond plain toast: real engagement buttons!) -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button type="button"
+                            id="btn-celebration-primary"
+                            @onclick="HandlePrimary"
+                            class="flex-1 py-3 px-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs sm:text-sm shadow-lg shadow-amber-500/25 transition flex items-center justify-center gap-2">
+                        <span>🎁</span>
+                        <span>@PrimaryActionText</span>
+                    </button>
+
+                    @if (!string.IsNullOrEmpty(SecondaryActionText))
+                    {
+                        <button type="button"
+                                id="btn-celebration-secondary"
+                                @onclick="HandleSecondary"
+                                class="py-3 px-4 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs sm:text-sm border border-slate-200/80 dark:border-slate-700 transition">
+                            @SecondaryActionText
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; } = false;
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+
+    [Parameter] public string HeaderBadge { get; set; } = "★ VICTORY & CELEBRATION ★";
+    [Parameter] public string Title { get; set; } = "Congratulations!";
+    [Parameter] public string Subtitle { get; set; } = "You have unlocked a major milestone reward!";
+    [Parameter] public string BadgeEmoji { get; set; } = "🏆";
+    [Parameter] public string RewardTitle { get; set; } = "";
+    [Parameter] public string RewardDescription { get; set; } = "";
+    [Parameter] public string RewardEmoji { get; set; } = "🎁";
+    [Parameter] public TwConfetti.CelebrationStyle Style { get; set; } = TwConfetti.CelebrationStyle.Confetti;
+    [Parameter] public int ParticleCount { get; set; } = 140;
+    [Parameter] public string PrimaryActionText { get; set; } = "Claim Reward 🎁";
+    [Parameter] public string SecondaryActionText { get; set; } = "Dismiss";
+    [Parameter] public EventCallback OnPrimaryAction { get; set; }
+    [Parameter] public EventCallback OnSecondaryAction { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private TwConfetti? _confettiRef;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen)
+        {
+            // Give brief delay to let modal mount, then trigger particle celebration & sound
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(150);
+                if (_confettiRef != null)
+                {
+                    await _confettiRef.FireStyleAsync(Style, 0.5, 0.35, ParticleCount);
+                }
+                try
+                {
+                    await JS.InvokeVoidAsync("playWheelSound", "select");
+                }
+                catch {}
+            });
+        }
+    }
+
+    private async Task HandleClose()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+    }
+
+    private async Task HandlePrimary()
+    {
+        await HandleClose();
+        await OnPrimaryAction.InvokeAsync();
+    }
+
+    private async Task HandleSecondary()
+    {
+        await HandleClose();
+        await OnSecondaryAction.InvokeAsync();
+    }
+}

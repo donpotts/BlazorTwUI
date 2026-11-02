@@ -1,0 +1,430 @@
+@namespace BlazorTwUI.Components.UI
+@typeparam TItem
+
+<div class="flex flex-col md:flex-row items-center gap-4 w-full @Class" @attributes="AdditionalAttributes">
+    @* Source / Available List Panel *@
+    <div class="flex-1 flex flex-col w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        @* Header *@
+        <div class="px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">@SourceTitle</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                    @FilteredSource.Count
+                </span>
+            </div>
+            @if (_selectedSource.Count > 0)
+            {
+                <span class="text-[11px] font-semibold text-brand-600 dark:text-brand-400">
+                    @_selectedSource.Count selected
+                </span>
+            }
+        </div>
+
+        @* Filter Search Box *@
+        @if (AllowFiltering)
+        {
+            <div class="p-2 border-b border-slate-100 dark:border-slate-800">
+                <div class="relative">
+                    <input type="text"
+                           @bind="_sourceFilter"
+                           @bind:event="oninput"
+                           placeholder="Filter available..."
+                           class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    @if (!string.IsNullOrEmpty(_sourceFilter))
+                    {
+                        <button type="button" @onclick='() => _sourceFilter = ""' class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
+        @* List Items *@
+        <div class="overflow-y-auto p-2 space-y-1 @Height select-none">
+            @if (FilteredSource.Count == 0)
+            {
+                <div class="h-full flex items-center justify-center p-4 text-xs text-slate-400 text-center">
+                    No items available
+                </div>
+            }
+            else
+            {
+                @foreach (var item in FilteredSource)
+                {
+                    var isSelected = _selectedSource.Contains(item);
+                    <div @onclick="() => ToggleSourceSelect(item)"
+                         @ondblclick="() => TransferSingleItemToTarget(item)"
+                         class="group px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer transition-all @(isSelected
+                             ? "bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-medium border border-brand-200 dark:border-brand-800"
+                             : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent")">
+
+                        <div class="flex items-center gap-2.5 truncate">
+                            @if (ItemIcon != null)
+                            {
+                                <span class="text-sm">@ItemIcon(item)</span>
+                            }
+                            <div class="truncate">
+                                @if (ItemTemplate != null)
+                                {
+                                    @ItemTemplate(item)
+                                }
+                                else
+                                {
+                                    <div class="truncate font-medium">@GetItemText(item)</div>
+                                    @if (ItemSubtext != null)
+                                    {
+                                        <div class="text-[10px] text-slate-400 truncate">@ItemSubtext(item)</div>
+                                    }
+                                }
+                            </div>
+                        </div>
+
+                        <div class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 @(isSelected ? "border-brand-500 bg-brand-500 text-white" : "border-slate-300 dark:border-slate-600")">
+                            @if (isSelected)
+                            {
+                                <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                </svg>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    @* Center Transfer Action Controls *@
+    <div class="flex md:flex-col gap-2 justify-center flex-shrink-0">
+        @* Move Selected to Target (>) *@
+        <button type="button"
+                @onclick="MoveSelectedToTarget"
+                disabled="@(_selectedSource.Count == 0)"
+                title="Transfer selected to target"
+                class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-950/40 hover:text-brand-600 hover:border-brand-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors">
+            <svg class="w-4 h-4 rotate-90 md:rotate-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+
+        @* Move Selected to Source (<) *@
+        <button type="button"
+                @onclick="MoveSelectedToSource"
+                disabled="@(_selectedTarget.Count == 0)"
+                title="Return selected to available"
+                class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-950/40 hover:text-brand-600 hover:border-brand-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors">
+            <svg class="w-4 h-4 -rotate-90 md:rotate-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+
+        @if (ShowMoveAll)
+        {
+            @* Move All to Target (>>) *@
+            <button type="button"
+                    @onclick="MoveAllToTarget"
+                    disabled="@(FilteredSource.Count == 0)"
+                    title="Transfer all to target"
+                    class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-950/40 hover:text-brand-600 hover:border-brand-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors">
+                <svg class="w-4 h-4 rotate-90 md:rotate-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+            </button>
+
+            @* Move All to Source (<<) *@
+            <button type="button"
+                    @onclick="MoveAllToSource"
+                    disabled="@(Target.Count == 0)"
+                    title="Return all to available"
+                    class="p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-950/40 hover:text-brand-600 hover:border-brand-300 disabled:opacity-40 disabled:cursor-not-allowed shadow-xs transition-colors">
+                <svg class="w-4 h-4 -rotate-90 md:rotate-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+            </button>
+        }
+    </div>
+
+    @* Target / Selected List Panel *@
+    <div class="flex-1 flex flex-col w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
+        @* Header *@
+        <div class="px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">@TargetTitle</span>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold">
+                    @FilteredTarget.Count
+                </span>
+            </div>
+            @if (_selectedTarget.Count > 0)
+            {
+                <span class="text-[11px] font-semibold text-brand-600 dark:text-brand-400">
+                    @_selectedTarget.Count selected
+                </span>
+            }
+        </div>
+
+        @* Filter Search Box *@
+        @if (AllowFiltering)
+        {
+            <div class="p-2 border-b border-slate-100 dark:border-slate-800">
+                <div class="relative">
+                    <input type="text"
+                           @bind="_targetFilter"
+                           @bind:event="oninput"
+                           placeholder="Filter selected..."
+                           class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                    <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    @if (!string.IsNullOrEmpty(_targetFilter))
+                    {
+                        <button type="button" @onclick='() => _targetFilter = ""' class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+
+        @* List Items *@
+        <div class="overflow-y-auto p-2 space-y-1 @Height select-none">
+            @if (FilteredTarget.Count == 0)
+            {
+                <div class="h-full flex items-center justify-center p-4 text-xs text-slate-400 text-center">
+                    No items selected yet
+                </div>
+            }
+            else
+            {
+                @for (int i = 0; i < FilteredTarget.Count; i++)
+                {
+                    var item = FilteredTarget[i];
+                    var isSelected = _selectedTarget.Contains(item);
+                    var index = i;
+
+                    <div @onclick="() => ToggleTargetSelect(item)"
+                         @ondblclick="() => TransferSingleItemToSource(item)"
+                         class="group px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer transition-all @(isSelected
+                             ? "bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-medium border border-brand-200 dark:border-brand-800"
+                             : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent")">
+
+                        <div class="flex items-center gap-2.5 truncate">
+                            @if (ItemIcon != null)
+                            {
+                                <span class="text-sm">@ItemIcon(item)</span>
+                            }
+                            <div class="truncate">
+                                @if (ItemTemplate != null)
+                                {
+                                    @ItemTemplate(item)
+                                }
+                                else
+                                {
+                                    <div class="truncate font-medium">@GetItemText(item)</div>
+                                    @if (ItemSubtext != null)
+                                    {
+                                        <div class="text-[10px] text-slate-400 truncate">@ItemSubtext(item)</div>
+                                    }
+                                }
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-1">
+                            @if (ShowReorder)
+                            {
+                                <button type="button"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => MoveUp(item)"
+                                        disabled="@(index == 0)"
+                                        class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-20 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                        title="Move up">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                    </svg>
+                                </button>
+                                <button type="button"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => MoveDown(item)"
+                                        disabled="@(index == Target.Count - 1)"
+                                        class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-20 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                        title="Move down">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+                            }
+
+                            <div class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ml-1 @(isSelected ? "border-brand-500 bg-brand-500 text-white" : "border-slate-300 dark:border-slate-600")">
+                                @if (isSelected)
+                                {
+                                    <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TItem>? Source { get; set; }
+    [Parameter] public IList<TItem> Target { get; set; } = new List<TItem>();
+    [Parameter] public EventCallback<IList<TItem>> TargetChanged { get; set; }
+
+    [Parameter] public string SourceTitle { get; set; } = "Available Items";
+    [Parameter] public string TargetTitle { get; set; } = "Selected Items";
+    [Parameter] public bool AllowFiltering { get; set; } = true;
+    [Parameter] public bool ShowMoveAll { get; set; } = true;
+    [Parameter] public bool ShowReorder { get; set; } = true;
+    [Parameter] public string Height { get; set; } = "h-72";
+    [Parameter] public string Class { get; set; } = "";
+
+    [Parameter] public Func<TItem, string>? ItemText { get; set; }
+    [Parameter] public Func<TItem, string>? ItemSubtext { get; set; }
+    [Parameter] public Func<TItem, string>? ItemIcon { get; set; }
+    [Parameter] public RenderFragment<TItem>? ItemTemplate { get; set; }
+
+    [Parameter] public EventCallback<List<TItem>> OnTransfer { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private readonly HashSet<TItem> _selectedSource = new();
+    private readonly HashSet<TItem> _selectedTarget = new();
+    private string _sourceFilter = "";
+    private string _targetFilter = "";
+
+    private string GetItemText(TItem item) => ItemText != null ? ItemText(item) : item?.ToString() ?? "";
+
+    private List<TItem> FilteredSource
+    {
+        get
+        {
+            if (Source == null) return new List<TItem>();
+            var available = Source.Where(s => !Target.Contains(s));
+            if (string.IsNullOrWhiteSpace(_sourceFilter)) return available.ToList();
+            return available.Where(s => GetItemText(s).Contains(_sourceFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+    }
+
+    private List<TItem> FilteredTarget
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_targetFilter)) return Target.ToList();
+            return Target.Where(t => GetItemText(t).Contains(_targetFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+    }
+
+    private void ToggleSourceSelect(TItem item)
+    {
+        if (!_selectedSource.Add(item))
+            _selectedSource.Remove(item);
+    }
+
+    private void ToggleTargetSelect(TItem item)
+    {
+        if (!_selectedTarget.Add(item))
+            _selectedTarget.Remove(item);
+    }
+
+    public async Task MoveSelectedToTarget()
+    {
+        if (_selectedSource.Count == 0) return;
+        var moved = _selectedSource.ToList();
+        foreach (var item in moved)
+        {
+            if (!Target.Contains(item)) Target.Add(item);
+        }
+        _selectedSource.Clear();
+        await TargetChanged.InvokeAsync(Target);
+        await OnTransfer.InvokeAsync(moved);
+    }
+
+    public async Task MoveSelectedToSource()
+    {
+        if (_selectedTarget.Count == 0) return;
+        var moved = _selectedTarget.ToList();
+        foreach (var item in moved)
+        {
+            Target.Remove(item);
+        }
+        _selectedTarget.Clear();
+        await TargetChanged.InvokeAsync(Target);
+        await OnTransfer.InvokeAsync(moved);
+    }
+
+    public async Task MoveAllToTarget()
+    {
+        var itemsToMove = FilteredSource.ToList();
+        foreach (var item in itemsToMove)
+        {
+            if (!Target.Contains(item)) Target.Add(item);
+        }
+        _selectedSource.Clear();
+        await TargetChanged.InvokeAsync(Target);
+        await OnTransfer.InvokeAsync(itemsToMove);
+    }
+
+    public async Task MoveAllToSource()
+    {
+        var itemsToRemove = Target.ToList();
+        Target.Clear();
+        _selectedTarget.Clear();
+        await TargetChanged.InvokeAsync(Target);
+        await OnTransfer.InvokeAsync(itemsToRemove);
+    }
+
+    private async Task TransferSingleItemToTarget(TItem item)
+    {
+        if (!Target.Contains(item))
+        {
+            Target.Add(item);
+            _selectedSource.Remove(item);
+            await TargetChanged.InvokeAsync(Target);
+            await OnTransfer.InvokeAsync(new List<TItem> { item });
+        }
+    }
+
+    private async Task TransferSingleItemToSource(TItem item)
+    {
+        if (Target.Remove(item))
+        {
+            _selectedTarget.Remove(item);
+            await TargetChanged.InvokeAsync(Target);
+            await OnTransfer.InvokeAsync(new List<TItem> { item });
+        }
+    }
+
+    public async Task MoveUp(TItem item)
+    {
+        var index = Target.IndexOf(item);
+        if (index > 0)
+        {
+            Target.RemoveAt(index);
+            Target.Insert(index - 1, item);
+            await TargetChanged.InvokeAsync(Target);
+        }
+    }
+
+    public async Task MoveDown(TItem item)
+    {
+        var index = Target.IndexOf(item);
+        if (index >= 0 && index < Target.Count - 1)
+        {
+            Target.RemoveAt(index);
+            Target.Insert(index + 1, item);
+            await TargetChanged.InvokeAsync(Target);
+        }
+    }
+}

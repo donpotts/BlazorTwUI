@@ -1,0 +1,329 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="flex flex-col h-[620px] rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden @Class" @attributes="AdditionalAttributes">
+    @* Top Navigation & Action Toolbar *@
+    <div class="px-5 py-3.5 border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/60 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+        @* Breadcrumbs Navigation *@
+        <div class="flex items-center gap-1.5 text-xs">
+            <button type="button" @onclick='() => NavigateToPath("/")' class="p-1 rounded text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors" title="Root Directory">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+            </button>
+            @foreach (var segment in BreadcrumbSegments)
+            {
+                <span class="text-slate-300 dark:text-slate-600">/</span>
+                <button type="button" @onclick="() => NavigateToPath(segment.Path)" class="px-1.5 py-0.5 rounded font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+                    @segment.Name
+                </button>
+            }
+        </div>
+
+        @* Search & View Switcher *@
+        <div class="flex items-center gap-2">
+            @* Search Filter *@
+            <div class="relative">
+                <input type="text"
+                       @bind="_searchQuery"
+                       @bind:event="oninput"
+                       placeholder="Search files..."
+                       class="w-40 md:w-52 pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+
+            @* View Mode Toggle *@
+            <div class="flex items-center p-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800">
+                <button type="button" @onclick="() => _isGridView = true" class="p-1 rounded-md transition-colors @(_isGridView ? "bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-xs" : "text-slate-500")" title="Grid View">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                </button>
+                <button type="button" @onclick="() => _isGridView = false" class="p-1 rounded-md transition-colors @(!_isGridView ? "bg-white dark:bg-slate-700 text-brand-600 dark:text-brand-400 shadow-xs" : "text-slate-500")" title="List View">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+
+            @* Upload Action Button *@
+            <button type="button"
+                    @onclick="TriggerUpload"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-xl bg-brand-600 text-white hover:bg-brand-500 shadow-sm shadow-brand-500/20 inline-flex items-center gap-1.5 transition-all">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>Upload</span>
+            </button>
+        </div>
+    </div>
+
+    @* Split Body: Left Folder Tree & Right Content Explorer *@
+    <div class="flex-1 flex overflow-hidden">
+        @* Left Folder Navigation Sidebar *@
+        <div class="w-56 border-r border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 p-3 flex flex-col justify-between hidden md:flex">
+            <div class="space-y-1 overflow-y-auto">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 mb-2">Storage Folders</div>
+                @foreach (var folder in RootFolders)
+                {
+                    var isCurrent = CurrentPath == folder.Path;
+                    <button type="button"
+                            @onclick="() => NavigateToPath(folder.Path)"
+                            class="w-full px-2.5 py-1.5 rounded-xl text-xs flex items-center justify-between transition-colors @(isCurrent
+                                ? "bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-bold"
+                                : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60")">
+                        <div class="flex items-center gap-2 truncate">
+                            <span class="text-sm">📁</span>
+                            <span class="truncate">@folder.Name</span>
+                        </div>
+                        <span class="text-[10px] font-mono text-slate-400">@folder.ItemCount</span>
+                    </button>
+                }
+            </div>
+
+            @* Storage Quota Meter *@
+            <div class="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                <div class="flex items-center justify-between text-[11px] font-medium text-slate-600 dark:text-slate-300">
+                    <span>Cloud Storage</span>
+                    <span class="font-mono">42.5 GB / 100 GB</span>
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-brand-500 h-full rounded-full" style="width: 42.5%;"></div>
+                </div>
+            </div>
+        </div>
+
+        @* Right File / Folder Content Explorer *@
+        <div class="flex-1 flex flex-col overflow-hidden bg-white dark:bg-slate-900">
+            <div class="flex-1 overflow-y-auto p-4">
+                @if (FilteredItems.Count == 0)
+                {
+                    <div class="h-full flex flex-col items-center justify-center text-center text-slate-400 p-8">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-2">
+                            📂
+                        </div>
+                        <div class="text-xs font-semibold text-slate-600 dark:text-slate-300">This folder is empty</div>
+                        <div class="text-[11px] text-slate-400 mt-1">Upload files or create a subfolder to get started.</div>
+                    </div>
+                }
+                else if (_isGridView)
+                {
+                    @* Grid Card Tiles *@
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        @foreach (var item in FilteredItems)
+                        {
+                            var isSelected = _selectedItem?.Id == item.Id;
+                            <div @onclick="() => SelectItem(item)"
+                                 @ondblclick="() => OpenItem(item)"
+                                 class="p-3 rounded-2xl border transition-all cursor-pointer flex flex-col items-center text-center group @(isSelected
+                                     ? "border-brand-500 bg-brand-50/50 dark:bg-brand-950/30 shadow-sm"
+                                     : "border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900")">
+                                <div class="text-3xl mb-2 group-hover:scale-110 transition-transform">
+                                    @GetFileIcon(item)
+                                </div>
+                                <div class="text-xs font-medium text-slate-800 dark:text-slate-200 truncate w-full" title="@item.Name">
+                                    @item.Name
+                                </div>
+                                <div class="text-[10px] text-slate-400 font-mono mt-1">
+                                    @(item.IsFolder ? "Folder" : FormatBytes(item.SizeBytes))
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    @* List / Table View *@
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-200 dark:border-slate-800 text-slate-400 font-semibold uppercase text-[10px] tracking-wider">
+                                <th class="pb-2">Name</th>
+                                <th class="pb-2">Size</th>
+                                <th class="pb-2">Modified</th>
+                                <th class="pb-2 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            @foreach (var item in FilteredItems)
+                            {
+                                var isSelected = _selectedItem?.Id == item.Id;
+                                <tr @onclick="() => SelectItem(item)"
+                                    @ondblclick="() => OpenItem(item)"
+                                    class="cursor-pointer transition-colors @(isSelected ? "bg-brand-50 dark:bg-brand-950/40 font-medium" : "hover:bg-slate-50 dark:hover:bg-slate-800/50")">
+                                    <td class="py-2.5 flex items-center gap-2">
+                                        <span class="text-base">@GetFileIcon(item)</span>
+                                        <span class="text-slate-800 dark:text-slate-200 truncate max-w-xs font-medium">@item.Name</span>
+                                    </td>
+                                    <td class="py-2.5 font-mono text-slate-500 text-[11px]">
+                                        @(item.IsFolder ? "—" : FormatBytes(item.SizeBytes))
+                                    </td>
+                                    <td class="py-2.5 text-slate-400 text-[11px]">
+                                        @item.Modified.ToString("MMM dd, yyyy")
+                                    </td>
+                                    <td class="py-2.5 text-right">
+                                        <button type="button" @onclick:stopPropagation="true" @onclick="() => DeleteItem(item)" class="p-1 rounded text-slate-400 hover:text-rose-500 transition-colors" title="Delete">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                            </svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+
+            @* Status Bar Footer *@
+            <div class="px-4 py-2.5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/60 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                <div>
+                    <span>@FilteredItems.Count(i => i.IsFolder) folders, @FilteredItems.Count(i => !i.IsFolder) files</span>
+                    <span class="text-slate-300 dark:text-slate-700 mx-1.5">•</span>
+                    <span class="font-mono">Total: @FormatBytes(FilteredItems.Where(i => !i.IsFolder).Sum(i => i.SizeBytes))</span>
+                </div>
+                @if (_selectedItem != null)
+                {
+                    <div class="font-medium text-slate-700 dark:text-slate-300 truncate max-w-xs">
+                        Selected: @_selectedItem.Name
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public sealed record FileItem(string Id, string Name, string Path, long SizeBytes, DateTime Modified, bool IsFolder, string? MimeType = null, string? Extension = null);
+    public sealed record FolderNav(string Name, string Path, int ItemCount);
+    private sealed record Breadcrumb(string Name, string Path);
+
+    [Parameter] public List<FileItem> Items { get; set; } = new();
+    [Parameter] public string CurrentPath { get; set; } = "/";
+    [Parameter] public EventCallback<string> CurrentPathChanged { get; set; }
+    [Parameter] public EventCallback<FileItem> OnFileSelected { get; set; }
+    [Parameter] public EventCallback<FileItem> OnFileOpened { get; set; }
+    [Parameter] public EventCallback OnUpload { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private bool _isGridView = true;
+    private string _searchQuery = "";
+    private FileItem? _selectedItem;
+
+    private List<FolderNav> RootFolders => new()
+    {
+        new FolderNav("All Documents", "/", Items.Count),
+        new FolderNav("Financial Reports", "/financials", Items.Count(i => i.Path.StartsWith("/financials"))),
+        new FolderNav("Compliance & Legal", "/compliance", Items.Count(i => i.Path.StartsWith("/compliance"))),
+        new FolderNav("System Backups", "/backups", Items.Count(i => i.Path.StartsWith("/backups"))),
+    };
+
+    private List<Breadcrumb> BreadcrumbSegments
+    {
+        get
+        {
+            var segments = new List<Breadcrumb>();
+            var parts = CurrentPath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            var cumulative = "";
+            foreach (var part in parts)
+            {
+                cumulative += "/" + part;
+                segments.Add(new Breadcrumb(part, cumulative));
+            }
+            return segments;
+        }
+    }
+
+    private List<FileItem> FilteredItems
+    {
+        get
+        {
+            var inFolder = Items.Where(i => i.Path == CurrentPath || (CurrentPath == "/" && !i.Path.Contains('/', StringComparison.OrdinalIgnoreCase) && i.Path != ""));
+            // If empty folder path, show items matching path
+            var baseList = Items.Where(i => i.Path == CurrentPath).ToList();
+            if (baseList.Count == 0 && CurrentPath == "/") baseList = Items.ToList();
+
+            if (string.IsNullOrWhiteSpace(_searchQuery))
+                return baseList.OrderByDescending(i => i.IsFolder).ThenBy(i => i.Name).ToList();
+
+            return baseList
+                .Where(i => i.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(i => i.IsFolder).ThenBy(i => i.Name)
+                .ToList();
+        }
+    }
+
+    private async Task NavigateToPath(string path)
+    {
+        CurrentPath = path;
+        _selectedItem = null;
+        await CurrentPathChanged.InvokeAsync(path);
+    }
+
+    private async Task SelectItem(FileItem item)
+    {
+        _selectedItem = item;
+        await OnFileSelected.InvokeAsync(item);
+    }
+
+    private async Task OpenItem(FileItem item)
+    {
+        if (item.IsFolder)
+        {
+            await NavigateToPath(item.Path == "/" ? "/" + item.Name : item.Path + "/" + item.Name);
+        }
+        else
+        {
+            await OnFileOpened.InvokeAsync(item);
+        }
+    }
+
+    private void DeleteItem(FileItem item)
+    {
+        Items.Remove(item);
+        if (_selectedItem?.Id == item.Id) _selectedItem = null;
+    }
+
+    private async Task TriggerUpload()
+    {
+        // Add sample uploaded file
+        var newFile = new FileItem(
+            Guid.NewGuid().ToString("N"),
+            $"Upload-{DateTime.Now:HHmmss}.parquet",
+            CurrentPath,
+            1048576 * 4,
+            DateTime.Now,
+            false,
+            "application/octet-stream",
+            ".parquet"
+        );
+        Items.Add(newFile);
+        await OnUpload.InvokeAsync();
+    }
+
+    private static string GetFileIcon(FileItem item)
+    {
+        if (item.IsFolder) return "📁";
+        var ext = item.Extension?.ToLower() ?? System.IO.Path.GetExtension(item.Name).ToLower();
+        return ext switch
+        {
+            ".pdf" => "📄",
+            ".csv" or ".xlsx" or ".xls" or ".parquet" => "📊",
+            ".json" or ".cs" or ".ts" or ".razor" or ".sql" => "💻",
+            ".png" or ".jpg" or ".jpeg" or ".svg" or ".webp" => "🖼️",
+            ".zip" or ".tar" or ".gz" => "📦",
+            _ => "📝"
+        };
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes < 1024) return $"{bytes} B";
+        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
+        if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024.0):F1} MB";
+        return $"{bytes / (1024.0 * 1024.0 * 1024.0):F1} GB";
+    }
+}

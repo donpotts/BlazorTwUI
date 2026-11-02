@@ -1,0 +1,87 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="space-y-1 @Class">
+    <!-- Item Row -->
+    <div class="flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs sm:text-sm font-medium transition cursor-pointer 
+                @(IsSelected ? "bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-semibold" : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800")"
+         @onclick="HandleSelect">
+        
+        <div class="flex items-center gap-2 truncate">
+            @if (HasChildren)
+            {
+                <button type="button" 
+                        @onclick="ToggleExpand" 
+                        @onclick:stopPropagation="true"
+                        class="p-0.5 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 focus:outline-none">
+                    <svg class="w-3.5 h-3.5 transition-transform duration-200 @(_isExpanded ? "rotate-90" : "rotate-0")" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+            }
+            else
+            {
+                <span class="w-4"></span>
+            }
+
+            @if (IconContent is not null)
+            {
+                <span class="shrink-0 text-slate-400">@IconContent</span>
+            }
+
+            <span class="truncate">@Text</span>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Badge))
+        {
+            <span class="text-[10px] px-1.5 py-0.5 rounded-full font-semibold bg-slate-100 dark:bg-slate-800 text-slate-500">
+                @Badge
+            </span>
+        }
+    </div>
+
+    <!-- Nested Children with Indentation Guide -->
+    @if (HasChildren && _isExpanded)
+    {
+        <div class="pl-5 ml-3 border-l border-slate-200 dark:border-slate-800 space-y-1 transition-all">
+            @ChildContent
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter] public TwTree? RootTree { get; set; }
+
+    [Parameter] public string Id { get; set; } = Guid.NewGuid().ToString("N");
+    [Parameter] public string Text { get; set; } = "";
+    [Parameter] public string? Badge { get; set; }
+    [Parameter] public bool InitiallyExpanded { get; set; }
+    [Parameter] public RenderFragment? IconContent { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool _isExpanded;
+    private bool HasChildren => ChildContent is not null;
+    private bool IsSelected => RootTree?.SelectedId == Id;
+
+    protected override void OnInitialized()
+    {
+        _isExpanded = InitiallyExpanded;
+    }
+
+    private void ToggleExpand()
+    {
+        _isExpanded = !_isExpanded;
+    }
+
+    private async Task HandleSelect()
+    {
+        if (HasChildren && !_isExpanded)
+        {
+            _isExpanded = true;
+        }
+        if (RootTree is not null)
+        {
+            await RootTree.SelectNodeAsync(Id);
+        }
+    }
+}

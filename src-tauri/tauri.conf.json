@@ -1,0 +1,39 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "BlazorTwUI",
+  "version": "0.7.0",
+  "identifier": "com.donpotts.blazortwui",
+  "build": {
+    "frontendDist": "../dist/wwwroot"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "BlazorTwUI Enterprise Studio",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 480,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "publisher": "Don Potts",
+    "shortDescription": "Mobile-first, high-performance UI ecosystem for modern .NET WebAssembly",
+    "longDescription": "BlazorTwUI delivers 234 production-ready controls, agent-native Agent Ops and live AG-UI, 2027 Spatial & Anticipatory UI Laboratory, Adaptive Generative UI (AGUI), Smart Components, 100 enterprise forms, and developer studios with zero runtime CDN dependencies.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
+}

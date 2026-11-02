@@ -1,0 +1,89 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="relative flex items-start gap-4 sm:gap-6 group @Class">
+    <!-- Connecting Vertical Line -->
+    @if (!IsLast)
+    {
+        <span class="absolute left-4 top-8 -bottom-6 w-0.5 bg-slate-200 dark:bg-slate-800 group-hover:bg-brand-500/40 transition-colors" aria-hidden="true"></span>
+    }
+
+    <!-- Timeline Dot / Icon Node -->
+    <div class="relative z-10 flex items-center justify-center w-8 h-8 rounded-full ring-4 ring-white dark:ring-slate-900 shrink-0 @DotVariantClass shadow-sm">
+        @if (Pulse)
+        {
+            <span class="absolute -inset-1 rounded-full animate-ping opacity-75 @PulseClass"></span>
+        }
+        
+        @if (DotContent is not null)
+        {
+            @DotContent
+        }
+        else
+        {
+            <span class="w-2.5 h-2.5 rounded-full bg-current"></span>
+        }
+    </div>
+
+    <!-- Timeline Content Box -->
+    <div class="flex-1 pt-0.5 min-w-0 pb-2">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-1">
+            <h4 class="text-sm font-bold text-slate-900 dark:text-white truncate">
+                @Title
+            </h4>
+            @if (!string.IsNullOrEmpty(Timestamp))
+            {
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">
+                    @Timestamp
+                </span>
+            }
+        </div>
+
+        @if (!string.IsNullOrEmpty(Subtitle))
+        {
+            <p class="text-xs text-brand-600 dark:text-brand-400 font-semibold mb-1">
+                @Subtitle
+            </p>
+        }
+
+        @if (ChildContent is not null)
+        {
+            <div class="text-xs sm:text-sm text-slate-600 dark:text-slate-300 space-y-2 mt-1">
+                @ChildContent
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter] public TwTimeline? Parent { get; set; }
+
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public string? Timestamp { get; set; }
+    [Parameter] public SemanticVariant Variant { get; set; } = SemanticVariant.Primary;
+    [Parameter] public bool Pulse { get; set; }
+    [Parameter] public bool IsLast { get; set; }
+    [Parameter] public RenderFragment? DotContent { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string DotVariantClass => Variant switch
+    {
+        SemanticVariant.Primary => "bg-brand-600 text-white",
+        SemanticVariant.Success => "bg-emerald-500 text-white",
+        SemanticVariant.Warning => "bg-amber-500 text-white",
+        SemanticVariant.Danger => "bg-rose-500 text-white",
+        SemanticVariant.Info => "bg-sky-500 text-white",
+        _ => "bg-slate-300 dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+    };
+
+    private string PulseClass => Variant switch
+    {
+        SemanticVariant.Primary => "bg-brand-400",
+        SemanticVariant.Success => "bg-emerald-400",
+        SemanticVariant.Warning => "bg-amber-400",
+        SemanticVariant.Danger => "bg-rose-400",
+        SemanticVariant.Info => "bg-sky-400",
+        _ => "bg-slate-400"
+    };
+}

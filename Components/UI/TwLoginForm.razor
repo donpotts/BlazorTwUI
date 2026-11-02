@@ -1,0 +1,281 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden max-w-5xl mx-auto @CustomClass">
+    <div class="grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
+        <!-- Left Side: Unsplash Showcase & Inspirational Saying -->
+        <div class="lg:col-span-5 relative bg-slate-950 text-white flex flex-col justify-between p-8 sm:p-10 overflow-hidden">
+            <!-- Background Image with Dark Gradient Overlay -->
+            <img src="@ImageUrl" alt="Enterprise Architecture"
+                 class="absolute inset-0 w-full h-full object-cover object-center opacity-40 mix-blend-overlay filter saturate-150 transform scale-105 transition-transform duration-1000 ease-out hover:scale-110" />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/70 to-brand-950/60"></div>
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-brand-600/20 via-transparent to-transparent"></div>
+
+            <!-- Top Header & Brand -->
+            <div class="relative z-10 space-y-4">
+                <div class="flex items-center gap-2.5">
+                    <span class="p-2 rounded-xl bg-brand-500/20 backdrop-blur-md border border-brand-400/30 text-brand-400">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </span>
+                    <div>
+                        <span class="text-sm font-black tracking-tight block">BlazorTwUI</span>
+                        <span class="text-[10px] font-mono text-brand-300 uppercase tracking-wider">Enterprise Edition</span>
+                    </div>
+                </div>
+
+                <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs font-semibold backdrop-blur-md">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>All Enterprise Systems Operational</span>
+                </div>
+            </div>
+
+            <!-- Middle / Bottom: Curated Inspiring Saying & Quote -->
+            <div class="relative z-10 space-y-5 my-8">
+                <div class="p-6 rounded-2xl bg-white/5 backdrop-blur-md border border-white/10 shadow-inner">
+                    <svg class="w-8 h-8 text-brand-400/80 mb-3 opacity-80" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+                    </svg>
+                    <blockquote class="text-base sm:text-lg font-medium leading-relaxed text-slate-100 italic">
+                        "@QuoteText"
+                    </blockquote>
+                    <div class="mt-4 flex items-center justify-between text-xs text-brand-200">
+                        <span class="font-bold tracking-wide">— @QuoteAuthor</span>
+                        <span class="font-mono text-[11px] text-slate-400">@QuoteCitation</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs text-slate-300">
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-400">✓</span>
+                        <span>SOC-2 Type II Certified</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-400">✓</span>
+                        <span>Zero External CDN Leaks</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-400">✓</span>
+                        <span>FIDO2 / WebAuthn Ready</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-emerald-400">✓</span>
+                        <span>.NET 10+ WASM Core</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Badge -->
+            <div class="relative z-10 text-[11px] text-slate-400 flex items-center justify-between pt-2 border-t border-white/10">
+                <span>Enterprise Security Gateway</span>
+                <span class="font-mono">TLS 1.3 • AES-256</span>
+            </div>
+        </div>
+
+        <!-- Right Side: Login Authentication Controls -->
+        <div class="lg:col-span-7 p-6 sm:p-10 flex flex-col justify-between bg-white dark:bg-slate-900">
+            <div>
+                <!-- Form Header -->
+                <div class="space-y-1 mb-6">
+                    <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">@Title</h2>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">@Subtitle</p>
+                </div>
+
+                <!-- SSO Login Buttons -->
+                @if (ShowSocialLogins)
+                {
+                    <div class="space-y-2 mb-6">
+                        <span class="text-xs font-semibold text-slate-400 dark:text-slate-500 block uppercase tracking-wider text-center">Federated SSO Identity</span>
+                        <div class="grid grid-cols-3 gap-2 sm:gap-3">
+                            <button type="button" @onclick='() => TriggerSso("GitHub")'
+                                    class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold transition">
+                                <span>🐙</span>
+                                <span class="hidden sm:inline">GitHub</span>
+                            </button>
+                            <button type="button" @onclick='() => TriggerSso("Microsoft Entra")'
+                                    class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold transition">
+                                <span>🔷</span>
+                                <span class="hidden sm:inline">Azure AD</span>
+                            </button>
+                            <button type="button" @onclick='() => TriggerSso("Google")'
+                                    class="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-bold transition">
+                                <span>🔍</span>
+                                <span class="hidden sm:inline">Google</span>
+                            </button>
+                        </div>
+
+                        <div class="relative flex items-center justify-center my-4">
+                            <div class="w-full border-t border-slate-200 dark:border-slate-800"></div>
+                            <span class="absolute px-3 bg-white dark:bg-slate-900 text-[11px] font-mono text-slate-400 uppercase tracking-wider">Or corporate email</span>
+                        </div>
+                    </div>
+                }
+
+                <!-- Fields -->
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Corporate Email or Handle</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                                </svg>
+                            </span>
+                            <input type="text" @bind="_email" placeholder="architect@company.com"
+                                   class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Password</label>
+                            <button type="button" @onclick="HandleForgotPassword"
+                                    class="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline">
+                                Forgot password?
+                            </button>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </span>
+                            <input type="@(_showPassword ? "text" : "password")" @bind="_password" placeholder="••••••••••••"
+                                   class="w-full pl-9 pr-10 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none font-mono" />
+                            <button type="button" @onclick="() => _showPassword = !_showPassword"
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                                @if (_showPassword)
+                                {
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                                    </svg>
+                                }
+                                else
+                                {
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                    </svg>
+                                }
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (AllowRememberMe)
+                    {
+                        <div class="flex items-center justify-between pt-1">
+                            <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-600 dark:text-slate-300">
+                                <input type="checkbox" @bind="_rememberMe"
+                                       class="rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500 h-4 w-4" />
+                                <span>Remember this workstation for 30 days</span>
+                            </label>
+                            <span class="text-[11px] font-mono text-slate-400">IP-Pinned</span>
+                        </div>
+                    }
+
+                    <!-- Error Alert -->
+                    @if (!string.IsNullOrEmpty(_errorMessage))
+                    {
+                        <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400 text-xs font-medium flex items-center gap-2">
+                            <span>⚠️</span>
+                            <span>@_errorMessage</span>
+                        </div>
+                    }
+
+                    <!-- Submit -->
+                    <button type="button" @onclick="HandleLogin" disabled="@_isSubmitting"
+                            class="w-full py-3 px-4 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-500 disabled:opacity-50 transition shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2 text-sm mt-2">
+                        @if (_isSubmitting)
+                        {
+                            <span class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span>Authenticating Workspace...</span>
+                        }
+                        else
+                        {
+                            <span>Sign In to Console</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        }
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer Help -->
+            <div class="pt-6 border-t border-slate-100 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
+                Don't have an enterprise account?
+                <a href="#register" class="text-brand-600 dark:text-brand-400 font-bold hover:underline ml-1">Request Workspace Access</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public class LoginCredentials
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+        public bool RememberMe { get; set; } = false;
+    }
+
+    [Parameter] public string Title { get; set; } = "Sign in to Enterprise Hub";
+    [Parameter] public string Subtitle { get; set; } = "Access mission-critical dashboards, design tokens, and components";
+    [Parameter] public string ImageUrl { get; set; } = "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1200&q=80";
+    [Parameter] public string QuoteText { get; set; } = "Simplicity is prerequisite for reliability.";
+    [Parameter] public string QuoteAuthor { get; set; } = "Edsger W. Dijkstra";
+    [Parameter] public string QuoteCitation { get; set; } = "Turing Award Laureate";
+    [Parameter] public bool ShowSocialLogins { get; set; } = true;
+    [Parameter] public bool AllowRememberMe { get; set; } = true;
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<LoginCredentials> OnLogin { get; set; }
+    [Parameter] public EventCallback<string> OnSsoLogin { get; set; }
+    [Parameter] public EventCallback OnForgotPassword { get; set; }
+
+    private string _email = "architect@enterprise-core.org";
+    private string _password = "Password123!";
+    private bool _rememberMe = true;
+    private bool _showPassword = false;
+    private bool _isSubmitting = false;
+    private string? _errorMessage;
+
+    private async Task TriggerSso(string provider)
+    {
+        if (OnSsoLogin.HasDelegate)
+        {
+            await OnSsoLogin.InvokeAsync(provider);
+        }
+    }
+
+    private async Task HandleForgotPassword()
+    {
+        if (OnForgotPassword.HasDelegate)
+        {
+            await OnForgotPassword.InvokeAsync();
+        }
+    }
+
+    private async Task HandleLogin()
+    {
+        _errorMessage = null;
+
+        if (string.IsNullOrWhiteSpace(_email) || string.IsNullOrWhiteSpace(_password))
+        {
+            _errorMessage = "Please enter both corporate email and password.";
+            return;
+        }
+
+        _isSubmitting = true;
+        await Task.Delay(700);
+        _isSubmitting = false;
+
+        if (OnLogin.HasDelegate)
+        {
+            await OnLogin.InvokeAsync(new LoginCredentials
+            {
+                Email = _email,
+                Password = _password,
+                RememberMe = _rememberMe
+            });
+        }
+    }
+}

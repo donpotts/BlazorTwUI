@@ -1,0 +1,113 @@
+<div class="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-x-hidden max-w-full">
+    <!-- Sticky Top Header (Mobile-first) -->
+    <header class="sticky top-0 z-30 h-16 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 flex items-center justify-between gap-2 sm:gap-3 max-w-full">
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0 min-w-0">
+            @if (Layout != LayoutVariant.Stacked)
+            {
+                <button type="button"
+                        @onclick="ToggleMobileMenu"
+                        aria-label="Toggle Navigation Drawer"
+                        class="inline-flex md:hidden items-center justify-center w-10 h-10 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            }
+            @BrandContent
+        </div>
+
+        @if (Layout == LayoutVariant.TopNav && TopNavContent is not null)
+        {
+            <nav class="hidden md:flex items-center gap-1">
+                @TopNavContent
+            </nav>
+        }
+
+        <div class="flex items-center gap-1.5 sm:gap-3 shrink-0">
+            @HeaderActions
+        </div>
+    </header>
+
+    <!-- Mobile Off-Canvas Navigation Drawer -->
+    @if (_mobileMenuOpen && Layout != LayoutVariant.Stacked)
+    {
+        <div class="fixed inset-0 z-50 md:hidden flex">
+            <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity" @onclick="CloseMobileMenu"></div>
+            <aside class="relative z-10 w-72 max-w-[82vw] bg-white dark:bg-slate-900 h-full border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between p-4 overflow-y-auto">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                        @BrandContent
+                        <button type="button"
+                                @onclick="CloseMobileMenu"
+                                class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div @onclick="CloseMobileMenu">
+                        @SidebarContent
+                    </div>
+                </div>
+                @if (SidebarFooter is not null)
+                {
+                    <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+                        @SidebarFooter
+                    </div>
+                }
+            </aside>
+        </div>
+    }
+
+    <!-- Main Body Area based on LayoutVariant -->
+    <div class="flex-1 flex">
+        @if (Layout == LayoutVariant.Sidebar)
+        {
+            <aside class="hidden md:flex md:w-64 lg:w-72 shrink-0 flex-col justify-between border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 p-4 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+                <div class="space-y-1">
+                    @SidebarContent
+                </div>
+                @if (SidebarFooter is not null)
+                {
+                    <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
+                        @SidebarFooter
+                    </div>
+                }
+            </aside>
+        }
+        else if (Layout == LayoutVariant.CompactRail)
+        {
+            <aside class="hidden md:flex md:w-20 shrink-0 flex-col items-center justify-between border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 py-4 px-2 sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto">
+                <div class="space-y-2 w-full flex flex-col items-center">
+                    @RailContent
+                </div>
+            </aside>
+        }
+
+        <main class="flex-1 min-w-0 pb-24 md:pb-10 max-w-full overflow-x-hidden">
+            @ChildContent
+        </main>
+    </div>
+
+    @if (BottomNavContent is not null)
+    {
+        @BottomNavContent
+    }
+</div>
+
+@code {
+    [Parameter] public LayoutVariant Layout { get; set; } = LayoutVariant.Sidebar;
+    [Parameter] public RenderFragment? BrandContent { get; set; }
+    [Parameter] public RenderFragment? HeaderActions { get; set; }
+    [Parameter] public RenderFragment? SidebarContent { get; set; }
+    [Parameter] public RenderFragment? SidebarFooter { get; set; }
+    [Parameter] public RenderFragment? TopNavContent { get; set; }
+    [Parameter] public RenderFragment? RailContent { get; set; }
+    [Parameter] public RenderFragment? BottomNavContent { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    private bool _mobileMenuOpen;
+
+    private void ToggleMobileMenu() => _mobileMenuOpen = !_mobileMenuOpen;
+    private void CloseMobileMenu() => _mobileMenuOpen = false;
+}

@@ -1,0 +1,97 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="fixed z-40 transition-all duration-300 @GetPositionClasses() @CustomClass">
+    <nav class="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-slate-200/80 dark:border-slate-800/80 shadow-xl shadow-slate-900/10 dark:shadow-black/40">
+        @foreach (var item in Items)
+        {
+            var isCurrent = item.Id == ActiveId;
+            <button type="button"
+                    @onclick="() => HandleSelect(item.Id)"
+                    class="relative group p-2.5 rounded-xl transition-all duration-200 ease-out hover:-translate-y-1 hover:scale-115 @(isCurrent ? "bg-brand-500/15 text-brand-600 dark:text-brand-400" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60")"
+                    title="@item.Label">
+                
+                <!-- Icon -->
+                <div class="text-xl leading-none flex items-center justify-center w-6 h-6">
+                    @if (!string.IsNullOrEmpty(item.Emoji))
+                    {
+                        <span>@item.Emoji</span>
+                    }
+                    else if (item.IconTemplate != null)
+                    {
+                        @item.IconTemplate
+                    }
+                </div>
+
+                <!-- Active Indicator Dot -->
+                @if (isCurrent)
+                {
+                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-brand-500"></span>
+                }
+
+                <!-- Notification Badge -->
+                @if (item.BadgeCount.HasValue && item.BadgeCount.Value > 0)
+                {
+                    <span class="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-rose-500 text-[9px] font-bold text-white shadow-xs">
+                        @(item.BadgeCount.Value > 9 ? "9+" : item.BadgeCount.Value.ToString())
+                    </span>
+                }
+
+                <!-- Floating Tooltip on Hover -->
+                <span class="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:flex items-center px-2 py-1 rounded-md text-[11px] font-medium bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 whitespace-nowrap shadow-md z-50">
+                    @item.Label
+                    <span class="absolute -bottom-1 left-1/2 -translate-x-1/2 border-solid border-t-slate-900 dark:border-t-slate-100 border-t-4 border-x-transparent border-x-4 border-b-0"></span>
+                </span>
+            </button>
+        }
+    </nav>
+</div>
+
+@code {
+    public class DockItem
+    {
+        public string Id { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string? Emoji { get; set; }
+        public RenderFragment? IconTemplate { get; set; }
+        public int? BadgeCount { get; set; }
+    }
+
+    [Parameter] public List<DockItem> Items { get; set; } = new();
+    [Parameter] public string ActiveId { get; set; } = "home";
+    [Parameter] public string Position { get; set; } = "bottom"; // bottom, top, left, right
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<string> OnItemSelected { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!Items.Any())
+        {
+            Items = new List<DockItem>
+            {
+                new DockItem { Id = "home", Label = "Overview", Emoji = "🏠" },
+                new DockItem { Id = "code", Label = "Code Studio", Emoji = "💻", BadgeCount = 3 },
+                new DockItem { Id = "forms", Label = "Smart Forms", Emoji = "📝" },
+                new DockItem { Id = "nav", Label = "Ribbon & Splitter", Emoji = "🧭" },
+                new DockItem { Id = "docs", Label = "Documentation", Emoji = "📚" },
+                new DockItem { Id = "theme", Label = "Theme Palette", Emoji = "🎨" }
+            };
+        }
+    }
+
+    private async Task HandleSelect(string id)
+    {
+        ActiveId = id;
+        if (OnItemSelected.HasDelegate)
+        {
+            await OnItemSelected.InvokeAsync(id);
+        }
+    }
+
+    private string GetPositionClasses() => Position.ToLowerInvariant() switch
+    {
+        "top" => "top-4 left-1/2 -translate-x-1/2",
+        "left" => "left-4 top-1/2 -translate-y-1/2",
+        "right" => "right-4 top-1/2 -translate-y-1/2",
+        _ => "bottom-4 left-1/2 -translate-x-1/2"
+    };
+}

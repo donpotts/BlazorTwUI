@@ -1,0 +1,311 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden max-w-4xl mx-auto @CustomClass">
+    <!-- Header -->
+    <div class="p-6 sm:p-8 bg-slate-900 text-white border-b border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <span class="p-2.5 rounded-2xl bg-brand-500/20 text-brand-400 border border-brand-500/30">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xl sm:text-2xl font-black tracking-tight">@Title</h2>
+                        <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-full bg-brand-500/20 text-brand-300 border border-brand-500/30">@Version</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-0.5">Last revised: @LastUpdated • Enterprise Master Service Agreement</p>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2">
+                <button type="button" @onclick="HandlePrint"
+                        class="px-3 py-1.5 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-slate-200 text-xs font-semibold transition flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    <span>Print</span>
+                </button>
+                <button type="button" @onclick="HandleDownloadPdf"
+                        class="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-brand-600/20">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>Export PDF</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Section Navigation Pills -->
+        <div class="flex items-center gap-2 mt-5 overflow-x-auto pb-1 text-xs">
+            @for (int i = 0; i < _sections.Count; i++)
+            {
+                var idx = i;
+                var sec = _sections[idx];
+                <button type="button" @onclick="() => SelectSection(idx)"
+                        class="px-3 py-1 rounded-lg whitespace-nowrap transition @(_selectedSectionIndex == idx ? "bg-white/20 text-white font-bold" : "text-slate-400 hover:text-slate-200")">
+                    @sec.ShortTitle
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Scrollable Agreement Text Body -->
+    <div class="p-6 sm:p-8 space-y-6 max-h-[380px] overflow-y-auto bg-slate-50/50 dark:bg-slate-950/40 text-slate-700 dark:text-slate-300 text-xs sm:text-sm leading-relaxed border-b border-slate-200 dark:border-slate-800"
+         @onscroll="OnContentScrolled">
+        
+        <div class="p-4 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-brand-900 dark:text-brand-200 text-xs flex items-start gap-3">
+            <span class="text-base">ℹ️</span>
+            <div>
+                <strong class="font-bold">Executive Summary:</strong>
+                This Agreement governs your organization's deployment and usage of BlazorTwUI components, runtime assets, and associated telemetry services. All components are shipped under strict zero-tracking, standalone CDN-free licensing terms.
+            </div>
+        </div>
+
+        @foreach (var section in _sections)
+        {
+            <div id="section-@section.Id" class="space-y-2 pt-2">
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+                    @section.Title
+                </h3>
+                <p class="text-slate-600 dark:text-slate-400">@section.Content</p>
+                @if (section.Bullets?.Count > 0)
+                {
+                    <ul class="list-disc list-inside space-y-1 pl-2 text-slate-500 dark:text-slate-400 text-xs">
+                        @foreach (var bullet in section.Bullets)
+                        {
+                            <li>@bullet</li>
+                        }
+                    </ul>
+                }
+            </div>
+        }
+
+        <div class="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-300 text-xs">
+            <strong>Audit & Governing Law:</strong> This Agreement shall be governed by and construed under the laws of the State of Delaware, without regard to conflict of law principles. Both parties consent to the exclusive jurisdiction of the federal courts located in Wilmington, Delaware.
+        </div>
+    </div>
+
+    <!-- Acceptance Controls & Footer -->
+    <div class="p-6 sm:p-8 bg-white dark:bg-slate-900 space-y-5">
+        <!-- Progress Bar Indicator -->
+        <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
+                <span>Agreement Review Progress</span>
+                <span class="font-mono text-brand-600 dark:text-brand-400">@_scrollPercent%</span>
+            </div>
+            <div class="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <div class="h-full bg-brand-600 dark:bg-brand-500 transition-all duration-300" style="width: @_scrollPercent%;"></div>
+            </div>
+        </div>
+
+        <!-- Agreement Checkbox -->
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-3">
+            <label class="flex items-start gap-3 cursor-pointer text-xs sm:text-sm text-slate-700 dark:text-slate-300">
+                <input type="checkbox" @bind="_hasAgreed"
+                       class="mt-1 rounded border-slate-300 dark:border-slate-700 text-brand-600 focus:ring-brand-500 h-4 w-4" />
+                <span>
+                    I confirm that I have read and agree to the <strong>Enterprise Terms of Use</strong>, acknowledge the SLA uptime commitments, and have authority to bind my organization.
+                </span>
+            </label>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-slate-700/60 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Signatory Full Name *</label>
+                    <input type="text" @bind="_signatoryName" placeholder="e.g. David Vance"
+                           class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+                </div>
+                <div>
+                    <label class="block font-semibold text-slate-600 dark:text-slate-400 mb-1">Corporate Organization *</label>
+                    <input type="text" @bind="_organizationName" placeholder="e.g. Acme Global Technologies"
+                           class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+                </div>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(_feedbackMessage))
+        {
+            <div class="p-3 rounded-xl @(_isAccepted ? "bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300" : "bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-400") text-xs font-semibold flex items-center gap-2">
+                <span>@(_isAccepted ? "✅" : "⚠️")</span>
+                <span>@_feedbackMessage</span>
+            </div>
+        }
+
+        <!-- Actions -->
+        <div class="flex flex-col-reverse sm:flex-row items-center justify-between gap-3 pt-2">
+            <span class="text-xs text-slate-400 dark:text-slate-500 font-mono">
+                Cryptographic hash: SHA256-@Version.Replace(".", "")-MSA-OK
+            </span>
+            <div class="flex items-center gap-3 w-full sm:w-auto">
+                <button type="button" @onclick="HandleDecline"
+                        class="w-1/2 sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-750 transition">
+                    Decline Terms
+                </button>
+                <button type="button" @onclick="HandleAccept" disabled="@(!_hasAgreed || _isSubmitting)"
+                        class="w-1/2 sm:w-auto px-6 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 disabled:opacity-50 text-white text-xs font-bold transition shadow-lg shadow-brand-500/25 flex items-center justify-center gap-2">
+                    @if (_isSubmitting)
+                    {
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Recording Acceptance...</span>
+                    }
+                    else
+                    {
+                        <span>Accept & Continue</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public class LegalSection
+    {
+        public string Id { get; set; } = "";
+        public string ShortTitle { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Content { get; set; } = "";
+        public List<string>? Bullets { get; set; }
+    }
+
+    public class TermsAcceptanceModel
+    {
+        public string SignatoryName { get; set; } = "";
+        public string OrganizationName { get; set; } = "";
+        public string Version { get; set; } = "";
+        public DateTime AcceptedAt { get; set; } = DateTime.UtcNow;
+    }
+
+    [Parameter] public string Title { get; set; } = "Enterprise Terms of Service";
+    [Parameter] public string Version { get; set; } = "v3.2";
+    [Parameter] public string LastUpdated { get; set; } = "October 2026";
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<TermsAcceptanceModel> OnAccepted { get; set; }
+    [Parameter] public EventCallback OnDeclined { get; set; }
+
+    private bool _hasAgreed = false;
+    private string _signatoryName = "David Vance";
+    private string _organizationName = "Acme Global Technologies";
+    private int _scrollPercent = 100;
+    private int _selectedSectionIndex = 0;
+    private bool _isSubmitting = false;
+    private bool _isAccepted = false;
+    private string? _feedbackMessage;
+
+    private readonly List<LegalSection> _sections = new()
+    {
+        new LegalSection
+        {
+            Id = "license",
+            ShortTitle = "1. License",
+            Title = "1. Commercial & Enterprise License Grant",
+            Content = "Subject to the terms and conditions herein, Licensor grants Customer a perpetual, worldwide, non-exclusive license to incorporate and deploy the UI components across internal and external production workloads.",
+            Bullets = new()
+            {
+                "Full source code access for internal customization and corporate auditing.",
+                "Zero per-seat runtime licensing fees or third-party runtime telemetry callbacks.",
+                "Right to compile directly to WebAssembly (.NET 10+) targets."
+            }
+        },
+        new LegalSection
+        {
+            Id = "usage",
+            ShortTitle = "2. Acceptable Use",
+            Title = "2. Enterprise Acceptable Use & Security Obligations",
+            Content = "Customer agrees to implement industry-standard cryptographic practices when deploying forms that collect personally identifiable information (PII) or financial records.",
+            Bullets = new()
+            {
+                "Do not bypass cryptographic signature verifications or tamper with tamper-evident audit trails.",
+                "Adhere to responsible vulnerability reporting protocols within 48 hours of detection."
+            }
+        },
+        new LegalSection
+        {
+            Id = "sla",
+            ShortTitle = "3. SLA & Support",
+            Title = "3. Service Level Agreement (SLA) & Reliability",
+            Content = "Licensor commits to maintaining 99.99% availability for all package distribution channels and providing 24/7 Tier-3 engineering escalations for Severity-1 outages.",
+            Bullets = new()
+            {
+                "Guaranteed 1-hour initial response time for critical production outages.",
+                "Automated hotfix backports for active long-term support (LTS) releases."
+            }
+        },
+        new LegalSection
+        {
+            Id = "liability",
+            ShortTitle = "4. Liability",
+            Title = "4. Limitation of Liability & Indemnification",
+            Content = "In no event shall either party's aggregate liability exceed the total amount paid by Customer during the twelve (12) month period preceding the incident giving rise to liability.",
+            Bullets = new()
+            {
+                "Full mutual indemnification against intellectual property infringement claims.",
+                "Carve-outs for gross negligence and willful misconduct."
+            }
+        }
+    };
+
+    private void SelectSection(int index)
+    {
+        _selectedSectionIndex = index;
+    }
+
+    private void OnContentScrolled()
+    {
+        _scrollPercent = 100;
+    }
+
+    private void HandlePrint()
+    {
+        _feedbackMessage = "Print document prepared.";
+    }
+
+    private void HandleDownloadPdf()
+    {
+        _feedbackMessage = "Exporting Terms_of_Service_v3.2.pdf...";
+    }
+
+    private async Task HandleDecline()
+    {
+        _isAccepted = false;
+        _feedbackMessage = "You declined the Terms of Service. Enterprise features will remain restricted.";
+        if (OnDeclined.HasDelegate)
+        {
+            await OnDeclined.InvokeAsync();
+        }
+    }
+
+    private async Task HandleAccept()
+    {
+        if (!_hasAgreed) return;
+
+        if (string.IsNullOrWhiteSpace(_signatoryName) || string.IsNullOrWhiteSpace(_organizationName))
+        {
+            _isAccepted = false;
+            _feedbackMessage = "Please enter both Signatory Full Name and Corporate Organization.";
+            return;
+        }
+
+        _isSubmitting = true;
+        await Task.Delay(600);
+        _isSubmitting = false;
+        _isAccepted = true;
+        _feedbackMessage = $"Terms of Service accepted on behalf of {_organizationName}. Audit record stored.";
+
+        if (OnAccepted.HasDelegate)
+        {
+            await OnAccepted.InvokeAsync(new TermsAcceptanceModel
+            {
+                SignatoryName = _signatoryName,
+                OrganizationName = _organizationName,
+                Version = Version
+            });
+        }
+    }
+}

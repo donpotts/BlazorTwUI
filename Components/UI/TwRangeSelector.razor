@@ -1,0 +1,72 @@
+@* Pick a window over a series: a mini area chart with two range inputs (start and end) that cannot cross. Reports the chosen indices. *@
+<div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 @Class" data-testid="range-selector">
+    <div class="relative h-16" aria-hidden="true">
+        <svg viewBox="0 0 100 30" preserveAspectRatio="none" class="absolute inset-0 w-full h-full">
+            <path d="@AreaPath" class="fill-brand-200 dark:fill-brand-900/50 stroke-brand-600" stroke-width="0.6" vector-effect="non-scaling-stroke" />
+            <rect x="0" y="0" width="@Pct(Start)" height="30" class="fill-slate-900/20 dark:fill-slate-950/60" />
+            <rect x="@Pct(End)" y="0" width="@Pct(Last - End)" height="30" class="fill-slate-900/20 dark:fill-slate-950/60" />
+        </svg>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mt-2">
+        <div>
+            <label for="@_s" class="text-xs font-semibold text-slate-800 dark:text-slate-200">From <span data-testid="range-start-label">@LabelAt(Start)</span></label>
+            <input id="@_s" type="range" min="0" max="@Last" value="@Start" @oninput="e => SetStartAsync(e.Value)" data-testid="range-start" class="w-full accent-brand-600" />
+        </div>
+        <div>
+            <label for="@_e" class="text-xs font-semibold text-slate-800 dark:text-slate-200">To <span data-testid="range-end-label">@LabelAt(End)</span></label>
+            <input id="@_e" type="range" min="0" max="@Last" value="@End" @oninput="e => SetEndAsync(e.Value)" data-testid="range-end" class="w-full accent-brand-600" />
+        </div>
+    </div>
+    <p class="mt-1 text-xs text-slate-700 dark:text-slate-300" role="status" data-testid="range-summary">@(End - Start + 1) of @Values.Count points selected</p>
+</div>
+
+@code {
+    private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
+    private readonly string _s = "rs-" + Guid.NewGuid().ToString("N")[..6];
+    private readonly string _e = "re-" + Guid.NewGuid().ToString("N")[..6];
+
+    [Parameter, EditorRequired] public IReadOnlyList<double> Values { get; set; } = Array.Empty<double>();
+    [Parameter] public IReadOnlyList<string>? Labels { get; set; }
+    [Parameter] public int Start { get; set; }
+    [Parameter] public EventCallback<int> StartChanged { get; set; }
+    [Parameter] public int End { get; set; } = int.MaxValue;
+    [Parameter] public EventCallback<int> EndChanged { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private int Last => Math.Max(0, Values.Count - 1);
+
+    protected override void OnParametersSet()
+    {
+        End = Math.Clamp(End, 0, Last);
+        Start = Math.Clamp(Start, 0, End);
+    }
+
+    private string LabelAt(int i) => Labels is not null && i < Labels.Count ? Labels[i] : (i + 1).ToString();
+
+    private string Pct(double index) => Last == 0 ? "0" : (index / Last * 100).ToString("0.##", Inv);
+
+    private string AreaPath
+    {
+        get
+        {
+            if (Values.Count < 2) return "";
+            double min = Values.Min(), max = Values.Max(), span = max - min <= 0 ? 1 : max - min;
+            var pts = Values.Select((v, i) => $"{(i * 100.0 / Last).ToString("0.##", Inv)},{(28 - (v - min) / span * 26).ToString("0.##", Inv)}");
+            return $"M0,30 L{string.Join(" L", pts)} L100,30 Z";
+        }
+    }
+
+    private async Task SetStartAsync(object? raw)
+    {
+        if (!int.TryParse(raw?.ToString(), out var v)) return;
+        Start = Math.Clamp(v, 0, End);
+        await StartChanged.InvokeAsync(Start);
+    }
+
+    private async Task SetEndAsync(object? raw)
+    {
+        if (!int.TryParse(raw?.ToString(), out var v)) return;
+        End = Math.Clamp(v, Start, Last);
+        await EndChanged.InvokeAsync(End);
+    }
+}

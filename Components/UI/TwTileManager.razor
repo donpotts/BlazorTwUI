@@ -1,0 +1,86 @@
+@namespace BlazorTwUI.Components.UI
+@using Microsoft.AspNetCore.Components
+
+<div class="btui-tile-manager w-full space-y-4 @Class">
+    @if (ShowToolbar)
+    {
+        <!-- Header Toolbar -->
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                @if (!string.IsNullOrEmpty(Title))
+                {
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>📊</span>
+                            <span>@Title</span>
+                        </h3>
+                        @if (!string.IsNullOrEmpty(Subtitle))
+                        {
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400">@Subtitle</p>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- View Modes & Action Buttons -->
+            <div class="flex items-center gap-2">
+                <div class="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold">
+                    <button type="button"
+                            @onclick="() => SetColumns(4)"
+                            title="4 Columns"
+                            class="px-2.5 py-1 rounded-lg transition @(ColumnCount == 4 ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-xs font-bold" : "text-slate-600 dark:text-slate-400")">
+                        Quad
+                    </button>
+                    <button type="button"
+                            @onclick="() => SetColumns(3)"
+                            title="3 Columns"
+                            class="px-2.5 py-1 rounded-lg transition @(ColumnCount == 3 ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-xs font-bold" : "text-slate-600 dark:text-slate-400")">
+                        Triple
+                    </button>
+                    <button type="button"
+                            @onclick="() => SetColumns(2)"
+                            title="2 Columns"
+                            class="px-2.5 py-1 rounded-lg transition @(ColumnCount == 2 ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-xs font-bold" : "text-slate-600 dark:text-slate-400")">
+                        Dual
+                    </button>
+                </div>
+
+                @if (ToolbarActions != null)
+                {
+                    @ToolbarActions
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Tile Grid -->
+    <div class="grid grid-cols-1 @GetGridColsClass() @Gap">
+        @ChildContent
+    </div>
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; } = "Executive Operations Command";
+    [Parameter] public string? Subtitle { get; set; } = "Real-time interactive dashboard tiles with focus maximization and layout management.";
+    [Parameter] public int ColumnCount { get; set; } = 4;
+    [Parameter] public EventCallback<int> ColumnCountChanged { get; set; }
+    [Parameter] public string Gap { get; set; } = "gap-4";
+    [Parameter] public bool ShowToolbar { get; set; } = true;
+    [Parameter] public RenderFragment? ToolbarActions { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Class { get; set; } = string.Empty;
+
+    private string GetGridColsClass() => ColumnCount switch
+    {
+        2 => "md:grid-cols-2",
+        3 => "md:grid-cols-2 lg:grid-cols-3",
+        4 => "md:grid-cols-2 lg:grid-cols-4",
+        _ => "md:grid-cols-2 lg:grid-cols-4"
+    };
+
+    private async Task SetColumns(int cols)
+    {
+        ColumnCount = cols;
+        await ColumnCountChanged.InvokeAsync(cols);
+    }
+}

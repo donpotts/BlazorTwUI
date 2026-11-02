@@ -1,0 +1,1069 @@
+@namespace BlazorTwUI.Components.UI
+@using System.Globalization
+@using System.Text
+@using BlazorTwUI.Models
+@inject IJSRuntime JS
+
+<div class="flex flex-col gap-2 w-full @Class" @attributes="AdditionalAttributes">
+    @if (!string.IsNullOrEmpty(Title) || EnableExport)
+    {
+        <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <span>☁️</span>
+                <span>@(string.IsNullOrEmpty(Title) ? "Word Balloon & Cloud" : Title)</span>
+            </h4>
+            <div class="flex items-center gap-2">
+                @if (_selectedWord != null)
+                {
+                    <span class="text-[11px] font-mono px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold border border-brand-500/20 animate-fadeIn">
+                        @_selectedWord.Text (@_selectedWord.Weight.ToString("F0") hits)
+                    </span>
+                }
+                @if (EnableExport)
+                {
+                    <button type="button"
+                            @onclick="ExportSvgAsync"
+                            title="Download Standalone SVG File"
+                            class="px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:border-indigo-300 dark:hover:border-indigo-700 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-[11px] font-semibold flex items-center gap-1.5 transition-all">
+                        <span>📥</span> Save SVG
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="relative w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm overflow-hidden flex items-center justify-center">
+        <svg @ref="_svgElement" viewBox="0 0 @Width @Height" class="w-full h-auto max-h-[380px] select-none" role="img" aria-label="Word Cloud Visualization">
+            <defs>
+                <!-- Standard Center Word Balloon Shadow & Glow -->
+                <filter id="wordBalloonShadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000000" flood-opacity="0.25" />
+                </filter>
+                <filter id="wordBalloonActive" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#6366f1" flood-opacity="0.35" />
+                </filter>
+                <filter id="comicBurstShadow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feDropShadow dx="3" dy="4" stdDeviation="3" flood-color="#000000" flood-opacity="0.45" />
+                </filter>
+                <filter id="neonTextGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+
+                <!-- Patterns -->
+                <pattern id="halftoneDotsPattern" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <circle cx="5" cy="5" r="2.2" fill="#000000" opacity="0.35" />
+                </pattern>
+                <pattern id="scanlinePattern" x="0" y="0" width="100%" height="4" patternUnits="userSpaceOnUse">
+                    <line x1="0" y1="0" x2="100%" y2="0" stroke="#000000" stroke-width="1.2" opacity="0.25" />
+                </pattern>
+
+                <!-- Gradients -->
+                <linearGradient id="centerBalloonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#4f46e5" />
+                    <stop offset="50%" stop-color="#6366f1" />
+                    <stop offset="100%" stop-color="#818cf8" />
+                </linearGradient>
+
+                <linearGradient id="indigoThemeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#4338ca" />
+                    <stop offset="100%" stop-color="#6366f1" />
+                </linearGradient>
+
+                <linearGradient id="comicYellowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fef08a" />
+                    <stop offset="50%" stop-color="#fde047" />
+                    <stop offset="100%" stop-color="#facc15" />
+                </linearGradient>
+
+                <linearGradient id="crimsonThemeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ef4444" />
+                    <stop offset="50%" stop-color="#f97316" />
+                    <stop offset="100%" stop-color="#fbbf24" />
+                </linearGradient>
+
+                <linearGradient id="emeraldThemeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#059669" />
+                    <stop offset="100%" stop-color="#10b981" />
+                </linearGradient>
+
+                <linearGradient id="cyanThemeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#0891b2" />
+                    <stop offset="100%" stop-color="#06b6d4" />
+                </linearGradient>
+
+                <linearGradient id="sunsetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#ec4899" />
+                    <stop offset="50%" stop-color="#f97316" />
+                    <stop offset="100%" stop-color="#facc15" />
+                </linearGradient>
+
+                <linearGradient id="matrixGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#022c22" />
+                    <stop offset="50%" stop-color="#059669" />
+                    <stop offset="100%" stop-color="#22c55e" />
+                </linearGradient>
+
+                <linearGradient id="noirGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#020617" />
+                    <stop offset="50%" stop-color="#0f172a" />
+                    <stop offset="100%" stop-color="#334155" />
+                </linearGradient>
+
+                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#78350f" />
+                    <stop offset="50%" stop-color="#d97706" />
+                    <stop offset="100%" stop-color="#fde68a" />
+                </linearGradient>
+
+                <linearGradient id="fireGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#7f1d1d" />
+                    <stop offset="35%" stop-color="#dc2626" />
+                    <stop offset="70%" stop-color="#f97316" />
+                    <stop offset="100%" stop-color="#facc15" />
+                </linearGradient>
+
+                <linearGradient id="powTextGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#fef08a" />
+                    <stop offset="50%" stop-color="#facc15" />
+                    <stop offset="100%" stop-color="#ea580c" />
+                </linearGradient>
+
+                <linearGradient id="chromeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#f8fafc" />
+                    <stop offset="35%" stop-color="#94a3b8" />
+                    <stop offset="65%" stop-color="#ffffff" />
+                    <stop offset="100%" stop-color="#475569" />
+                </linearGradient>
+
+                <linearGradient id="sheenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45" />
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.0" />
+                </linearGradient>
+            </defs>
+
+            <!-- Background Graphic Overlays -->
+            @if (ShowSpeedSunburst || OverlayType == WordBalloonOverlayType.SpeedSunburst || OverlayType == WordBalloonOverlayType.AllOverlays)
+            {
+                <g class="pointer-events-none opacity-20 dark:opacity-25 transition-opacity duration-300">
+                    @foreach (var ray in GenerateSunburstRays(Width / 2.0, Height / 2.0, 24, 380))
+                    {
+                        <polygon points="@ray" fill="@GetSunburstRayFill()" />
+                    }
+                </g>
+            }
+
+            @if (ShowHalftoneDots || OverlayType == WordBalloonOverlayType.HalftoneDots || OverlayType == WordBalloonOverlayType.AllOverlays)
+            {
+                <rect width="@Width" height="@Height" fill="url(#halftoneDotsPattern)" class="pointer-events-none opacity-25 dark:opacity-30" />
+            }
+
+            @if (ShowScanlineHud || OverlayType == WordBalloonOverlayType.ScanlineHud || OverlayType == WordBalloonOverlayType.AllOverlays)
+            {
+                <g class="pointer-events-none">
+                    <rect width="@Width" height="@Height" fill="url(#scanlinePattern)" class="opacity-30" />
+                    <path d="M 20,40 V 20 H 40 M @(Width-40),20 H @(Width-20) V 40 M 20,@(Height-40) V @(Height-20) H 40 M @(Width-40),@(Height-20) H @(Width-20) V @(Height-40)" 
+                          fill="none" stroke="@GetNeonStrokeColor()" stroke-width="2" class="opacity-40" />
+                </g>
+            }
+
+            @* 
+               SVG Rendering Order: In SVG, later elements in the DOM are painted ON TOP of earlier elements.
+               RenderOrder guarantees background/outer words are drawn first, and the main center word 
+               (and currently selected word) is drawn LAST so it floats prominently on top.
+            *@
+            @foreach (var entry in RenderOrder)
+            {
+                var item = entry.Item;
+                var isCenter = (Placements.Count > 0 && entry == Placements[0]);
+                var isSelected = (_selectedWord == item);
+                var isTopLayer = isCenter || isSelected;
+
+                <g class="cursor-pointer transition-all duration-200 group"
+                   @onclick="() => HandleWordClick(item)">
+
+                    @* Word Balloon Backdrop for Center and Selected Words *@
+                    @if (ShowCenterBalloon && isTopLayer)
+                    {
+                        var approxCharWidth = entry.FontSize * 0.65;
+                        var baseTextWidth = item.Text.Length * approxCharWidth;
+                        var shapeExtraFactor = BalloonShape switch
+                        {
+                            WordBalloonShape.ComicBurst => 1.55,
+                            WordBalloonShape.ActionBlast => 1.55,
+                                                        WordBalloonShape.ThoughtBubble => 1.40,
+                            WordBalloonShape.CloudPuff => 1.38,
+                            WordBalloonShape.BadgeShield => 1.35,
+                            WordBalloonShape.CyberHexagon => 1.30,
+                            _ => 1.22
+                        };
+
+                        double pillWidth;
+                        double pillHeight;
+
+                        if (!AutoResizeBalloon && BalloonCustomWidth > 30.0)
+                        {
+                            pillWidth = BalloonCustomWidth * BalloonScale;
+                            pillHeight = (BalloonCustomHeight > 20.0 ? BalloonCustomHeight : entry.FontSize * 2.2) * BalloonScale;
+                        }
+                        else
+                        {
+                            var effPadX = BalloonPaddingX * BalloonScale;
+                            var effPadY = BalloonPaddingY * BalloonScale;
+                            pillWidth = Math.Max(120.0 * BalloonScale, (baseTextWidth * shapeExtraFactor) + (effPadX * 2.0));
+                            pillHeight = Math.Max(52.0 * BalloonScale, (entry.FontSize * 1.85 * (BalloonShape == WordBalloonShape.ComicBurst || BalloonShape == WordBalloonShape.ActionBlast ? 1.45 : 1.20)) + effPadY);
+                            if (BalloonCustomWidth > 30.0) pillWidth = Math.Max(pillWidth, BalloonCustomWidth * BalloonScale);
+                            if (BalloonCustomHeight > 20.0) pillHeight = Math.Max(pillHeight, BalloonCustomHeight * BalloonScale);
+                        }
+
+                        var pillX = entry.X - (pillWidth / 2.0);
+                        var pillY = entry.Y - (pillHeight / 2.0);
+
+                        @switch (BalloonShape)
+                        {
+                            case WordBalloonShape.ComicBurst:
+                                <polygon points="@GenerateStarburstPoints(entry.X, entry.Y, pillWidth, pillHeight)"
+                                         fill="@GetShapeFill(isSelected)"
+                                         stroke="@GetShapeStroke(isSelected)"
+                                         stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                         stroke-linejoin="round"
+                                         filter="@GetShapeFilter(isSelected)"
+                                         class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                break;
+
+                            case WordBalloonShape.SpeechBubble:
+                                <path d="@GenerateSpeechBubblePath(entry.X, entry.Y, pillWidth, pillHeight, TailPosition, TailStyle)"
+                                      fill="@GetShapeFill(isSelected)"
+                                      stroke="@GetShapeStroke(isSelected)"
+                                      stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                      stroke-linejoin="round"
+                                      filter="@GetShapeFilter(isSelected)"
+                                      class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                break;
+
+                            case WordBalloonShape.CyberHexagon:
+                                <polygon points="@GenerateCyberHexagonPoints(entry.X, entry.Y, pillWidth, pillHeight)"
+                                         fill="@GetShapeFill(isSelected)"
+                                         stroke="@GetShapeStroke(isSelected)"
+                                         stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                         stroke-linejoin="round"
+                                         filter="@GetShapeFilter(isSelected)"
+                                         class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                break;
+
+                            case WordBalloonShape.CloudPuff:
+                                <path d="@GenerateCloudPuffPath(entry.X, entry.Y, pillWidth, pillHeight)"
+                                      fill="@GetShapeFill(isSelected)"
+                                      stroke="@GetShapeStroke(isSelected)"
+                                      stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                      stroke-linejoin="round"
+                                      filter="@GetShapeFilter(isSelected)"
+                                      class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                break;
+
+                            case WordBalloonShape.ThoughtBubble:
+                                <g>
+                                    <path d="@GenerateCloudPuffPath(entry.X, entry.Y, pillWidth, pillHeight)"
+                                          fill="@GetShapeFill(isSelected)"
+                                          stroke="@GetShapeStroke(isSelected)"
+                                          stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                          stroke-linejoin="round"
+                                          filter="@GetShapeFilter(isSelected)"
+                                          class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                    @if (TailPosition != WordBalloonTailPosition.None)
+                                    {
+                                        @foreach (var dot in GetThoughtDots(entry.X, entry.Y, pillWidth, pillHeight, TailPosition))
+                                        {
+                                            <circle cx="@dot.X.ToString("F1", CultureInfo.InvariantCulture)"
+                                                    cy="@dot.Y.ToString("F1", CultureInfo.InvariantCulture)"
+                                                    r="@dot.R.ToString("F1", CultureInfo.InvariantCulture)"
+                                                    fill="@GetShapeFill(isSelected)"
+                                                    stroke="@GetShapeStroke(isSelected)"
+                                                    stroke-width="@GetShapeStrokeWidth(isSelected)" />
+                                        }
+                                    }
+                                </g>
+                                break;
+
+                            case WordBalloonShape.ActionBlast:
+                                <polygon points="@GenerateActionBlastPoints(entry.X, entry.Y, pillWidth, pillHeight)"
+                                         fill="@GetShapeFill(isSelected)"
+                                         stroke="@GetShapeStroke(isSelected)"
+                                         stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                         stroke-linejoin="round"
+                                         filter="@GetShapeFilter(isSelected)"
+                                         class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                break;
+
+                            case WordBalloonShape.BadgeShield:
+                                <path d="@GenerateBadgeShieldPath(entry.X, entry.Y, pillWidth, pillHeight)"
+                                      fill="@GetShapeFill(isSelected)"
+                                      stroke="@GetShapeStroke(isSelected)"
+                                      stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                      stroke-linejoin="round"
+                                      filter="@GetShapeFilter(isSelected)"
+                                      class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                break;
+
+                            case WordBalloonShape.BannerRibbon:
+                                <g>
+                                    <path d="@GenerateBannerRibbonTails(entry.X, entry.Y, pillWidth, pillHeight)"
+                                          fill="@GetShapeFill(isSelected)"
+                                          stroke="@GetShapeStroke(isSelected)"
+                                          stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                          opacity="0.85" />
+                                    <rect x="@pillX"
+                                          y="@pillY"
+                                          width="@pillWidth"
+                                          height="@pillHeight"
+                                          rx="4"
+                                          fill="@GetShapeFill(isSelected)"
+                                          stroke="@GetShapeStroke(isSelected)"
+                                          stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                          filter="@GetShapeFilter(isSelected)"
+                                          class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                </g>
+                                break;
+
+                            case WordBalloonShape.RetroArcade:
+                                <polygon points="@GenerateRetroArcadePoints(entry.X, entry.Y, pillWidth, pillHeight)"
+                                         fill="@GetShapeFill(isSelected)"
+                                         stroke="@GetShapeStroke(isSelected)"
+                                         stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                         stroke-linejoin="miter"
+                                         filter="@GetShapeFilter(isSelected)"
+                                         class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                break;
+
+                            case WordBalloonShape.SmoothCallout:
+                                <path d="@GenerateSmoothCalloutPath(entry.X, entry.Y, pillWidth, pillHeight, TailPosition, TailStyle)"
+                                      fill="@GetShapeFill(isSelected)"
+                                      stroke="@GetShapeStroke(isSelected)"
+                                      stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                      stroke-linejoin="round"
+                                      filter="@GetShapeFilter(isSelected)"
+                                      class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                break;
+
+                            case WordBalloonShape.PillCapsule:
+                            default:
+                                <rect x="@pillX"
+                                      y="@pillY"
+                                      width="@pillWidth"
+                                      height="@pillHeight"
+                                      rx="@(pillHeight / 2.0)"
+                                      fill="@GetShapeFill(isSelected)"
+                                      stroke="@GetShapeStroke(isSelected)"
+                                      stroke-width="@GetShapeStrokeWidth(isSelected)"
+                                      filter="@GetShapeFilter(isSelected)"
+                                      class="@(AnimatePulse ? "animate-pulse" : "") transition-all duration-300" />
+                                break;
+                        }
+
+                        <!-- Specular Sheen Highlight Overlay -->
+                        @if (ShowSpecularSheen || OverlayType == WordBalloonOverlayType.SpecularSheen || OverlayType == WordBalloonOverlayType.AllOverlays)
+                        {
+                            <path d="@GenerateSpecularSheenPath(entry.X, entry.Y, pillWidth, pillHeight)"
+                                  fill="url(#sheenGrad)" class="pointer-events-none" />
+                        }
+
+                        <!-- Action Sparks & Collision Stars Overlay -->
+                        @if (ShowActionSparks || OverlayType == WordBalloonOverlayType.ActionSparks || OverlayType == WordBalloonOverlayType.AllOverlays)
+                        {
+                            <g class="pointer-events-none @(AnimatePulse ? "animate-pulse" : "")">
+                                @foreach (var spark in GetActionSparks(entry.X, entry.Y, pillWidth, pillHeight))
+                                {
+                                    <path d="@spark" fill="#facc15" stroke="#000000" stroke-width="1.2" stroke-linejoin="round" />
+                                }
+                            </g>
+                        }
+
+                        <!-- Kicker / Caption Ribbon Overlay -->
+                        @if (!string.IsNullOrWhiteSpace(KickerText))
+                        {
+                            var kickerX = entry.X - (pillWidth * 0.35);
+                            var kickerY = entry.Y - (pillHeight * 0.58);
+                            var kickerW = (KickerText.Length * 7.5) + 16.0;
+                            <g transform="rotate(-6 @(kickerX.ToString("F1", CultureInfo.InvariantCulture)) @(kickerY.ToString("F1", CultureInfo.InvariantCulture)))" class="pointer-events-none">
+                                <rect x="@((kickerX - 4).ToString("F1", CultureInfo.InvariantCulture))"
+                                      y="@((kickerY - 10).ToString("F1", CultureInfo.InvariantCulture))"
+                                      width="@kickerW.ToString("F1", CultureInfo.InvariantCulture)"
+                                      height="18" rx="4"
+                                      fill="#ef4444" stroke="#000000" stroke-width="2" filter="url(#comicBurstShadow)" />
+                                <text x="@((kickerX - 4 + kickerW / 2.0).ToString("F1", CultureInfo.InvariantCulture))"
+                                      y="@((kickerY - 1).ToString("F1", CultureInfo.InvariantCulture))"
+                                      font-size="9" font-weight="900" text-anchor="middle" dominant-baseline="central"
+                                      fill="#ffffff" class="select-none tracking-widest font-mono uppercase">
+                                    @KickerText
+                                </text>
+                            </g>
+                        }
+                    }
+
+                    @* Word Rendering with explicit SVG g-wrapper to avoid Razor RZ1023 text tag collision *@
+                    @if (isTopLayer)
+                    {
+                        var textAngle = (BalloonEffect == WordBalloonEffect.PowEffect) ? -5.0 : TextRotationAngle;
+                        var transformStr = (textAngle != 0) 
+                            ? $"rotate({textAngle.ToString("F1", CultureInfo.InvariantCulture)} {entry.X.ToString(CultureInfo.InvariantCulture)} {entry.Y.ToString(CultureInfo.InvariantCulture)})"
+                            : null;
+
+                        @if (BalloonEffect == WordBalloonEffect.PowEffect)
+                        {
+                            <g transform="@transformStr">
+                                <!-- 3D Comic Extrusion Shadow -->
+                                <text x="@(entry.X + 3.5)"
+                                      y="@(entry.Y + 3.5)"
+                                      font-size="@entry.FontSize"
+                                      font-weight="900"
+                                      text-anchor="middle"
+                                      dominant-baseline="central"
+                                      fill="#000000"
+                                      class="tracking-wider select-none opacity-90">
+                                    @item.Text
+                                </text>
+
+                                <!-- Comic POW Pop-Art Foreground Text -->
+                                <text x="@entry.X"
+                                      y="@entry.Y"
+                                      font-size="@entry.FontSize"
+                                      font-weight="900"
+                                      text-anchor="middle"
+                                      dominant-baseline="central"
+                                      fill="url(#powTextGrad)"
+                                      style="paint-order: stroke fill; stroke: #000000; stroke-width: 4px; stroke-linejoin: round; font-style: italic;"
+                                      class="transition-all duration-200 group-hover:scale-110 active:scale-95 transform origin-center tracking-wider drop-shadow-md select-none @(AnimatePulse ? "animate-bounce" : "")">
+                                    @item.Text
+                                </text>
+                            </g>
+                        }
+                        else if (BalloonEffect == WordBalloonEffect.Outlined)
+                        {
+                            <g transform="@transformStr">
+                                <text x="@entry.X"
+                                      y="@entry.Y"
+                                      font-size="@entry.FontSize"
+                                      font-weight="900"
+                                      text-anchor="middle"
+                                      dominant-baseline="central"
+                                      fill="@GetTextFill(isCenter, isSelected)"
+                                      style="paint-order: stroke fill; stroke: @GetOutlineColor(); stroke-width: 3.5px; stroke-linejoin: round;"
+                                      class="transition-all duration-200 group-hover:scale-110 active:scale-95 transform origin-center font-black tracking-wide drop-shadow-sm select-none">
+                                    @item.Text
+                                </text>
+                            </g>
+                        }
+                        else if (BalloonEffect == WordBalloonEffect.NeonGlow)
+                        {
+                            <g transform="@transformStr">
+                                <text x="@entry.X"
+                                      y="@entry.Y"
+                                      font-size="@entry.FontSize"
+                                      font-weight="900"
+                                      text-anchor="middle"
+                                      dominant-baseline="central"
+                                      fill="@GetTextFill(isCenter, isSelected)"
+                                      filter="url(#neonTextGlow)"
+                                      style="paint-order: stroke fill; stroke: @GetNeonStrokeColor(); stroke-width: 1.5px;"
+                                      class="transition-all duration-200 group-hover:scale-110 active:scale-95 transform origin-center font-black tracking-wider select-none">
+                                    @item.Text
+                                </text>
+                            </g>
+                        }
+                        else if (BalloonEffect == WordBalloonEffect.GradientChrome)
+                        {
+                            <g transform="@transformStr">
+                                <text x="@entry.X"
+                                      y="@entry.Y"
+                                      font-size="@entry.FontSize"
+                                      font-weight="900"
+                                      text-anchor="middle"
+                                      dominant-baseline="central"
+                                      fill="url(#chromeGrad)"
+                                      style="paint-order: stroke fill; stroke: #334155; stroke-width: 1.5px;"
+                                      class="transition-all duration-200 group-hover:scale-110 active:scale-95 transform origin-center font-black tracking-wider drop-shadow-md select-none">
+                                    @item.Text
+                                </text>
+                            </g>
+                        }
+                        else if (BalloonEffect == WordBalloonEffect.GlitchEffect)
+                        {
+                            <g transform="@transformStr">
+                                <text x="@(entry.X - 2.5)" y="@(entry.Y - 1.0)"
+                                      font-size="@entry.FontSize" font-weight="900"
+                                      text-anchor="middle" dominant-baseline="central"
+                                      fill="#06b6d4" opacity="0.8" class="select-none font-black tracking-widest">
+                                    @item.Text
+                                </text>
+                                <text x="@(entry.X + 2.5)" y="@(entry.Y + 1.0)"
+                                      font-size="@entry.FontSize" font-weight="900"
+                                      text-anchor="middle" dominant-baseline="central"
+                                      fill="#ec4899" opacity="0.8" class="select-none font-black tracking-widest">
+                                    @item.Text
+                                </text>
+                                <text x="@entry.X" y="@entry.Y"
+                                      font-size="@entry.FontSize" font-weight="900"
+                                      text-anchor="middle" dominant-baseline="central"
+                                      fill="#ffffff"
+                                      style="paint-order: stroke fill; stroke: #0f172a; stroke-width: 2px;"
+                                      class="select-none font-black tracking-widest">
+                                    @item.Text
+                                </text>
+                            </g>
+                        }
+                        else if (BalloonEffect == WordBalloonEffect.FireFlame)
+                        {
+                            <g transform="@transformStr">
+                                <text x="@entry.X" y="@(entry.Y + 3.0)"
+                                      font-size="@entry.FontSize" font-weight="900"
+                                      text-anchor="middle" dominant-baseline="central"
+                                      fill="#7f1d1d" opacity="0.7">
+                                    @item.Text
+                                </text>
+                                <text x="@entry.X" y="@entry.Y"
+                                      font-size="@entry.FontSize" font-weight="900"
+                                      text-anchor="middle" dominant-baseline="central"
+                                      fill="url(#fireGrad)"
+                                      style="paint-order: stroke fill; stroke: #450a0a; stroke-width: 3px; font-style: italic;"
+                                      class="font-black tracking-wider select-none drop-shadow-md">
+                                    @item.Text
+                                </text>
+                            </g>
+                        }
+                        else if (BalloonEffect == WordBalloonEffect.Retro3D)
+                        {
+                            <g transform="@transformStr">
+                                <text x="@(entry.X + 1.5)" y="@(entry.Y + 1.5)" font-size="@entry.FontSize" font-weight="900" text-anchor="middle" dominant-baseline="central" fill="#0f172a">@item.Text</text>
+                                <text x="@(entry.X + 3.0)" y="@(entry.Y + 3.0)" font-size="@entry.FontSize" font-weight="900" text-anchor="middle" dominant-baseline="central" fill="#0f172a">@item.Text</text>
+                                <text x="@(entry.X + 4.5)" y="@(entry.Y + 4.5)" font-size="@entry.FontSize" font-weight="900" text-anchor="middle" dominant-baseline="central" fill="#000000">@item.Text</text>
+                                <text x="@entry.X" y="@entry.Y" font-size="@entry.FontSize" font-weight="900" text-anchor="middle" dominant-baseline="central"
+                                      fill="@GetTextFill(isCenter, isSelected)" style="paint-order: stroke fill; stroke: #000000; stroke-width: 2.5px;"
+                                      class="font-black select-none tracking-wider">
+                                    @item.Text
+                                </text>
+                            </g>
+                        }
+                        else if (BalloonEffect == WordBalloonEffect.ComicHalftone)
+                        {
+                            <g transform="@transformStr">
+                                <text x="@(entry.X + 3.0)" y="@(entry.Y + 3.0)" font-size="@entry.FontSize" font-weight="900" text-anchor="middle" dominant-baseline="central" fill="#000000">@item.Text</text>
+                                <text x="@entry.X" y="@entry.Y" font-size="@entry.FontSize" font-weight="900" text-anchor="middle" dominant-baseline="central"
+                                      fill="url(#halftoneDotsPattern)" stroke="@GetShapeStroke(isSelected)" stroke-width="2.5"
+                                      class="font-black tracking-wider select-none">
+                                    @item.Text
+                                </text>
+                            </g>
+                        }
+                        else // Bold
+                        {
+                            <g transform="@transformStr">
+                                <text x="@entry.X"
+                                      y="@entry.Y"
+                                      font-size="@entry.FontSize"
+                                      font-weight="900"
+                                      fill="@GetTextFill(isCenter, isSelected)"
+                                      text-anchor="middle"
+                                      dominant-baseline="central"
+                                      style="paint-order: stroke fill; stroke: rgba(255, 255, 255, 0.4); stroke-width: 1px;"
+                                      class="transition-all duration-200 group-hover:scale-110 active:scale-95 transform origin-center font-black tracking-wide drop-shadow-sm select-none">
+                                    @item.Text
+                                </text>
+                            </g>
+                        }
+                    }
+                    else
+                    {
+                        <g>
+                            <text x="@entry.X"
+                                  y="@entry.Y"
+                                  font-size="@entry.FontSize"
+                                  font-weight="700"
+                                  fill="@entry.Color"
+                                  text-anchor="middle"
+                                  dominant-baseline="central"
+                                  opacity="0.85"
+                                  class="transition-all duration-200 group-hover:scale-125 group-hover:opacity-100 group-hover:font-extrabold transform origin-center select-none font-sans">
+                                @item.Text
+                            </text>
+                        </g>
+                    }
+                </g>
+            }
+        </svg>
+
+        @if (Words.Count == 0)
+        {
+            <div class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+                No words available
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    public sealed record WordCloudItem(string Text, double Weight, string? Category = null);
+
+    private sealed record WordPlacement(WordCloudItem Item, double X, double Y, double FontSize, string Color);
+
+    public readonly record struct ThoughtDot(double X, double Y, double R);
+
+    private ElementReference _svgElement;
+
+    [Parameter] public IReadOnlyList<WordCloudItem> Words { get; set; } = Array.Empty<WordCloudItem>();
+    [Parameter] public string? Title { get; set; } = "Keyword Density & Term Frequency";
+    [Parameter] public int Width { get; set; } = 640;
+    [Parameter] public int Height { get; set; } = 320;
+    [Parameter] public double MinFontSize { get; set; } = 12;
+    [Parameter] public double MaxFontSize { get; set; } = 42;
+    [Parameter] public bool CenterWordOnTop { get; set; } = true;
+    [Parameter] public bool ShowCenterBalloon { get; set; } = true;
+    [Parameter] public WordBalloonShape BalloonShape { get; set; } = WordBalloonShape.PillCapsule;
+    [Parameter] public WordBalloonEffect BalloonEffect { get; set; } = WordBalloonEffect.Bold;
+    [Parameter] public WordBalloonTheme BalloonTheme { get; set; } = WordBalloonTheme.IndigoViolet;
+    [Parameter] public WordBalloonTailPosition TailPosition { get; set; } = WordBalloonTailPosition.BottomLeft;
+    [Parameter] public WordBalloonTailStyle TailStyle { get; set; } = WordBalloonTailStyle.Wedge;
+    [Parameter] public WordBalloonOverlayType OverlayType { get; set; } = WordBalloonOverlayType.None;
+    [Parameter] public bool ShowSpeedSunburst { get; set; } = false;
+    [Parameter] public bool ShowHalftoneDots { get; set; } = false;
+    [Parameter] public bool ShowActionSparks { get; set; } = false;
+    [Parameter] public bool ShowSpecularSheen { get; set; } = false;
+    [Parameter] public bool ShowScanlineHud { get; set; } = false;
+    [Parameter] public string? KickerText { get; set; } = null;
+    [Parameter] public double TextRotationAngle { get; set; } = 0;
+    [Parameter] public bool AnimatePulse { get; set; } = false;
+    [Parameter] public double CenterWordScale { get; set; } = 1.0;
+    [Parameter] public bool AutoResizeBalloon { get; set; } = true;
+    [Parameter] public double BalloonScale { get; set; } = 1.35;
+    [Parameter] public double BalloonPaddingX { get; set; } = 40.0;
+    [Parameter] public double BalloonPaddingY { get; set; } = 20.0;
+    [Parameter] public double BalloonCustomWidth { get; set; } = 0.0;
+    [Parameter] public double BalloonCustomHeight { get; set; } = 0.0;
+    [Parameter] public bool ShowSpiralWords { get; set; } = true;
+    [Parameter] public int SurroundingWordCount { get; set; } = 11;
+    [Parameter] public double SurroundingWordScale { get; set; } = 1.0;
+    [Parameter] public bool EnableExport { get; set; } = true;
+    [Parameter] public string ExportFilename { get; set; } = "word-balloon-cloud.svg";
+    [Parameter] public EventCallback<WordCloudItem> OnWordClick { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private WordCloudItem? _selectedWord;
+
+    private static readonly string[] Palette =
+    {
+        "#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#14b8a6", "#3b82f6", "#84cc16"
+    };
+
+    private IReadOnlyList<WordPlacement> Placements
+    {
+        get
+        {
+            if (Words.Count == 0) return Array.Empty<WordPlacement>();
+
+            var minWeight = Words.Min(w => w.Weight);
+            var maxWeight = Words.Max(w => w.Weight);
+            var weightRange = Math.Max(1.0, maxWeight - minWeight);
+
+            var list = new List<WordPlacement>();
+            var sorted = Words.OrderByDescending(w => w.Weight).ToList();
+
+            double centerX = Width / 2.0;
+            double centerY = Height / 2.0;
+
+            int maxSurrounding = (ShowSpiralWords && SurroundingWordCount > 0) ? SurroundingWordCount : 0;
+            for (int i = 0; i < sorted.Count; i++)
+            {
+                if (i > maxSurrounding)
+                {
+                    break;
+                }
+
+                var word = sorted[i];
+                var normalized = (word.Weight - minWeight) / weightRange;
+                var baseFontSize = MinFontSize + (normalized * (MaxFontSize - MinFontSize));
+                var fontSize = (i == 0) 
+                    ? baseFontSize * Math.Clamp(CenterWordScale, 0.5, 2.5) 
+                    : baseFontSize * Math.Clamp(SurroundingWordScale, 0.4, 2.0);
+
+                // Archimedean spiral placement distribution with center balloon clearance
+                double angle = i * 2.4;
+                double radius = (i == 0) ? 0 : 55 + (i * 13.5);
+                
+                // Keep within bounds
+                double x = (i == 0) ? centerX : Math.Clamp(centerX + (radius * Math.Cos(angle) * 1.6), 50.0, Width - 50.0);
+                double y = (i == 0) ? centerY : Math.Clamp(centerY + (radius * Math.Sin(angle)), 30.0, Height - 30.0);
+
+                var color = Palette[i % Palette.Length];
+                list.Add(new WordPlacement(word, x, y, fontSize, color));
+            }
+
+            return list;
+        }
+    }
+
+    /// <summary>
+    /// Renders outer/smaller words FIRST so they form the background painting layer,
+    /// and renders the main center word (and selected word) LAST so it is painted strictly ON TOP.
+    /// </summary>
+    private IEnumerable<WordPlacement> RenderOrder
+    {
+        get
+        {
+            var placements = Placements;
+            if (placements.Count == 0) return Array.Empty<WordPlacement>();
+
+            if (!CenterWordOnTop)
+            {
+                return placements;
+            }
+
+            var centerPlacement = placements[0];
+
+            // 1. Smaller/background words (ascending font size so smaller words are underneath)
+            var backgroundWords = placements
+                .Where(p => p != centerPlacement && p.Item != _selectedWord)
+                .OrderBy(p => p.FontSize);
+
+            // 2. Main Center Word on top of background words
+            var centerList = (centerPlacement.Item != _selectedWord)
+                ? new[] { centerPlacement }
+                : Array.Empty<WordPlacement>();
+
+            // 3. Currently active/selected word on top of everything
+            var selectedList = (_selectedWord != null)
+                ? placements.Where(p => p.Item == _selectedWord)
+                : Array.Empty<WordPlacement>();
+
+            return backgroundWords.Concat(centerList).Concat(selectedList);
+        }
+    }
+
+    private string GenerateStarburstPoints(double cx, double cy, double w, double h)
+    {
+        int points = 18;
+        var sb = new StringBuilder();
+        double rxOuter = (w / 2.0) * 1.25;
+        double ryOuter = (h / 2.0) * 1.45;
+        double rxInner = (w / 2.0) * 0.72;
+        double ryInner = (h / 2.0) * 0.72;
+
+        for (int i = 0; i < points; i++)
+        {
+            double angle = (i * 2 * Math.PI) / points - (Math.PI / 2);
+            double rX = (i % 2 == 0) ? rxOuter : rxInner;
+            double rY = (i % 2 == 0) ? ryOuter : ryInner;
+            double px = cx + (rX * Math.Cos(angle));
+            double py = cy + (rY * Math.Sin(angle));
+            sb.Append(CultureInfo.InvariantCulture, $"{px:F1},{py:F1} ");
+        }
+        return sb.ToString().Trim();
+    }
+
+    private string GenerateActionBlastPoints(double cx, double cy, double w, double h)
+    {
+        double rx = w / 2.0;
+        double ry = h / 2.0;
+        double[] radii = { 1.35, 0.65, 1.55, 0.7, 1.25, 0.6, 1.45, 0.75, 1.3, 0.65, 1.5, 0.7, 1.2, 0.6, 1.4, 0.72 };
+        var sb = new StringBuilder();
+        int n = radii.Length;
+        for (int i = 0; i < n; i++)
+        {
+            double angle = (i * 2 * Math.PI) / n - (Math.PI / 2);
+            double factor = radii[i];
+            double px = cx + (rx * factor * Math.Cos(angle));
+            double py = cy + (ry * factor * Math.Sin(angle));
+            sb.Append(CultureInfo.InvariantCulture, $"{px:F1},{py:F1} ");
+        }
+        return sb.ToString().Trim();
+    }
+
+    private string GenerateSpeechBubblePath(double cx, double cy, double w, double h, WordBalloonTailPosition pos, WordBalloonTailStyle style)
+    {
+        double x = cx - (w / 2.0);
+        double y = cy - (h / 2.0);
+        double r = Math.Min(16.0, h / 2.5);
+        double tailW = 16.0;
+        double tailH = 15.0;
+
+        if (pos == WordBalloonTailPosition.None)
+        {
+            return string.Create(CultureInfo.InvariantCulture,
+                $"M {x + r:F1},{y:F1} H {x + w - r:F1} Q {x + w:F1},{y:F1} {x + w:F1},{y + r:F1} V {y + h - r:F1} Q {x + w:F1},{y + h:F1} {x + w - r:F1},{y + h:F1} H {x + r:F1} Q {x:F1},{y + h:F1} {x:F1},{y + h - r:F1} V {y + r:F1} Q {x:F1},{y:F1} {x + r:F1},{y:F1} Z");
+        }
+
+        double tailX = pos switch
+        {
+            WordBalloonTailPosition.BottomRight => x + (w * 0.75),
+            WordBalloonTailPosition.BottomCenter => cx - (tailW / 2.0),
+            WordBalloonTailPosition.TopLeft => x + (w * 0.25),
+            WordBalloonTailPosition.TopRight => x + (w * 0.75),
+            _ => x + (w * 0.25)
+        };
+
+        bool isTop = (pos == WordBalloonTailPosition.TopLeft || pos == WordBalloonTailPosition.TopRight);
+
+        if (isTop)
+        {
+            return string.Create(CultureInfo.InvariantCulture,
+                $"M {x + r:F1},{y:F1} H {tailX:F1} L {tailX - (tailW * 0.2):F1},{y - tailH:F1} L {tailX + tailW:F1},{y:F1} H {x + w - r:F1} Q {x + w:F1},{y:F1} {x + w:F1},{y + r:F1} V {y + h - r:F1} Q {x + w:F1},{y + h:F1} {x + w - r:F1},{y + h:F1} H {x + r:F1} Q {x:F1},{y + h:F1} {x:F1},{y + h - r:F1} V {y + r:F1} Q {x:F1},{y:F1} {x + r:F1},{y:F1} Z");
+        }
+
+        // Bottom tail (curved or wedge)
+        double tipOffset = (style == WordBalloonTailStyle.Curved) ? -10.0 : 0.0;
+
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M {x + r:F1},{y:F1} H {x + w - r:F1} Q {x + w:F1},{y:F1} {x + w:F1},{y + r:F1} V {y + h - r:F1} Q {x + w:F1},{y + h:F1} {x + w - r:F1},{y + h:F1} H {tailX + tailW:F1} L {tailX + tipOffset:F1},{y + h + tailH:F1} L {tailX - (tailW * 0.3):F1},{y + h:F1} H {x + r:F1} Q {x:F1},{y + h:F1} {x:F1},{y + h - r:F1} V {y + r:F1} Q {x:F1},{y:F1} {x + r:F1},{y:F1} Z");
+    }
+
+    private string GenerateSmoothCalloutPath(double cx, double cy, double w, double h, WordBalloonTailPosition pos, WordBalloonTailStyle style)
+    {
+        return GenerateSpeechBubblePath(cx, cy, w, h, pos, style);
+    }
+
+    private string GenerateBadgeShieldPath(double cx, double cy, double w, double h)
+    {
+        double x = cx - (w / 2.0);
+        double y = cy - (h / 2.0);
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M {x:F1},{y + 8:F1} Q {cx:F1},{y - 8:F1} {x + w:F1},{y + 8:F1} V {y + (h * 0.58):F1} Q {x + w:F1},{y + (h * 0.96):F1} {cx:F1},{y + h + 10:F1} Q {x:F1},{y + (h * 0.96):F1} {x:F1},{y + (h * 0.58):F1} Z");
+    }
+
+    private string GenerateBannerRibbonTails(double cx, double cy, double w, double h)
+    {
+        double x = cx - (w / 2.0);
+        double y = cy - (h / 2.0);
+        double ribbonW = 28.0;
+
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M {x:F1},{y + 8:F1} L {x - ribbonW:F1},{y + 4:F1} L {x - ribbonW + 10:F1},{y + (h / 2):F1} L {x - ribbonW:F1},{y + h - 4:F1} L {x:F1},{y + h - 8:F1} Z " +
+            $"M {x + w:F1},{y + 8:F1} L {x + w + ribbonW:F1},{y + 4:F1} L {x + w + ribbonW - 10:F1},{y + (h / 2):F1} L {x + w + ribbonW:F1},{y + h - 4:F1} L {x + w:F1},{y + h - 8:F1} Z");
+    }
+
+    private string GenerateRetroArcadePoints(double cx, double cy, double w, double h)
+    {
+        double x = cx - (w / 2.0);
+        double y = cy - (h / 2.0);
+        double s = 7.0;
+
+        return string.Create(CultureInfo.InvariantCulture,
+            $"{x + s*2:F1},{y:F1} {x + w - s*2:F1},{y:F1} {x + w - s*2:F1},{y + s:F1} {x + w - s:F1},{y + s:F1} {x + w - s:F1},{y + s*2:F1} {x + w:F1},{y + s*2:F1} {x + w:F1},{y + h - s*2:F1} {x + w - s:F1},{y + h - s*2:F1} {x + w - s:F1},{y + h - s:F1} {x + w - s*2:F1},{y + h - s:F1} {x + w - s*2:F1},{y + h:F1} {x + s*2:F1},{y + h:F1} {x + s*2:F1},{y + h - s:F1} {x + s:F1},{y + h - s:F1} {x + s:F1},{y + h - s*2:F1} {x:F1},{y + h - s*2:F1} {x:F1},{y + s*2:F1} {x + s:F1},{y + s*2:F1} {x + s:F1},{y + s:F1} {x + s*2:F1},{y + s:F1}");
+    }
+
+    private IEnumerable<ThoughtDot> GetThoughtDots(double cx, double cy, double w, double h, WordBalloonTailPosition pos)
+    {
+        double x = cx - (w / 2.0);
+        double y = cy - (h / 2.0);
+        double baseX = (pos == WordBalloonTailPosition.BottomRight) ? x + (w * 0.78) : x + (w * 0.22);
+        double baseY = y + h;
+
+        yield return new ThoughtDot(baseX, baseY + 8, 7.5);
+        yield return new ThoughtDot(baseX - 8, baseY + 20, 5.0);
+        yield return new ThoughtDot(baseX - 16, baseY + 30, 3.0);
+    }
+
+    private string GenerateSpecularSheenPath(double cx, double cy, double w, double h)
+    {
+        double x = cx - (w / 2.0) + 6.0;
+        double y = cy - (h / 2.0) + 4.0;
+        double sw = w - 12.0;
+        double sh = (h * 0.42);
+
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M {x:F1},{y + sh:F1} Q {cx:F1},{y + 2:F1} {x + sw:F1},{y + sh:F1} L {x + sw:F1},{y:F1} L {x:F1},{y:F1} Z");
+    }
+
+    private IEnumerable<string> GetActionSparks(double cx, double cy, double w, double h)
+    {
+        double rx = (w / 2.0) + 16.0;
+        double ry = (h / 2.0) + 14.0;
+
+        // 4 corner sparkles
+        (double sx, double sy)[] positions = {
+            (cx - rx, cy - ry + 4),
+            (cx + rx, cy - ry + 4),
+            (cx - rx + 10, cy + ry),
+            (cx + rx - 10, cy + ry)
+        };
+
+        foreach (var pos in positions)
+        {
+            double px = pos.sx;
+            double py = pos.sy;
+            yield return string.Create(CultureInfo.InvariantCulture,
+                $"M {px:F1},{py - 9:F1} L {px + 2.5:F1},{py - 2.5:F1} L {px + 9:F1},{py:F1} L {px + 2.5:F1},{py + 2.5:F1} L {px:F1},{py + 9:F1} L {px - 2.5:F1},{py + 2.5:F1} L {px - 9:F1},{py:F1} L {px - 2.5:F1},{py - 2.5:F1} Z");
+        }
+    }
+
+    private IEnumerable<string> GenerateSunburstRays(double cx, double cy, int count, double r)
+    {
+        var list = new List<string>();
+        double step = (2 * Math.PI) / count;
+        for (int i = 0; i < count; i += 2)
+        {
+            double a1 = i * step;
+            double a2 = (i + 1) * step;
+            double p1x = cx + r * Math.Cos(a1);
+            double p1y = cy + r * Math.Sin(a1);
+            double p2x = cx + r * Math.Cos(a2);
+            double p2y = cy + r * Math.Sin(a2);
+            list.Add(string.Create(CultureInfo.InvariantCulture, $"{cx:F1},{cy:F1} {p1x:F1},{p1y:F1} {p2x:F1},{p2y:F1}"));
+        }
+        return list;
+    }
+
+    private string GetSunburstRayFill()
+    {
+        return BalloonTheme switch
+        {
+            WordBalloonTheme.ComicYellow => "#facc15",
+            WordBalloonTheme.CrimsonBurst => "#ef4444",
+            WordBalloonTheme.SunsetBlaze => "#f97316",
+            WordBalloonTheme.EmeraldTech => "#10b981",
+            WordBalloonTheme.CyberCyan => "#06b6d4",
+            WordBalloonTheme.NeonMatrix => "#22c55e",
+            WordBalloonTheme.GoldenHero => "#d97706",
+            WordBalloonTheme.MonochromeNoir => "#94a3b8",
+            _ => "#818cf8"
+        };
+    }
+
+    private string GenerateCyberHexagonPoints(double cx, double cy, double w, double h)
+    {
+        double x = cx - (w / 2.0);
+        double y = cy - (h / 2.0);
+        double cut = Math.Min(18.0, h * 0.38);
+
+        return string.Create(CultureInfo.InvariantCulture,
+            $"{x + cut:F1},{y:F1} {x + w - cut:F1},{y:F1} {x + w:F1},{y + cut:F1} {x + w:F1},{y + h - cut:F1} {x + w - cut:F1},{y + h:F1} {x + cut:F1},{y + h:F1} {x:F1},{y + h - cut:F1} {x:F1},{y + cut:F1}");
+    }
+
+    private string GenerateCloudPuffPath(double cx, double cy, double w, double h)
+    {
+        double rX = w / 2.0;
+        double rY = h / 2.0;
+
+        return string.Create(CultureInfo.InvariantCulture,
+            $"M {cx - rX * 0.7:F1},{cy:F1} C {cx - rX:F1},{cy - rY * 0.6:F1} {cx - rX * 0.6:F1},{cy - rY * 1.1:F1} {cx - rX * 0.2:F1},{cy - rY * 0.9:F1} C {cx:F1},{cy - rY * 1.25:F1} {cx + rX * 0.4:F1},{cy - rY * 1.2:F1} {cx + rX * 0.6:F1},{cy - rY * 0.8:F1} C {cx + rX * 1.05:F1},{cy - rY * 0.7:F1} {cx + rX * 1.1:F1},{cy + rY * 0.4:F1} {cx + rX * 0.7:F1},{cy + rY * 0.8:F1} C {cx + rX * 0.4:F1},{cy + rY * 1.2:F1} {cx - rX * 0.1:F1},{cy + rY * 1.15:F1} {cx - rX * 0.4:F1},{cy + rY * 0.85:F1} C {cx - rX * 0.85:F1},{cy + rY * 1.0:F1} {cx - rX * 1.1:F1},{cy + rY * 0.4:F1} {cx - rX * 0.7:F1},{cy:F1} Z");
+    }
+
+    private string GetShapeFill(bool isSelected)
+    {
+        if (isSelected) return "url(#centerBalloonGrad)";
+
+        return BalloonTheme switch
+        {
+            WordBalloonTheme.ComicYellow => "url(#comicYellowGrad)",
+            WordBalloonTheme.CrimsonBurst => "url(#crimsonThemeGrad)",
+            WordBalloonTheme.EmeraldTech => "url(#emeraldThemeGrad)",
+            WordBalloonTheme.CyberCyan => "url(#cyanThemeGrad)",
+            WordBalloonTheme.SunsetBlaze => "url(#sunsetGrad)",
+            WordBalloonTheme.NeonMatrix => "url(#matrixGrad)",
+            WordBalloonTheme.MonochromeNoir => "url(#noirGrad)",
+            WordBalloonTheme.GoldenHero => "url(#goldGrad)",
+            WordBalloonTheme.IndigoViolet => "url(#indigoThemeGrad)",
+            _ => "url(#indigoThemeGrad)"
+        };
+    }
+
+    private string GetShapeStroke(bool isSelected)
+    {
+        if (isSelected) return "#4f46e5";
+
+        return BalloonTheme switch
+        {
+            WordBalloonTheme.ComicYellow => "#000000",
+            WordBalloonTheme.CrimsonBurst => "#facc15",
+            WordBalloonTheme.EmeraldTech => "#34d399",
+            WordBalloonTheme.CyberCyan => "#22d3ee",
+            WordBalloonTheme.SunsetBlaze => "#fde047",
+            WordBalloonTheme.NeonMatrix => "#4ade80",
+            WordBalloonTheme.MonochromeNoir => "#ffffff",
+            WordBalloonTheme.GoldenHero => "#fef08a",
+            WordBalloonTheme.IndigoViolet => "#818cf8",
+            _ => "#818cf8"
+        };
+    }
+
+    private string GetShapeStrokeWidth(bool isSelected)
+    {
+        if (isSelected) return "3";
+
+        return (BalloonShape == WordBalloonShape.ComicBurst || BalloonShape == WordBalloonShape.ActionBlast || BalloonTheme == WordBalloonTheme.ComicYellow)
+            ? "3.5"
+            : "2.5";
+    }
+
+    private string GetShapeFilter(bool isSelected)
+    {
+        if (isSelected) return "url(#wordBalloonActive)";
+        if (BalloonShape == WordBalloonShape.ComicBurst || BalloonShape == WordBalloonShape.ActionBlast) return "url(#comicBurstShadow)";
+        return "url(#wordBalloonShadow)";
+    }
+
+    private string GetTextFill(bool isCenter, bool isSelected)
+    {
+        if (BalloonEffect == WordBalloonEffect.PowEffect) return "url(#powTextGrad)";
+        if (BalloonEffect == WordBalloonEffect.GradientChrome) return "url(#chromeGrad)";
+        if (BalloonEffect == WordBalloonEffect.FireFlame) return "url(#fireGrad)";
+
+        if (BalloonTheme == WordBalloonTheme.ComicYellow)
+        {
+            return (BalloonEffect == WordBalloonEffect.Outlined) ? "#ef4444" : "#000000";
+        }
+
+        if (BalloonTheme == WordBalloonTheme.GoldenHero)
+        {
+            return "#ffffff";
+        }
+
+        return "#ffffff";
+    }
+
+    private string GetOutlineColor()
+    {
+        return BalloonTheme switch
+        {
+            WordBalloonTheme.ComicYellow => "#000000",
+            WordBalloonTheme.CrimsonBurst => "#7f1d1d",
+            WordBalloonTheme.EmeraldTech => "#064e3b",
+            WordBalloonTheme.CyberCyan => "#083344",
+            WordBalloonTheme.SunsetBlaze => "#701a75",
+            WordBalloonTheme.NeonMatrix => "#022c22",
+            WordBalloonTheme.MonochromeNoir => "#000000",
+            WordBalloonTheme.GoldenHero => "#451a03",
+            _ => "#1e1b4b"
+        };
+    }
+
+    private string GetNeonStrokeColor()
+    {
+        return BalloonTheme switch
+        {
+            WordBalloonTheme.ComicYellow => "#facc15",
+            WordBalloonTheme.CrimsonBurst => "#ef4444",
+            WordBalloonTheme.EmeraldTech => "#10b981",
+            WordBalloonTheme.CyberCyan => "#06b6d4",
+            WordBalloonTheme.SunsetBlaze => "#ec4899",
+            WordBalloonTheme.NeonMatrix => "#22c55e",
+            WordBalloonTheme.MonochromeNoir => "#e2e8f0",
+            WordBalloonTheme.GoldenHero => "#fbbf24",
+            _ => "#a855f7"
+        };
+    }
+
+    private async Task HandleWordClick(WordCloudItem item)
+    {
+        _selectedWord = item;
+        await OnWordClick.InvokeAsync(item);
+    }
+
+    public async Task ExportSvgAsync()
+    {
+        await JS.InvokeVoidAsync("svgExporter.exportSvgElement", _svgElement, ExportFilename);
+    }
+}

@@ -1,0 +1,274 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm space-y-4 @CustomClass">
+    <!-- Header -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200 dark:border-slate-800">
+        <div class="flex items-center gap-2">
+            <span class="p-1.5 rounded-lg bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+            </span>
+            <div>
+                <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">@Title</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">Construct visual enterprise query filters with nested boolean logic</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" @onclick="ClearFilter" class="px-2.5 py-1 rounded-lg text-xs text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                Reset
+            </button>
+            <button type="button" @onclick="ApplyFilter" class="px-3 py-1 rounded-lg text-xs font-semibold bg-brand-600 hover:bg-brand-500 text-white shadow-xs transition">
+                Apply Filter
+            </button>
+        </div>
+    </div>
+
+    <!-- Tree Structure -->
+    <div class="space-y-3 font-mono text-xs">
+        @RenderGroup(RootGroup, 0)
+    </div>
+
+    <!-- Predicate Preview Footer -->
+    @if (ShowPreview)
+    {
+        <div class="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 p-3 rounded-xl">
+            <div class="flex items-center justify-between text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                <span>EVALUATED FILTER EXPRESSION</span>
+                <span class="text-brand-500 dark:text-brand-400 font-mono">LINQ / SQL</span>
+            </div>
+            <div class="text-xs font-mono text-emerald-600 dark:text-emerald-400 break-words">
+                <code>@GetExpressionString(RootGroup)</code>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    public class FilterRule
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Field { get; set; } = "Status";
+        public string Operator { get; set; } = "Equals";
+        public string Value { get; set; } = "Active";
+    }
+
+    public class FilterGroup
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Conjunction { get; set; } = "AND"; // AND, OR, NOT AND, NOT OR
+        public List<FilterRule> Rules { get; set; } = new();
+        public List<FilterGroup> SubGroups { get; set; } = new();
+    }
+
+    public class FieldDefinition
+    {
+        public string Name { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string DataType { get; set; } = "string"; // string, number, date, boolean
+    }
+
+    [Parameter] public string Title { get; set; } = "Visual Query & Filter Builder";
+    [Parameter] public FilterGroup RootGroup { get; set; } = new();
+    [Parameter] public List<FieldDefinition> AvailableFields { get; set; } = new();
+    [Parameter] public bool ShowPreview { get; set; } = true;
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<FilterGroup> OnFilterChanged { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!AvailableFields.Any())
+        {
+            AvailableFields = new List<FieldDefinition>
+            {
+                new FieldDefinition { Name = "Status", Label = "Status", DataType = "string" },
+                new FieldDefinition { Name = "Role", Label = "Security Role", DataType = "string" },
+                new FieldDefinition { Name = "Age", Label = "User Age", DataType = "number" },
+                new FieldDefinition { Name = "Salary", Label = "Compensation", DataType = "number" },
+                new FieldDefinition { Name = "IsActive", Label = "Account Active", DataType = "boolean" }
+            };
+        }
+
+        if (!RootGroup.Rules.Any() && !RootGroup.SubGroups.Any())
+        {
+            RootGroup.Conjunction = "AND";
+            RootGroup.Rules.Add(new FilterRule { Field = "Status", Operator = "Equals", Value = "Active" });
+            RootGroup.Rules.Add(new FilterRule { Field = "Role", Operator = "Contains", Value = "Admin" });
+
+            var sub = new FilterGroup { Conjunction = "OR" };
+            sub.Rules.Add(new FilterRule { Field = "Age", Operator = "GreaterThan", Value = "25" });
+            sub.Rules.Add(new FilterRule { Field = "Salary", Operator = "GreaterThanOrEqual", Value = "90000" });
+            RootGroup.SubGroups.Add(sub);
+        }
+    }
+
+    private RenderFragment RenderGroup(FilterGroup group, int depth) => __builder =>
+    {
+        <div class="relative pl-4 border-l-2 @(group.Conjunction == "AND" ? "border-brand-500/60" : "border-amber-500/60") space-y-2.5">
+            <!-- Group Conjunction Header -->
+            <div class="flex items-center gap-2">
+                <button type="button"
+                        @onclick="() => ToggleConjunction(group)"
+                        class="px-2 py-0.5 rounded-md text-xs font-bold transition shadow-2xs @(group.Conjunction == "AND" ? "bg-brand-600 text-white hover:bg-brand-700" : "bg-amber-600 text-white hover:bg-amber-700")">
+                    @group.Conjunction
+                </button>
+
+                <button type="button"
+                        @onclick="() => AddRule(group)"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition text-[11px]"
+                        title="Add Condition Rule">
+                    <span>+ Rule</span>
+                </button>
+
+                <button type="button"
+                        @onclick="() => AddSubGroup(group)"
+                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition text-[11px]"
+                        title="Add Nested Group">
+                    <span>+ Group</span>
+                </button>
+            </div>
+
+            <!-- Rules list -->
+            @foreach (var rule in group.Rules)
+            {
+                <div class="flex flex-wrap items-center gap-2 bg-slate-50 dark:bg-slate-850/80 p-2 rounded-xl border border-slate-200/60 dark:border-slate-800">
+                    <!-- Field Selector -->
+                    <select @bind="rule.Field" @bind:after="NotifyChange"
+                            class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:ring-1 focus:ring-brand-500">
+                        @foreach (var f in AvailableFields)
+                        {
+                            <option value="@f.Name">@f.Label</option>
+                        }
+                    </select>
+
+                    <!-- Operator Selector -->
+                    <select @bind="rule.Operator" @bind:after="NotifyChange"
+                            class="px-2 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:ring-1 focus:ring-brand-500">
+                        <option value="Equals">Equals (=)</option>
+                        <option value="NotEquals">Not Equals (!=)</option>
+                        <option value="Contains">Contains</option>
+                        <option value="StartsWith">Starts With</option>
+                        <option value="GreaterThan">Greater Than (&gt;)</option>
+                        <option value="GreaterThanOrEqual">Greater or Equal (&gt;=)</option>
+                        <option value="LessThan">Less Than (&lt;)</option>
+                        <option value="LessThanOrEqual">Less or Equal (&lt;=)</option>
+                    </select>
+
+                    <!-- Value Input -->
+                    <input type="text"
+                           @bind="rule.Value"
+                           @bind:after="NotifyChange"
+                           placeholder="Value..."
+                           class="flex-1 min-w-[120px] px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:ring-1 focus:ring-brand-500 focus:outline-none" />
+
+                    <!-- Delete Rule Button -->
+                    <button type="button"
+                            @onclick="() => RemoveRule(group, rule)"
+                            class="p-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950/40 text-slate-400 hover:text-rose-600 transition"
+                            title="Remove Rule">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            }
+
+            <!-- Subgroups list -->
+            @foreach (var sub in group.SubGroups)
+            {
+                <div class="pt-1">
+                    @RenderGroup(sub, depth + 1)
+                </div>
+            }
+        </div>
+    };
+
+    private void ToggleConjunction(FilterGroup group)
+    {
+        group.Conjunction = group.Conjunction == "AND" ? "OR" : "AND";
+        NotifyChange();
+    }
+
+    private void AddRule(FilterGroup group)
+    {
+        group.Rules.Add(new FilterRule { Field = AvailableFields.FirstOrDefault()?.Name ?? "Status", Operator = "Equals", Value = "" });
+        NotifyChange();
+    }
+
+    private void AddSubGroup(FilterGroup group)
+    {
+        var newSub = new FilterGroup { Conjunction = group.Conjunction == "AND" ? "OR" : "AND" };
+        newSub.Rules.Add(new FilterRule { Field = AvailableFields.FirstOrDefault()?.Name ?? "Status", Operator = "Equals", Value = "" });
+        group.SubGroups.Add(newSub);
+        NotifyChange();
+    }
+
+    private void RemoveRule(FilterGroup group, FilterRule rule)
+    {
+        group.Rules.Remove(rule);
+        NotifyChange();
+    }
+
+    private void ClearFilter()
+    {
+        RootGroup.Rules.Clear();
+        RootGroup.SubGroups.Clear();
+        RootGroup.Conjunction = "AND";
+        RootGroup.Rules.Add(new FilterRule { Field = AvailableFields.FirstOrDefault()?.Name ?? "Status", Operator = "Equals", Value = "" });
+        NotifyChange();
+    }
+
+    private async Task ApplyFilter()
+    {
+        if (OnFilterChanged.HasDelegate)
+        {
+            await OnFilterChanged.InvokeAsync(RootGroup);
+        }
+    }
+
+    private async void NotifyChange()
+    {
+        if (OnFilterChanged.HasDelegate)
+        {
+            await OnFilterChanged.InvokeAsync(RootGroup);
+        }
+    }
+
+    private string GetExpressionString(FilterGroup group)
+    {
+        var parts = new List<string>();
+
+        foreach (var rule in group.Rules)
+        {
+            var op = rule.Operator switch
+            {
+                "Equals" => "==",
+                "NotEquals" => "!=",
+                "Contains" => ".Contains",
+                "StartsWith" => ".StartsWith",
+                "GreaterThan" => ">",
+                "GreaterThanOrEqual" => ">=",
+                "LessThan" => "<",
+                "LessThanOrEqual" => "<=",
+                _ => "=="
+            };
+
+            if (op.StartsWith("."))
+                parts.Add($"[x.{rule.Field}{op}(\"{rule.Value}\")]");
+            else
+                parts.Add($"[x.{rule.Field} {op} \"{rule.Value}\"]");
+        }
+
+        foreach (var sub in group.SubGroups)
+        {
+            var subExpr = GetExpressionString(sub);
+            if (!string.IsNullOrWhiteSpace(subExpr))
+                parts.Add($"({subExpr})");
+        }
+
+        if (!parts.Any()) return "(true)";
+        var conj = group.Conjunction == "AND" ? " && " : " || ";
+        return string.Join(conj, parts);
+    }
+}

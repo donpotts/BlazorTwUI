@@ -1,0 +1,66 @@
+@typeparam TItem
+
+<div class="w-full space-y-3 @Class">
+    <!-- Mobile Card View: shown on mobile (default), hidden on md+ -->
+    <div class="grid grid-cols-1 gap-3 md:hidden">
+        @if (Items is null || !Items.Any())
+        {
+            <div class="p-6 text-center text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+                @EmptyText
+            </div>
+        }
+        else
+        {
+            @foreach (var item in Items)
+            {
+                <div class="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xs">
+                    @if (MobileTemplate is not null)
+                    {
+                        @MobileTemplate(item)
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Desktop / Tablet Table View: hidden on mobile, block on md+ -->
+    <div class="hidden md:block overflow-hidden rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                <thead class="bg-slate-50/80 dark:bg-slate-950/50 text-xs uppercase font-semibold text-slate-700 dark:text-slate-300 border-b border-slate-200/80 dark:border-slate-800">
+                    <tr>
+                        @TableHeader
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
+                    @if (Items is null || !Items.Any())
+                    {
+                        <tr>
+                            <td colspan="100" class="p-8 text-center text-slate-500 dark:text-slate-400">
+                                @EmptyText
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Items)
+                        {
+                            <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
+                                @RowTemplate(item)
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<TItem> Items { get; set; } = Array.Empty<TItem>();
+    [Parameter] public RenderFragment? TableHeader { get; set; }
+    [Parameter] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
+    [Parameter] public RenderFragment<TItem>? MobileTemplate { get; set; }
+    [Parameter] public string EmptyText { get; set; } = "No records found";
+    [Parameter] public string? Class { get; set; }
+}

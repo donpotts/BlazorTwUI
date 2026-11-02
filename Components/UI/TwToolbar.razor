@@ -1,0 +1,102 @@
+@* Command toolbar with a roving tab stop (arrow keys, Home, End), toggle buttons, separators, and an overflow menu for items beyond MaxVisible. *@
+<div role="toolbar" aria-label="@Label" aria-orientation="horizontal" class="inline-flex items-center gap-1 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-1 @Class"
+     @onkeydown="OnKeyAsync" data-testid="toolbar">
+    @for (var i = 0; i < _visible.Count; i++)
+    {
+        var item = _visible[i];
+        @if (item.Kind == ToolbarKind.Separator)
+        {
+            <span role="separator" aria-orientation="vertical" class="w-px h-6 mx-1 bg-slate-300 dark:bg-slate-600"></span>
+            continue;
+        }
+        var idx = i;
+        <button type="button" tabindex="@(idx == _tab ? 0 : -1)" disabled="@item.Disabled" @onclick="() => ClickAsync(item)"
+                aria-pressed="@(item.Kind == ToolbarKind.Toggle ? item.Pressed.ToString().ToLowerInvariant() : null)" title="@item.Text"
+                data-testid="toolbar-item" data-id="@item.Id"
+                class="inline-flex items-center gap-1.5 min-h-[36px] px-3 rounded-lg text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50 disabled:cursor-not-allowed @(item.Pressed ? "bg-brand-100 dark:bg-brand-500/20 text-brand-900 dark:text-brand-100" : "text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800")">
+            @if (!string.IsNullOrEmpty(item.Icon)) { <span aria-hidden="true">@item.Icon</span> }
+            @if (!item.IconOnly) { <span>@item.Text</span> } else { <span class="sr-only">@item.Text</span> }
+        </button>
+    }
+    @if (_overflow.Count > 0)
+    {
+        <div class="relative">
+            <button type="button" tabindex="@(_visible.Count == _tab ? 0 : -1)" aria-haspopup="menu" aria-expanded="@_open.ToString().ToLowerInvariant()" aria-label="More commands" @onclick="() => _open = !_open" data-testid="toolbar-more"
+                    class="inline-flex items-center justify-center w-9 min-h-[36px] rounded-lg text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><span aria-hidden="true">⋯</span></button>
+            @if (_open)
+            {
+                <ul role="menu" class="absolute end-0 top-full mt-1 z-20 min-w-[11rem] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg p-1" data-testid="toolbar-overflow">
+                    @foreach (var item in _overflow.Where(o => o.Kind != ToolbarKind.Separator))
+                    {
+                        <li role="none">
+                            <button type="button" role="menuitem" disabled="@item.Disabled" @onclick="() => ClickAsync(item)" data-testid="toolbar-overflow-item" data-id="@item.Id"
+                                    class="w-full text-start px-3 min-h-[36px] rounded-lg text-sm text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">@item.Text</button>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    public enum ToolbarKind { Button, Toggle, Separator }
+
+    public sealed class ToolbarItem
+    {
+        public string Id { get; init; } = Guid.NewGuid().ToString("N")[..6];
+        public string Text { get; init; } = "";
+        public string? Icon { get; init; }
+        public bool IconOnly { get; init; }
+        public ToolbarKind Kind { get; init; }
+        public bool Pressed { get; set; }
+        public bool Disabled { get; init; }
+    }
+
+    private List<ToolbarItem> _visible = new();
+    private List<ToolbarItem> _overflow = new();
+    private int _tab;
+    private bool _open;
+
+    [Parameter, EditorRequired] public IReadOnlyList<ToolbarItem> Items { get; set; } = Array.Empty<ToolbarItem>();
+    /// <summary>Items past this count move into the overflow menu. 0 shows everything.</summary>
+    [Parameter] public int MaxVisible { get; set; }
+    [Parameter] public string Label { get; set; } = "Toolbar";
+    [Parameter] public EventCallback<ToolbarItem> OnItemClick { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        var take = MaxVisible > 0 ? Math.Min(MaxVisible, Items.Count) : Items.Count;
+        _visible = Items.Take(take).ToList();
+        _overflow = Items.Skip(take).ToList();
+        _tab = Math.Clamp(_tab, 0, Math.Max(0, FocusableCount - 1));
+    }
+
+    private int FocusableCount => _visible.Count + (_overflow.Count > 0 ? 1 : 0);
+
+    private async Task ClickAsync(ToolbarItem item)
+    {
+        if (item.Kind == ToolbarKind.Toggle) item.Pressed = !item.Pressed;
+        _open = false;
+        await OnItemClick.InvokeAsync(item);
+    }
+
+    private void OnKeyAsync(KeyboardEventArgs e)
+    {
+        var order = Enumerable.Range(0, _visible.Count).Where(i => _visible[i].Kind != ToolbarKind.Separator).ToList();
+        if (_overflow.Count > 0) order.Add(_visible.Count);
+        if (order.Count == 0) return;
+        var pos = Math.Max(0, order.IndexOf(_tab));
+        pos = e.Key switch
+        {
+            "ArrowRight" => (pos + 1) % order.Count,
+            "ArrowLeft" => (pos - 1 + order.Count) % order.Count,
+            "Home" => 0,
+            "End" => order.Count - 1,
+            _ => pos
+        };
+        if (e.Key == "Escape") _open = false;
+        _tab = order[pos];
+    }
+}

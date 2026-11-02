@@ -1,0 +1,426 @@
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject TwOpenTelemetryService OtelService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div class="btui-telemetry-dashboard rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden space-y-4 p-5">
+    <!-- Header with OTel Branding -->
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center justify-center font-bold text-base shadow-sm">
+                🔭
+            </div>
+            <div>
+                <h4 class="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    OpenTelemetry APM Cockpit
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                        ActivitySource v0.7.0
+                    </span>
+                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        LIVE W3C TRACE
+                    </span>
+                </h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    High-precision component lifecycle tracing, render latency waterfalls, WASM heap allocation & OTLP export.
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+            <button type="button"
+                    @onclick="HandleSimulateBurst"
+                    class="px-3 py-1.5 text-xs font-bold rounded-xl bg-purple-600 hover:bg-purple-700 text-white shadow-sm transition flex items-center gap-1.5 active:scale-95">
+                <span>⚡</span> Record Activity Burst
+            </button>
+            <button type="button"
+                    @onclick="HandleExportJson"
+                    class="px-3 py-1.5 text-xs font-semibold rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition flex items-center gap-1.5">
+                <span>📋</span> Export OTLP JSON
+            </button>
+            <button type="button"
+                    @onclick="HandleClear"
+                    class="px-2.5 py-1.5 text-xs font-semibold rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition">
+                Clear
+            </button>
+        </div>
+    </div>
+
+    <!-- Live Telemetry KPI Meters -->
+    <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800">
+            <span class="text-[10px] uppercase font-semibold text-slate-400">Total Spans</span>
+            <div class="text-lg font-mono font-bold text-slate-900 dark:text-white">@OtelService.TotalRecordedCount</div>
+            <div class="text-[10px] text-slate-400 font-mono mt-0.5">Ring buffer: @OtelService.RecentSpans.Count / 250</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800">
+            <span class="text-[10px] uppercase font-semibold text-slate-400">Avg Render Latency</span>
+            <div class="text-lg font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                @($"{OtelService.AverageRenderMs:F2} ms")
+            </div>
+            <div class="text-[10px] text-emerald-500 font-mono mt-0.5">&lt; 16.6ms Target (60 FPS)</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800">
+            <span class="text-[10px] uppercase font-semibold text-slate-400">Frame Rate</span>
+            <div class="text-lg font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                @($"{OtelService.CurrentFps:F0} FPS")
+            </div>
+            <div class="text-[10px] text-indigo-400 font-mono mt-0.5">Smooth RAF Vsync</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800">
+            <span class="text-[10px] uppercase font-semibold text-slate-400">WASM Heap Allocation</span>
+            <div class="text-lg font-mono font-bold text-purple-600 dark:text-purple-400">
+                @((OtelService.HeapMemoryBytes / (1024.0 * 1024.0)).ToString("F1")) MB
+            </div>
+            <div class="text-[10px] text-purple-400 font-mono mt-0.5">GC Gen 0/1/2: @OtelService.Gen0Collections/@OtelService.Gen1Collections/@OtelService.Gen2Collections</div>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 col-span-2 sm:col-span-1">
+            <span class="text-[10px] uppercase font-semibold text-slate-400">Instrumented Units</span>
+            <div class="text-lg font-mono font-bold text-amber-600 dark:text-amber-400">
+                @_distinctComponents
+            </div>
+            <div class="text-[10px] text-amber-500 font-mono mt-0.5">Auto-traced</div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex items-center gap-1 border-b border-slate-200 dark:border-slate-800 pt-1">
+        <button type="button"
+                @onclick='() => _activeTab = "waterfall"'
+                class="px-3.5 py-2 text-xs font-bold rounded-t-xl transition border-b-2 @(_activeTab == "waterfall" ? "border-purple-600 text-purple-600 dark:text-purple-400 bg-purple-500/5" : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+            🌊 Waterfall & Flame Graph
+        </button>
+        <button type="button"
+                @onclick='() => _activeTab = "leaderboard"'
+                class="px-3.5 py-2 text-xs font-bold rounded-t-xl transition border-b-2 @(_activeTab == "leaderboard" ? "border-purple-600 text-purple-600 dark:text-purple-400 bg-purple-500/5" : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+            🏆 Component Leaderboard (@OtelService.PerformanceSummaries.Count)
+        </button>
+        <button type="button"
+                @onclick='() => _activeTab = "vitals"'
+                class="px-3.5 py-2 text-xs font-bold rounded-t-xl transition border-b-2 @(_activeTab == "vitals" ? "border-purple-600 text-purple-600 dark:text-purple-400 bg-purple-500/5" : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+            📊 WASM & GC Vitals
+        </button>
+        <button type="button"
+                @onclick='() => _activeTab = "otlp"'
+                class="px-3.5 py-2 text-xs font-bold rounded-t-xl transition border-b-2 @(_activeTab == "otlp" ? "border-purple-600 text-purple-600 dark:text-purple-400 bg-purple-500/5" : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+            📜 W3C OTLP JSON Export
+        </button>
+    </div>
+
+    <!-- Tab 1: Waterfall & Flame Graph -->
+    @if (_activeTab == "waterfall")
+    {
+        <div class="space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-500 font-semibold px-1">
+                <span>Recent Activity Spans (Click row to inspect W3C traceparent & attributes)</span>
+                <span class="text-[11px] font-mono">Microsecond Precision Waterfall</span>
+            </div>
+
+            <div class="max-h-80 overflow-y-auto space-y-1.5 pr-1 font-mono text-[11px]">
+                @if (!OtelService.RecentSpans.Any())
+                {
+                    <div class="p-6 text-center text-xs text-slate-400 bg-slate-50 dark:bg-slate-850 rounded-xl">
+                        No trace spans recorded yet. Click "Record Activity Burst" above to capture live traces.
+                    </div>
+                }
+                else
+                {
+                    @foreach (var span in OtelService.RecentSpans.Take(25))
+                    {
+                        var isExpanded = _expandedSpanId == span.SpanId;
+                        <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200/70 dark:border-slate-800 hover:border-purple-500/40 transition cursor-pointer"
+                             @onclick="() => ToggleSpan(span.SpanId)">
+                            <div class="flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <span class="w-2 h-2 rounded-full @(span.Health == "Optimal" ? "bg-emerald-500" : (span.Health == "Warning" ? "bg-amber-500" : "bg-rose-500"))"></span>
+                                    <span class="font-bold text-slate-900 dark:text-white truncate">@span.ComponentName</span>
+                                    <span class="text-slate-400">/</span>
+                                    <span class="text-slate-600 dark:text-slate-300 truncate">@span.OperationName</span>
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                        @span.Category
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center gap-3 shrink-0">
+                                    <!-- Visual Duration Bar -->
+                                    <div class="w-20 sm:w-32 bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden hidden sm:block">
+                                        <div class="@(span.Health == "Optimal" ? "bg-emerald-500" : (span.Health == "Warning" ? "bg-amber-500" : "bg-rose-500")) h-full rounded-full transition-all duration-300"
+                                             style="width: @(Math.Min(100, Math.Max(12, span.DurationMs * 15)))%"></div>
+                                    </div>
+                                    <span class="font-bold text-right w-16 @(span.Health == "Optimal" ? "text-emerald-600 dark:text-emerald-400" : (span.Health == "Warning" ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"))">
+                                        @(span.DurationMs < 1.0 ? $"{span.DurationMicroseconds:F0} μs" : $"{span.DurationMs:F2} ms")
+                                    </span>
+                                    <span class="text-[10px] text-slate-400 hidden md:inline">
+                                        @span.Timestamp.ToString("HH:mm:ss.fff")
+                                    </span>
+                                    <span class="text-slate-400 text-xs">@(isExpanded ? "▲" : "▼")</span>
+                                </div>
+                            </div>
+
+                            @if (isExpanded)
+                            {
+                                <div class="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 text-[10px] space-y-1.5 text-slate-600 dark:text-slate-300">
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div>
+                                            <span class="font-bold text-slate-500">W3C Traceparent:</span>
+                                            <div class="font-mono bg-slate-100 dark:bg-slate-800 p-1 rounded mt-0.5 select-all">
+                                                00-@span.TraceId-@span.SpanId-01
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="font-bold text-slate-500">Parent Span ID:</span>
+                                            <div class="font-mono bg-slate-100 dark:bg-slate-800 p-1 rounded mt-0.5">
+                                                @(string.IsNullOrEmpty(span.ParentSpanId) ? "(Root Span)" : span.ParentSpanId)
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    @if (span.Attributes.Any())
+                                    {
+                                        <div class="mt-1">
+                                            <span class="font-bold text-slate-500">Attributes & Tags:</span>
+                                            <div class="flex flex-wrap gap-1.5 mt-1">
+                                                @foreach (var attr in span.Attributes)
+                                                {
+                                                    <span class="px-2 py-0.5 rounded bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 font-mono">
+                                                        @attr.Key = "@attr.Value"
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+    <!-- Tab 2: Component Leaderboard -->
+    @if (_activeTab == "leaderboard")
+    {
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600 dark:text-slate-300">
+                <thead class="text-[11px] uppercase bg-slate-50 dark:bg-slate-800/50 text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-800">
+                    <tr>
+                        <th class="py-2.5 px-3">Component</th>
+                        <th class="py-2.5 px-3 text-right">Renders</th>
+                        <th class="py-2.5 px-3 text-right">Total (ms)</th>
+                        <th class="py-2.5 px-3 text-right">Avg (ms)</th>
+                        <th class="py-2.5 px-3 text-right">Max (ms)</th>
+                        <th class="py-2.5 px-3 text-right">Slow Frames (&gt;33ms)</th>
+                        <th class="py-2.5 px-3 text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-800 font-mono">
+                    @if (!OtelService.PerformanceSummaries.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="py-6 text-center text-slate-400">
+                                No component renders recorded. Trigger activity above.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var summary in OtelService.PerformanceSummaries)
+                        {
+                            var statusColor = summary.SlowFrameCount > 0 ? "text-rose-500 bg-rose-500/10 border-rose-500/20" : (summary.AvgDurationMs > 16.0 ? "text-amber-500 bg-amber-500/10 border-amber-500/20" : "text-emerald-500 bg-emerald-500/10 border-emerald-500/20");
+                            <tr class="hover:bg-slate-50 dark:hover:bg-slate-850 transition">
+                                <td class="py-2.5 px-3 font-bold text-slate-900 dark:text-white font-sans">
+                                    @summary.ComponentName
+                                </td>
+                                <td class="py-2.5 px-3 text-right">@summary.RenderCount</td>
+                                <td class="py-2.5 px-3 text-right">@summary.TotalDurationMs.ToString("F1")</td>
+                                <td class="py-2.5 px-3 text-right font-bold @(summary.AvgDurationMs < 16.0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400")">
+                                    @summary.AvgDurationMs.ToString("F2")
+                                </td>
+                                <td class="py-2.5 px-3 text-right">@summary.MaxDurationMs.ToString("F2")</td>
+                                <td class="py-2.5 px-3 text-right @(summary.SlowFrameCount > 0 ? "text-rose-500 font-bold" : "text-slate-400")">
+                                    @summary.SlowFrameCount
+                                </td>
+                                <td class="py-2.5 px-3 text-center">
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border @statusColor">
+                                        @(summary.SlowFrameCount > 0 ? "Degraded" : (summary.AvgDurationMs > 16.0 ? "Warning" : "Optimal"))
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    <!-- Tab 3: WASM & GC Vitals -->
+    @if (_activeTab == "vitals")
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-3">
+                <h5 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">GC Collections</h5>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200 dark:border-slate-800">
+                        <span class="text-slate-500">Gen 0 (Ephemeral):</span>
+                        <span class="font-mono font-bold text-purple-600 dark:text-purple-400">@OtelService.Gen0Collections</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200 dark:border-slate-800">
+                        <span class="text-slate-500">Gen 1 (Survival):</span>
+                        <span class="font-mono font-bold text-purple-600 dark:text-purple-400">@OtelService.Gen1Collections</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1">
+                        <span class="text-slate-500">Gen 2 (Full GC):</span>
+                        <span class="font-mono font-bold text-purple-600 dark:text-purple-400">@OtelService.Gen2Collections</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-3">
+                <h5 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">Memory Allocation</h5>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200 dark:border-slate-800">
+                        <span class="text-slate-500">Total Managed Heap:</span>
+                        <span class="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                            @((OtelService.HeapMemoryBytes / (1024.0 * 1024.0)).ToString("F2")) MB
+                        </span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200 dark:border-slate-800">
+                        <span class="text-slate-500">Runtime Target:</span>
+                        <span class="font-mono font-bold text-slate-700 dark:text-slate-300">.NET 10+ WASM</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1">
+                        <span class="text-slate-500">Garbage Collector:</span>
+                        <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">Interactive Workstation GC</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 space-y-3">
+                <h5 class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">W3C APM Compatibility</h5>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200 dark:border-slate-800">
+                        <span class="text-slate-500">Trace Context:</span>
+                        <span class="font-mono font-bold text-emerald-600">W3C Traceparent v1</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200 dark:border-slate-800">
+                        <span class="text-slate-500">OTLP Protocol:</span>
+                        <span class="font-mono font-bold text-purple-600">v1.3.1 JSON / gRPC</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1">
+                        <span class="text-slate-500">Jaeger / Grafana:</span>
+                        <span class="font-mono font-bold text-emerald-600">Zero-Config Ingest</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Tab 4: W3C OTLP JSON Export -->
+    @if (_activeTab == "otlp")
+    {
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Standard OpenTelemetry Protocol (OTLP) payload matching Jaeger, Grafana Tempo, and Dynatrace HTTP endpoints.
+                </p>
+                <button type="button"
+                        @onclick="HandleCopyOtlp"
+                        class="px-3 py-1 text-xs font-semibold rounded-lg bg-purple-600 hover:bg-purple-700 text-white transition">
+                    @(_copied ? "✓ Copied to Clipboard" : "Copy JSON")
+                </button>
+            </div>
+
+            <pre class="p-4 rounded-xl bg-slate-900 text-purple-300 font-mono text-[11px] overflow-x-auto max-h-72 border border-slate-800 select-all">@OtelService.ExportOtlpJson()</pre>
+        </div>
+    }
+</div>
+
+@code {
+    private string _activeTab = "waterfall";
+    private string? _expandedSpanId;
+    private int _distinctComponents;
+    private bool _copied;
+
+    protected override void OnInitialized()
+    {
+        OtelService.OnTraceRecorded += HandleTraceUpdated;
+        OtelService.OnMetricsUpdated += HandleMetricsUpdated;
+        RefreshMetrics();
+        if (!OtelService.RecentSpans.Any())
+        {
+            OtelService.GenerateSimulatedBurst();
+        }
+    }
+
+    private void HandleTraceUpdated()
+    {
+        InvokeAsync(() =>
+        {
+            RefreshMetrics();
+            StateHasChanged();
+        });
+    }
+
+    private void HandleMetricsUpdated()
+    {
+        InvokeAsync(() =>
+        {
+            RefreshMetrics();
+            StateHasChanged();
+        });
+    }
+
+    private void RefreshMetrics()
+    {
+        var spans = OtelService.RecentSpans;
+        if (spans.Any())
+        {
+            _distinctComponents = spans.Select(s => s.ComponentName).Distinct().Count();
+        }
+    }
+
+    private void ToggleSpan(string spanId)
+    {
+        _expandedSpanId = _expandedSpanId == spanId ? null : spanId;
+    }
+
+    private void HandleSimulateBurst()
+    {
+        OtelService.GenerateSimulatedBurst();
+    }
+
+    private void HandleClear()
+    {
+        OtelService.Clear();
+    }
+
+    private async Task HandleExportJson()
+    {
+        _activeTab = "otlp";
+        await HandleCopyOtlp();
+    }
+
+    private async Task HandleCopyOtlp()
+    {
+        try
+        {
+            var json = OtelService.ExportOtlpJson();
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            _copied = true;
+            await Task.Delay(2000);
+            _copied = false;
+        }
+        catch
+        {
+            _copied = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        OtelService.OnTraceRecorded -= HandleTraceUpdated;
+        OtelService.OnMetricsUpdated -= HandleMetricsUpdated;
+    }
+}

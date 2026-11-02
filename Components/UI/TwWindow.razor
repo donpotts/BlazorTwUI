@@ -1,0 +1,119 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@* A floating, non-modal window: drag by the title bar, or focus the title bar and use the arrow keys (Shift = 50px, Ctrl = resize). Minimize, maximize and close buttons.
+   Windows stack: the one you touched last is on top. *@
+@if (Visible)
+{
+    <div @ref="_root" role="dialog" aria-modal="false" aria-label="@Title" tabindex="-1" @onfocusin="Raise" @onpointerdown="Raise" @onkeydown="OnKeyAsync"
+         class="fixed flex flex-col rounded-2xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 shadow-2xl overflow-hidden @Class"
+         style="@Style" data-testid="window" data-state="@(_maximized ? "maximized" : _minimized ? "minimized" : "normal")">
+        <div @ref="_handle" tabindex="0" aria-label="@Title title bar. Arrow keys move the window." data-testid="window-titlebar"
+             class="flex items-center justify-between gap-2 px-3 min-h-[40px] bg-slate-100 dark:bg-slate-800 cursor-move select-none touch-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500">
+            <span class="text-sm font-bold text-slate-900 dark:text-white truncate">@Title</span>
+            <span class="flex items-center gap-1">
+                <button type="button" @onclick="() => _minimized = !_minimized" aria-label="@(_minimized ? "Restore" : "Minimize")" data-testid="window-min" class="@Btn"><span aria-hidden="true">@(_minimized ? "▢" : "–")</span></button>
+                <button type="button" @onclick="() => { _maximized = !_maximized; _minimized = false; }" aria-label="@(_maximized ? "Restore size" : "Maximize")" data-testid="window-max" class="@Btn"><span aria-hidden="true">@(_maximized ? "❐" : "□")</span></button>
+                <button type="button" @onclick="CloseAsync" aria-label="Close" data-testid="window-close" class="@Btn"><span aria-hidden="true">✕</span></button>
+            </span>
+        </div>
+        @if (!_minimized)
+        {
+            <div class="flex-1 overflow-auto p-4 text-sm text-slate-900 dark:text-slate-100" data-testid="window-body">@ChildContent</div>
+        }
+    </div>
+}
+
+@code {
+    private const string Btn = "w-8 h-8 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500";
+    private static int _topZ = 50;
+
+    private ElementReference _root, _handle;
+    private DotNetObjectReference<TwWindow>? _self;
+    private bool _attached, _minimized, _maximized;
+    private int _z = ++_topZ;
+
+    [Parameter] public bool Visible { get; set; } = true;
+    [Parameter] public EventCallback<bool> VisibleChanged { get; set; }
+    [Parameter, EditorRequired] public string Title { get; set; } = "";
+    [Parameter] public int X { get; set; } = 80;
+    [Parameter] public int Y { get; set; } = 80;
+    [Parameter] public EventCallback<(int X, int Y)> OnMoved { get; set; }
+    [Parameter] public int Width { get; set; } = 420;
+    [Parameter] public int Height { get; set; } = 300;
+    [Parameter] public bool CloseOnEscape { get; set; } = true;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string Style => _maximized
+        ? $"inset:0;z-index:{_z};"
+        : $"left:{X}px;top:{Y}px;width:{Width}px;{(_minimized ? "" : $"height:{Height}px;")}max-width:100vw;max-height:100vh;z-index:{_z};";
+
+    private void Raise() => _z = ++_topZ;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!Visible) { _attached = false; return; }
+        if (_attached) return;
+        _attached = true;
+        _self ??= DotNetObjectReference.Create(this);
+        try { await JS.InvokeVoidAsync("twEnterprise.attachWindow", _root, _handle, _self); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
+    [JSInvokable]
+    public Task OnFocused()
+    {
+        Raise();
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    [JSInvokable]
+    public async Task JsMoved(int x, int y)
+    {
+        X = x;
+        Y = y;
+        await OnMoved.InvokeAsync((x, y));
+        StateHasChanged();
+    }
+
+    private async Task CloseAsync()
+    {
+        Visible = false;
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task OnKeyAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && CloseOnEscape) { await CloseAsync(); return; }
+        var step = e.ShiftKey ? 50 : 10;
+        int dx = 0, dy = 0;
+        switch (e.Key)
+        {
+            case "ArrowLeft": dx = -step; break;
+            case "ArrowRight": dx = step; break;
+            case "ArrowUp": dy = -step; break;
+            case "ArrowDown": dy = step; break;
+            default: return;
+        }
+        if (_maximized) return;
+        if (e.CtrlKey)
+        {
+            Width = Math.Max(240, Width + dx);
+            Height = Math.Max(120, Height + dy);
+        }
+        else
+        {
+            X = Math.Max(0, X + dx);
+            Y = Math.Max(0, Y + dy);
+            await OnMoved.InvokeAsync((X, Y));
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { if (_attached) await JS.InvokeVoidAsync("twEnterprise.detachWindow", _root); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+        _self?.Dispose();
+    }
+}

@@ -1,0 +1,82 @@
+<div class="@TwMerge.Merge("inline-flex items-center rounded-xl p-1 gap-1", VariantContainerClass, Class)"
+     role="group">
+    @foreach (var opt in Options)
+    {
+        var active = IsSelected(opt.Value);
+        <button type="button"
+                aria-pressed="@(active ? "true" : "false")"
+                disabled="@opt.Disabled"
+                title="@opt.Tooltip"
+                @onclick="() => ToggleOption(opt.Value)"
+                class="@GetItemClasses(active)">
+            @if (!string.IsNullOrWhiteSpace(opt.Icon))
+            {
+                <span>@opt.Icon</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(opt.Label))
+            {
+                <span>@opt.Label</span>
+            }
+        </button>
+    }
+</div>
+
+@code {
+    public sealed class ToggleItem
+    {
+        public string Value { get; set; } = string.Empty;
+        public string? Label { get; set; }
+        public string? Icon { get; set; }
+        public string? Tooltip { get; set; }
+        public bool Disabled { get; set; }
+    }
+
+    [Parameter] public List<ToggleItem> Options { get; set; } = new();
+    [Parameter] public bool Multiple { get; set; }
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public HashSet<string> SelectedValues { get; set; } = new();
+    [Parameter] public EventCallback<HashSet<string>> SelectedValuesChanged { get; set; }
+    [Parameter] public ButtonVariant Variant { get; set; } = ButtonVariant.Outline;
+    [Parameter] public ComponentSize Size { get; set; } = ComponentSize.Sm;
+    [Parameter] public string? Class { get; set; }
+
+    private bool IsSelected(string val) => Multiple ? SelectedValues.Contains(val) : string.Equals(Value, val, StringComparison.Ordinal);
+
+    private async Task ToggleOption(string val)
+    {
+        if (Multiple)
+        {
+            if (!SelectedValues.Remove(val))
+                SelectedValues.Add(val);
+            await SelectedValuesChanged.InvokeAsync(SelectedValues);
+        }
+        else
+        {
+            Value = Value == val ? null : val;
+            await ValueChanged.InvokeAsync(Value);
+        }
+    }
+
+    private string VariantContainerClass => Variant switch
+    {
+        ButtonVariant.Soft => "bg-slate-100/90 dark:bg-slate-800/80",
+        _ => "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800"
+    };
+
+    private string GetItemClasses(bool active)
+    {
+        var sizeCls = Size switch
+        {
+            ComponentSize.Xs => "px-2 py-1 text-[11px]",
+            ComponentSize.Lg => "px-4 py-2 text-sm",
+            _ => "px-3 py-1.5 text-xs"
+        };
+
+        var stateCls = active
+            ? "bg-brand-600 text-white shadow-xs font-bold"
+            : "text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-medium";
+
+        return $"inline-flex items-center justify-center gap-1.5 rounded-lg transition select-none disabled:opacity-40 disabled:pointer-events-none {sizeCls} {stateCls}";
+    }
+}

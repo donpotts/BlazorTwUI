@@ -1,0 +1,82 @@
+<div class="w-full @Class">
+    <!-- Mobile: Compact Progress Bar & Step Label -->
+    <div class="sm:hidden space-y-2">
+        <div class="flex items-center justify-between text-xs font-semibold">
+            <span class="text-brand-600 dark:text-brand-400">Step @CurrentStep of @Steps.Count</span>
+            <span class="text-slate-800 dark:text-slate-200">@CurrentStepLabel</span>
+        </div>
+        <div class="h-2 w-full bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full bg-brand-600 rounded-full transition-all duration-300"
+                 style="width: @(Steps.Count > 0 ? (CurrentStep * 100 / Steps.Count) : 0)%"></div>
+        </div>
+    </div>
+
+    <!-- Tablet / Desktop: Horizontal Linear Stepper with Connectors -->
+    <div class="hidden sm:flex items-center justify-between w-full">
+        @for (int i = 0; i < Steps.Count; i++)
+        {
+            var stepIndex = i + 1;
+            var step = Steps[i];
+            var isCompleted = stepIndex < CurrentStep;
+            var isCurrent = stepIndex == CurrentStep;
+
+            <div class="flex items-center @(i < Steps.Count - 1 ? "flex-1" : "")">
+                <button type="button"
+                        disabled="@(!Clickable)"
+                        @onclick="() => SelectStep(stepIndex)"
+                        class="flex items-center gap-3 text-left focus:outline-none group">
+                    <div class="w-9 h-9 rounded-2xl flex items-center justify-center font-bold text-xs transition-all duration-200 @(isCompleted ? "bg-emerald-500 text-white" : isCurrent ? "bg-brand-600 text-white shadow-md shadow-brand-500/20 ring-4 ring-brand-500/15" : "bg-slate-100 dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700")">
+                        @if (isCompleted)
+                        {
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        }
+                        else
+                        {
+                            <span>@stepIndex</span>
+                        }
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold leading-tight @(isCurrent ? "text-brand-600 dark:text-brand-400" : isCompleted ? "text-slate-900 dark:text-white" : "text-slate-400")">
+                            @step.Title
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(step.Subtitle))
+                        {
+                            <p class="text-[11px] text-slate-400 mt-0.5">@step.Subtitle</p>
+                        }
+                    </div>
+                </button>
+
+                @if (i < Steps.Count - 1)
+                {
+                    <div class="flex-1 h-0.5 mx-4 bg-slate-200 dark:bg-slate-800 overflow-hidden">
+                        <div class="h-full bg-emerald-500 transition-all duration-300" style="width: @(isCompleted ? "100%" : "0%")"></div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    public sealed record StepItem(string Title, string? Subtitle = null);
+
+    [Parameter] public IReadOnlyList<StepItem> Steps { get; set; } = Array.Empty<StepItem>();
+    [Parameter] public int CurrentStep { get; set; } = 1;
+    [Parameter] public EventCallback<int> CurrentStepChanged { get; set; }
+    [Parameter] public bool Clickable { get; set; } = true;
+    [Parameter] public string? Class { get; set; }
+
+    private string CurrentStepLabel =>
+        CurrentStep >= 1 && CurrentStep <= Steps.Count ? Steps[CurrentStep - 1].Title : "";
+
+    private async Task SelectStep(int step)
+    {
+        if (Clickable && step != CurrentStep && step >= 1 && step <= Steps.Count)
+        {
+            CurrentStep = step;
+            await CurrentStepChanged.InvokeAsync(step);
+        }
+    }
+}

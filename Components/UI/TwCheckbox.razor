@@ -1,0 +1,32 @@
+<label class="inline-flex items-start gap-3 cursor-pointer select-none py-1 @(Disabled ? "opacity-50 pointer-events-none" : "") @Class">
+    <input type="checkbox"
+           checked="@Checked"
+           disabled="@Disabled"
+           @onchange="HandleChange"
+           class="mt-0.5 h-5 w-5 rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-brand-600 focus:ring-brand-500 focus:ring-offset-0" />
+    @if (!string.IsNullOrWhiteSpace(Label) || !string.IsNullOrWhiteSpace(Description))
+    {
+        <div class="flex flex-col">
+            @if (!string.IsNullOrWhiteSpace(Label))
+            {
+                <span class="text-sm font-medium text-slate-900 dark:text-slate-100">@Label</span>
+            }
+            @if (!string.IsNullOrWhiteSpace(Description))
+            {
+                <span class="text-xs text-slate-500 dark:text-slate-400">@Description</span>
+            }
+        </div>
+    }
+</label>
+
+@code {
+    [Parameter] public bool Checked { get; set; }
+    [Parameter] public EventCallback<bool> CheckedChanged { get; set; }
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private Task HandleChange(ChangeEventArgs e)
+        => CheckedChanged.InvokeAsync(e.Value is bool b && b);
+}

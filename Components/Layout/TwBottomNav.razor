@@ -1,0 +1,25 @@
+@namespace BlazorTwUI.Components.Layout
+
+<nav aria-label="Mobile Bottom Navigation"
+     class="fixed bottom-0 inset-x-0 z-30 md:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe shadow-lg">
+    <div class="flex items-center justify-around h-16 max-w-lg mx-auto px-1">
+        @foreach (var item in Items)
+        {
+            var isActive = item.Id == ActiveId;
+            <button type="button"
+                    @onclick="() => OnSelect.InvokeAsync(item.Id)"
+                    class="flex flex-col items-center justify-center flex-1 h-full py-1.5 rounded-xl mx-0.5 transition-colors @(isActive ? "text-brand-600 dark:text-brand-400 font-bold bg-brand-50/70 dark:bg-brand-500/10" : "text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200")">
+                <span class="w-5 h-5 flex items-center justify-center">@((MarkupString)item.SvgIcon)</span>
+                <span class="text-[10px] leading-tight truncate max-w-full px-0.5 mt-0.5">@item.Label</span>
+            </button>
+        }
+    </div>
+</nav>
+
+@code {
+    public sealed record NavItem(string Id, string Label, string SvgIcon, string? Badge = null);
+
+    [Parameter] public IReadOnlyList<NavItem> Items { get; set; } = Array.Empty<NavItem>();
+    [Parameter] public string? ActiveId { get; set; }
+    [Parameter] public EventCallback<string> OnSelect { get; set; }
+}

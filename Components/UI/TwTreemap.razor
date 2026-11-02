@@ -1,0 +1,322 @@
+@namespace BlazorTwUI.Components.UI
+@using System.Globalization
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-4 @CustomClass">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-base">
+                🗺️
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    @if (!string.IsNullOrEmpty(_selectedSector))
+                    {
+                        <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-brand-500/20 text-brand-400 flex items-center gap-1">
+                            <span>Sector: @_selectedSector</span>
+                            <button type="button" @onclick="ClearSectorFilter" class="hover:text-white">✕</button>
+                        </span>
+                    }
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Controls: View Mode & Sort -->
+        <div class="flex items-center gap-2">
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+                <button type="button" @onclick='() => _metricMode = "marketCap"'
+                        class="px-2.5 py-1 rounded-lg transition @(_metricMode == "marketCap" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold" : "text-slate-500")">
+                    Market Cap
+                </button>
+                <button type="button" @onclick='() => _metricMode = "volume"'
+                        class="px-2.5 py-1 rounded-lg transition @(_metricMode == "volume" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold" : "text-slate-500")">
+                    Volume
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(_selectedSector))
+            {
+                <button type="button" @onclick="ClearSectorFilter"
+                        class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-850 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition">
+                    ← All Sectors
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Active Hover Inspector Capsule -->
+    <div class="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-mono">
+        @if (_hoverNode != null)
+        {
+            <div class="flex items-center gap-3">
+                <span class="font-bold text-white px-2 py-0.5 rounded bg-slate-800">@_hoverNode.Symbol</span>
+                <span class="text-slate-300 font-sans font-semibold">@_hoverNode.Name</span>
+                <span class="text-slate-400">(@_hoverNode.Sector)</span>
+                <span class="font-bold @(_hoverNode.ChangePercent >= 0 ? "text-emerald-400" : "text-rose-400")">
+                    @(_hoverNode.ChangePercent >= 0 ? "+" : "")@_hoverNode.ChangePercent.ToString("F2")%
+                </span>
+            </div>
+            <div class="text-slate-400">
+                Cap: <strong class="text-white">$@FormatMarketCap(_hoverNode.Value)</strong>
+            </div>
+        }
+        else
+        {
+            <span class="text-slate-400 italic">Hover over any node rectangle to inspect asset metrics or click to drill down</span>
+            <span class="text-[11px] text-slate-500">100% Zero-JS Squarified SVG</span>
+        }
+    </div>
+
+    <!-- Squarified Treemap SVG Container -->
+    <div class="relative w-full h-[440px] rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-inner select-none"
+         @onmouseleave="() => _hoverNode = null">
+        <svg class="w-full h-full" viewBox="0 0 1000 500" preserveAspectRatio="none">
+            @foreach (var rect in _layoutRects)
+            {
+                var node = rect.Node;
+                var color = GetChangeColor(node.ChangePercent);
+                var isHover = _hoverNode == node;
+
+                <g class="cursor-pointer transition-transform duration-200"
+                   @onmouseenter="() => _hoverNode = node"
+                   @onclick="() => HandleNodeClick(node)">
+                    <!-- Background Node Rectangle -->
+                    <rect x="@rect.X" y="@rect.Y" width="@rect.Width" height="@rect.Height"
+                          fill="@color"
+                          stroke="#0b0f19"
+                          stroke-width="@(isHover ? "3" : "1.5")"
+                          rx="6"
+                          opacity="@(isHover ? "1.0" : "0.92")" />
+
+                    <!-- Node Text Labels (if cell is big enough) -->
+                    @if (rect.Width > 45 && rect.Height > 35)
+                    {
+                        <g>
+                            <text x="@(rect.X + rect.Width / 2)" y="@(rect.Y + rect.Height / 2 - 4)"
+                                  text-anchor="middle"
+                                  fill="#ffffff"
+                                  font-size="@(Math.Min(18, Math.Max(11, rect.Width / 8)))"
+                                  font-weight="bold"
+                                  font-family="system-ui, sans-serif">
+                                @node.Symbol
+                            </text>
+                            <text x="@(rect.X + rect.Width / 2)" y="@(rect.Y + rect.Height / 2 + 14)"
+                                  text-anchor="middle"
+                                  fill="rgba(255,255,255,0.85)"
+                                  font-size="@(Math.Min(12, Math.Max(9, rect.Width / 11)))"
+                                  font-family="monospace">
+                                @((node.ChangePercent >= 0 ? "+" : "") + node.ChangePercent.ToString("F1") + "%")
+                            </text>
+                        </g>
+                    }
+                    else if (rect.Width > 25 && rect.Height > 20)
+                    {
+                        <g>
+                            <text x="@(rect.X + rect.Width / 2)" y="@(rect.Y + rect.Height / 2 + 4)"
+                                  text-anchor="middle"
+                                  fill="#ffffff"
+                                  font-size="9"
+                                  font-weight="bold"
+                                  font-family="system-ui, sans-serif">
+                                @node.Symbol
+                            </text>
+                        </g>
+                    }
+                </g>
+            }
+        </svg>
+    </div>
+
+    <!-- Heatmap Color Legend -->
+    <div class="flex items-center justify-between text-xs font-mono text-slate-400 pt-1">
+        <div class="flex items-center gap-1.5">
+            <span class="text-[10px] uppercase">Performance Heatmap:</span>
+            <div class="flex items-center h-2.5 rounded-full overflow-hidden w-40">
+                <div class="w-1/5 h-full bg-rose-600"></div>
+                <div class="w-1/5 h-full bg-rose-400"></div>
+                <div class="w-1/5 h-full bg-slate-700"></div>
+                <div class="w-1/5 h-full bg-emerald-400"></div>
+                <div class="w-1/5 h-full bg-emerald-600"></div>
+            </div>
+            <div class="flex justify-between w-40 text-[9px]">
+                <span>-3%</span>
+                <span>0%</span>
+                <span>+3%</span>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span>Showing @(_layoutRects.Count) Assets</span>
+            <span>•</span>
+            <span>Total Valuation: <strong>$@FormatMarketCap(_totalValue)</strong></span>
+        </div>
+    </div>
+</div>
+
+@code {
+    public class TreemapItem
+    {
+        public string Symbol { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Sector { get; set; } = "Technology";
+        public double Value { get; set; } // Market cap or size
+        public double ChangePercent { get; set; }
+    }
+
+    private class LayoutRect
+    {
+        public double X { get; set; }
+        public double Y { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public TreemapItem Node { get; set; } = null!;
+    }
+
+    [Parameter] public string Title { get; set; } = "Market Valuation Heatmap & Treemap";
+    [Parameter] public string Subtitle { get; set; } = "Hierarchical squarified area map of enterprise assets and percentage price shifts";
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public List<TreemapItem>? Items { get; set; }
+    [Parameter] public EventCallback<TreemapItem> OnItemClick { get; set; }
+
+    private List<TreemapItem> _allItems = new();
+    private List<LayoutRect> _layoutRects = new();
+    private TreemapItem? _hoverNode;
+    private string? _selectedSector;
+    private string _metricMode = "marketCap";
+    private double _totalValue = 0;
+
+    protected override void OnInitialized()
+    {
+        _allItems = Items ?? GetDefaultTreemapData();
+        CalculateLayout();
+    }
+
+    private void HandleNodeClick(TreemapItem item)
+    {
+        if (string.IsNullOrEmpty(_selectedSector))
+        {
+            _selectedSector = item.Sector;
+            CalculateLayout();
+        }
+
+        if (OnItemClick.HasDelegate)
+        {
+            OnItemClick.InvokeAsync(item);
+        }
+    }
+
+    private void ClearSectorFilter()
+    {
+        _selectedSector = null;
+        CalculateLayout();
+    }
+
+    // Squarified Treemap Layout Algorithm (1000 x 500 viewport)
+    private void CalculateLayout()
+    {
+        _layoutRects.Clear();
+
+        var activeList = _allItems;
+        if (!string.IsNullOrEmpty(_selectedSector))
+        {
+            activeList = _allItems.Where(i => i.Sector == _selectedSector).ToList();
+        }
+
+        if (!activeList.Any()) return;
+
+        var sorted = activeList.OrderByDescending(i => i.Value).ToList();
+        _totalValue = sorted.Sum(i => i.Value);
+
+        // Compute 2D squarified slices
+        Squarify(sorted, 0, 0, 1000, 500, _totalValue);
+    }
+
+    private void Squarify(List<TreemapItem> items, double x, double y, double w, double h, double total)
+    {
+        if (!items.Any() || w <= 0 || h <= 0 || total <= 0) return;
+
+        if (items.Count == 1)
+        {
+            _layoutRects.Add(new LayoutRect { X = x, Y = y, Width = w, Height = h, Node = items[0] });
+            return;
+        }
+
+        // Split items into 2 balanced halves
+        double half = total / 2.0;
+        double currentSum = 0;
+        int splitIdx = 0;
+
+        for (int i = 0; i < items.Count; i++)
+        {
+            currentSum += items[i].Value;
+            if (currentSum >= half || i == items.Count - 1)
+            {
+                splitIdx = Math.Max(1, i + 1);
+                break;
+            }
+        }
+
+        var groupA = items.Take(splitIdx).ToList();
+        var groupB = items.Skip(splitIdx).ToList();
+
+        double sumA = groupA.Sum(i => i.Value);
+        double sumB = groupB.Sum(i => i.Value);
+
+        if (w >= h)
+        {
+            // Vertical split (divide width)
+            double widthA = w * (sumA / total);
+            double widthB = w - widthA;
+
+            Squarify(groupA, x, y, widthA, h, sumA);
+            Squarify(groupB, x + widthA, y, widthB, h, sumB);
+        }
+        else
+        {
+            // Horizontal split (divide height)
+            double heightA = h * (sumA / total);
+            double heightB = h - heightA;
+
+            Squarify(groupA, x, y, w, heightA, sumA);
+            Squarify(groupB, x, y + heightA, w, heightB, sumB);
+        }
+    }
+
+    private string GetChangeColor(double pct)
+    {
+        if (pct >= 3.0) return "#059669"; // vibrant deep emerald
+        if (pct >= 1.5) return "#10b981"; // emerald
+        if (pct >= 0.0) return "#047857"; // soft emerald
+        if (pct > -1.5) return "#be123c"; // soft rose
+        if (pct > -3.0) return "#e11d48"; // vibrant rose
+        return "#881337"; // deep dark red
+    }
+
+    private string FormatMarketCap(double cap)
+    {
+        if (cap >= 1_000_000_000_000) return $"{(cap / 1_000_000_000_000.0):F2}T";
+        if (cap >= 1_000_000_000) return $"{(cap / 1_000_000_000.0):F1}B";
+        if (cap >= 1_000_000) return $"{(cap / 1_000_000.0):F0}M";
+        return cap.ToString("N0");
+    }
+
+    private List<TreemapItem> GetDefaultTreemapData() => new()
+    {
+        new TreemapItem { Symbol = "NVDA", Name = "NVIDIA Corporation", Sector = "Technology", Value = 3_420_000_000_000, ChangePercent = 4.2 },
+        new TreemapItem { Symbol = "AAPL", Name = "Apple Inc.", Sector = "Technology", Value = 3_280_000_000_000, ChangePercent = -0.8 },
+        new TreemapItem { Symbol = "MSFT", Name = "Microsoft Corporation", Sector = "Technology", Value = 3_150_000_000_000, ChangePercent = 1.9 },
+        new TreemapItem { Symbol = "GOOGL", Name = "Alphabet Inc.", Sector = "Technology", Value = 2_110_000_000_000, ChangePercent = 2.4 },
+        new TreemapItem { Symbol = "AMZN", Name = "Amazon.com, Inc.", Sector = "Consumer", Value = 1_950_000_000_000, ChangePercent = 1.6 },
+        new TreemapItem { Symbol = "META", Name = "Meta Platforms, Inc.", Sector = "Technology", Value = 1_480_000_000_000, ChangePercent = 3.1 },
+        new TreemapItem { Symbol = "TSLA", Name = "Tesla, Inc.", Sector = "Consumer", Value = 780_000_000_000, ChangePercent = -2.7 },
+        new TreemapItem { Symbol = "JPM", Name = "JPMorgan Chase & Co.", Sector = "Financials", Value = 620_000_000_000, ChangePercent = 0.9 },
+        new TreemapItem { Symbol = "LLY", Name = "Eli Lilly and Company", Sector = "Healthcare", Value = 750_000_000_000, ChangePercent = -1.2 },
+        new TreemapItem { Symbol = "V", Name = "Visa Inc.", Sector = "Financials", Value = 580_000_000_000, ChangePercent = 0.5 },
+        new TreemapItem { Symbol = "XOM", Name = "Exxon Mobil Corporation", Sector = "Energy", Value = 490_000_000_000, ChangePercent = -1.8 },
+        new TreemapItem { Symbol = "UNH", Name = "UnitedHealth Group Inc.", Sector = "Healthcare", Value = 520_000_000_000, ChangePercent = 1.1 },
+        new TreemapItem { Symbol = "COST", Name = "Costco Wholesale Corp.", Sector = "Consumer", Value = 390_000_000_000, ChangePercent = 2.0 },
+        new TreemapItem { Symbol = "CVX", Name = "Chevron Corporation", Sector = "Energy", Value = 280_000_000_000, ChangePercent = -0.4 }
+    };
+}

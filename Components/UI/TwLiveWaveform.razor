@@ -1,0 +1,26 @@
+@* Level meter for live audio ui/live-waveform; own implementation). Pass 0..1 levels; it draws one bar per value. Static, so reduced motion needs no special case. *@
+<div class="inline-flex items-center gap-[3px] h-10 @Class" role="img" aria-label="@AriaLabel" data-testid="waveform" data-active="@Active.ToString().ToLowerInvariant()">
+    @for (var i = 0; i < Bars; i++)
+    {
+        var level = Active ? Level(i) : 0.08;
+        <span class="w-1 rounded-full @(Active ? "bg-brand-600 dark:bg-brand-400" : "bg-slate-400 dark:bg-slate-600")" style="height:@(Height(level))" data-testid="waveform-bar"></span>
+    }
+</div>
+
+@code {
+    [Parameter] public IReadOnlyList<float> Levels { get; set; } = Array.Empty<float>();
+    [Parameter] public bool Active { get; set; }
+    [Parameter] public int Bars { get; set; } = 24;
+    [Parameter] public string AriaLabel { get; set; } = "Audio level";
+    [Parameter] public string? Class { get; set; }
+
+    private double Level(int bar)
+    {
+        if (Levels.Count == 0) return 0.08;
+        // Map each bar onto the available bins so any number of bars works with any number of levels.
+        var idx = Math.Min(Levels.Count - 1, bar * Levels.Count / Bars);
+        return Math.Clamp(Levels[idx], 0.08, 1);
+    }
+
+    private static string Height(double level) => (level * 100).ToString("0", System.Globalization.CultureInfo.InvariantCulture) + "%";
+}

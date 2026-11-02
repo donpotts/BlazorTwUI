@@ -1,0 +1,296 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="flex flex-col gap-3 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl max-w-xl select-none @Class" @attributes="AdditionalAttributes">
+    @* Output Display Bar *@
+    @if (ShowDisplay)
+    {
+        <div class="relative flex items-center justify-between px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850">
+            <div class="flex-1 font-mono text-base md:text-lg font-bold text-slate-900 dark:text-white truncate">
+                @if (string.IsNullOrEmpty(Value))
+                {
+                    <span class="text-slate-400 font-normal text-sm">@Placeholder</span>
+                }
+                else if (IsPassword)
+                {
+                    <span>@(new string('•', Value.Length))</span>
+                }
+                else
+                {
+                    <span>@Value</span>
+                }
+            </div>
+
+            @* Quick Clear Button *@
+            @if (!string.IsNullOrEmpty(Value))
+            {
+                <button type="button" @onclick="ClearAsync" class="text-slate-400 hover:text-rose-500 transition-colors p-1" title="Clear">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            }
+        </div>
+    }
+
+    @* Mode Switcher Tabs *@
+    @if (AllowModeSwitch)
+    {
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+            <div class="flex items-center gap-1.5">
+                <button type="button"
+                        @onclick="() => SetMode(VirtualKeyboardMode.Qwerty)"
+                        class="px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors @(_mode == VirtualKeyboardMode.Qwerty ? "bg-brand-600 text-white" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800")">
+                    QWERTY
+                </button>
+                <button type="button"
+                        @onclick="() => SetMode(VirtualKeyboardMode.Numeric)"
+                        class="px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors @(_mode == VirtualKeyboardMode.Numeric ? "bg-brand-600 text-white" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800")">
+                    Numeric
+                </button>
+                <button type="button"
+                        @onclick="() => SetMode(VirtualKeyboardMode.Pin)"
+                        class="px-2.5 py-1 text-xs font-semibold rounded-lg transition-colors @(_mode == VirtualKeyboardMode.Pin ? "bg-brand-600 text-white" : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800")">
+                    Secure PIN
+                </button>
+            </div>
+
+            @if (_mode == VirtualKeyboardMode.Pin)
+            {
+                <button type="button"
+                        @onclick="ScramblePinKeys"
+                        class="text-[11px] font-semibold text-brand-600 dark:text-brand-400 hover:underline inline-flex items-center gap-1">
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Scramble
+                </button>
+            }
+        </div>
+    }
+
+    @* QWERTY Layout *@
+    @if (_mode == VirtualKeyboardMode.Qwerty)
+    {
+        <div class="space-y-1.5">
+            @* Numbers Row *@
+            <div class="flex gap-1 justify-center">
+                @foreach (var key in _numbersRow)
+                {
+                    <button type="button" @onclick="() => AppendChar(key)" class="flex-1 py-2 text-xs md:text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all shadow-xs">
+                        @key
+                    </button>
+                }
+            </div>
+
+            @* Top Alpha Row (Q-P) *@
+            <div class="flex gap-1 justify-center">
+                @foreach (var key in _topAlphaRow)
+                {
+                    var ch = _isCaps ? key.ToUpper() : key.ToLower();
+                    <button type="button" @onclick="() => AppendChar(ch)" class="flex-1 py-2 text-xs md:text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all shadow-xs">
+                        @ch
+                    </button>
+                }
+            </div>
+
+            @* Home Alpha Row (A-L) *@
+            <div class="flex gap-1 justify-center px-2">
+                @foreach (var key in _homeAlphaRow)
+                {
+                    var ch = _isCaps ? key.ToUpper() : key.ToLower();
+                    <button type="button" @onclick="() => AppendChar(ch)" class="flex-1 py-2 text-xs md:text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all shadow-xs">
+                        @ch
+                    </button>
+                }
+            </div>
+
+            @* Bottom Alpha Row (Z-M) with Shift & Backspace *@
+            <div class="flex gap-1 justify-center">
+                @* Caps Lock Button *@
+                <button type="button"
+                        @onclick="ToggleCaps"
+                        class="px-3 py-2 text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1 @(_isCaps ? "bg-brand-600 text-white" : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200")">
+                    <span class="w-1.5 h-1.5 rounded-full @(_isCaps ? "bg-emerald-400 animate-pulse" : "bg-slate-400")"></span>
+                    <span>Caps</span>
+                </button>
+
+                @foreach (var key in _bottomAlphaRow)
+                {
+                    var ch = _isCaps ? key.ToUpper() : key.ToLower();
+                    <button type="button" @onclick="() => AppendChar(ch)" class="flex-1 py-2 text-xs md:text-sm font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all shadow-xs">
+                        @ch
+                    </button>
+                }
+
+                @* Backspace Button *@
+                <button type="button" @onclick="BackspaceAsync" class="px-3 py-2 text-xs font-bold rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600 active:scale-95 transition-all shadow-xs" title="Backspace">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414-6.414a2 2 0 011.414-.586H19a2 2 0 012 2v10a2 2 0 01-2 2h-7.172a2 2 0 01-1.414-.586L3 12z" />
+                    </svg>
+                </button>
+            </div>
+
+            @* Bottom Controls: Space & Enter *@
+            <div class="flex gap-1.5 pt-1">
+                <button type="button" @onclick="AppendAtSign" class="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-xs">@@</button>
+                <button type="button" @onclick='() => AppendChar(".")' class="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-xs">.</button>
+                <button type="button" @onclick='() => AppendChar(" ")' class="flex-1 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 shadow-xs text-center">
+                    Space
+                </button>
+                <button type="button" @onclick='() => AppendChar("-")' class="px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 shadow-xs">-</button>
+                <button type="button" @onclick="SubmitAsync" class="px-4 py-2 text-xs font-bold rounded-xl bg-brand-600 text-white hover:bg-brand-500 active:scale-95 shadow-md shadow-brand-500/20 transition-all flex items-center gap-1">
+                    <span>Enter</span>
+                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    }
+    @* Numeric / PIN Pad Layout *@
+    else
+    {
+        <div class="grid grid-cols-3 gap-2 max-w-xs mx-auto py-2">
+            @foreach (var key in _pinDigits)
+            {
+                <button type="button"
+                        @onclick="() => AppendChar(key)"
+                        class="h-12 text-lg font-mono font-bold rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-950/40 hover:text-brand-600 active:scale-95 transition-all shadow-xs flex items-center justify-center">
+                    @key
+                </button>
+            }
+
+            @* Backspace button *@
+            <button type="button"
+                    @onclick="BackspaceAsync"
+                    class="h-12 rounded-2xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-600 active:scale-95 transition-all flex items-center justify-center"
+                    title="Backspace">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414-6.414a2 2 0 011.414-.586H19a2 2 0 012 2v10a2 2 0 01-2 2h-7.172a2 2 0 01-1.414-.586L3 12z" />
+                </svg>
+            </button>
+
+            @* Zero or Dot *@
+            <button type="button"
+                    @onclick="() => AppendChar(_lastDigit)"
+                    class="h-12 text-lg font-mono font-bold rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-brand-50 dark:hover:bg-brand-950/40 hover:text-brand-600 active:scale-95 transition-all shadow-xs flex items-center justify-center">
+                @_lastDigit
+            </button>
+
+            @* Enter / Submit button *@
+            <button type="button"
+                    @onclick="SubmitAsync"
+                    class="h-12 rounded-2xl bg-brand-600 text-white hover:bg-brand-500 active:scale-95 shadow-md shadow-brand-500/20 transition-all flex items-center justify-center font-bold text-xs"
+                    title="Enter">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </button>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Value { get; set; } = "";
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+    [Parameter] public EventCallback OnSubmit { get; set; }
+
+    [Parameter] public VirtualKeyboardMode Mode { get; set; } = VirtualKeyboardMode.Qwerty;
+    [Parameter] public bool IsPassword { get; set; }
+    [Parameter] public bool ShowDisplay { get; set; } = true;
+    [Parameter] public bool AllowModeSwitch { get; set; } = true;
+    [Parameter] public int? MaxLength { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Tap keys to enter text...";
+    [Parameter] public string Class { get; set; } = "";
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    public enum VirtualKeyboardMode
+    {
+        Qwerty,
+        Numeric,
+        Pin
+    }
+
+    private VirtualKeyboardMode _mode;
+    private bool _isCaps = false;
+
+    private readonly string[] _numbersRow = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" };
+    private readonly string[] _topAlphaRow = { "q", "w", "e", "r", "t", "y", "u", "i", "o", "p" };
+    private readonly string[] _homeAlphaRow = { "a", "s", "d", "f", "g", "h", "j", "k", "l" };
+    private readonly string[] _bottomAlphaRow = { "z", "x", "c", "v", "b", "n", "m" };
+
+    private List<string> _pinDigits = new() { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+    private string _lastDigit = "0";
+
+    protected override void OnInitialized()
+    {
+        _mode = Mode;
+    }
+
+    private void SetMode(VirtualKeyboardMode mode)
+    {
+        _mode = mode;
+        if (mode == VirtualKeyboardMode.Pin)
+        {
+            ScramblePinKeys();
+        }
+        else
+        {
+            _pinDigits = new List<string> { "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+            _lastDigit = "0";
+        }
+    }
+
+    private void ToggleCaps()
+    {
+        _isCaps = !_isCaps;
+    }
+
+    private async Task AppendChar(string ch)
+    {
+        if (MaxLength.HasValue && Value.Length >= MaxLength.Value) return;
+
+        Value += ch;
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private async Task AppendChar(char ch)
+    {
+        await AppendChar(ch.ToString());
+    }
+
+    private async Task AppendAtSign()
+    {
+        await AppendChar("@");
+    }
+
+    private async Task BackspaceAsync()
+    {
+        if (string.IsNullOrEmpty(Value)) return;
+
+        Value = Value[..^1];
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private async Task ClearAsync()
+    {
+        Value = "";
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    private async Task SubmitAsync()
+    {
+        await OnSubmit.InvokeAsync();
+    }
+
+    private void ScramblePinKeys()
+    {
+        var allDigits = new List<string> { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
+        var rng = new Random();
+        var shuffled = allDigits.OrderBy(_ => rng.Next()).ToList();
+        _lastDigit = shuffled[0];
+        _pinDigits = shuffled.Skip(1).ToList();
+    }
+}

@@ -1,0 +1,44 @@
+@implements IDisposable
+@using BlazorTwUI.Services
+@* Renders an agent-described UI (A2UI v0.9): components stream in as JSON and bind to a data model. Button presses come back as actions. *@
+<section aria-label="@Label" class="@Class" data-testid="a2ui-surface" data-surface="@Surface.SurfaceId">
+    @if (Surface.HasRoot)
+    {
+        <TwA2uiNode Surface="Surface" Id="@A2uiSurface.RootId" />
+    }
+    else
+    {
+        <p class="text-sm text-slate-700 dark:text-slate-300" role="status" data-testid="a2ui-waiting">Waiting for the agent to describe this surface…</p>
+    }
+</section>
+
+@code {
+    private A2uiSurface? _subscribed;
+
+    [Parameter, EditorRequired] public A2uiSurface Surface { get; set; } = default!;
+    [Parameter] public EventCallback<A2uiUserAction> OnAction { get; set; }
+    [Parameter] public string Label { get; set; } = "Agent-generated interface";
+    [Parameter] public string? Class { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        if (ReferenceEquals(_subscribed, Surface)) return;
+        Unsubscribe();
+        _subscribed = Surface;
+        _subscribed.Changed += OnChanged;
+        _subscribed.ActionRaised += OnRaised;
+    }
+
+    private void OnChanged() => _ = InvokeAsync(StateHasChanged);
+
+    private void OnRaised(A2uiUserAction action) => _ = InvokeAsync(() => OnAction.InvokeAsync(action));
+
+    private void Unsubscribe()
+    {
+        if (_subscribed is null) return;
+        _subscribed.Changed -= OnChanged;
+        _subscribed.ActionRaised -= OnRaised;
+    }
+
+    public void Dispose() => Unsubscribe();
+}

@@ -1,0 +1,323 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@inject OcrEngineService OcrEngine
+@inject TwSoundService Sound
+@inject ToastService Toast
+@inject IJSRuntime JS
+
+<div class="space-y-6 @Class">
+    <!-- Studio Header Banner -->
+    <div class="p-4 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-600/10 via-teal-600/10 to-transparent border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                    Form & PDF OCR Studio
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20">
+                    Check 21 & E-13B MICR
+                </span>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                    Spatial Bounding Boxes
+                </span>
+            </div>
+            <h3 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                Optical Character Recognition (OCR) & Form Engine Studio
+            </h3>
+            <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-3xl">
+                High-performance WebAssembly client-side document parser. Extracts structured key-value entities from invoices, paper checks, tax forms, and PDF records with zero server dependencies.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+            <button type="button" @onclick="TriggerScanAsync"
+                    disabled="@_isProcessing"
+                    class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition flex items-center gap-2">
+                @if (_isProcessing)
+                {
+                    <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span>Extracting...</span>
+                }
+                else
+                {
+                    <span>⚡ Process OCR Document</span>
+                }
+            </button>
+        </div>
+    </div>
+
+    <!-- Document Category Tabs -->
+    <div class="flex items-center gap-2 overflow-x-auto pb-1 p-1.5 bg-slate-100/70 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/80 text-xs font-bold">
+        <button type="button" @onclick='() => SelectCategory(OcrDocumentType.PaperCheck)'
+                class="px-3.5 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap @(_selectedDocType == OcrDocumentType.PaperCheck ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+            <span>🏦</span>
+            <span>Paper Check & MICR Reader</span>
+        </button>
+
+        <button type="button" @onclick='() => SelectCategory(OcrDocumentType.CommercialInvoice)'
+                class="px-3.5 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap @(_selectedDocType == OcrDocumentType.CommercialInvoice ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+            <span>🧾</span>
+            <span>Commercial Invoice PDF</span>
+        </button>
+
+        <button type="button" @onclick='() => SelectCategory(OcrDocumentType.TaxFormW9)'
+                class="px-3.5 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap @(_selectedDocType == OcrDocumentType.TaxFormW9 ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm ring-1 ring-emerald-500/30" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+            <span>📑</span>
+            <span>IRS Form W-9 Tax Document</span>
+        </button>
+    </div>
+
+    @if (_selectedDocType == OcrDocumentType.PaperCheck)
+    {
+        <!-- Dedicated Check 21 & MICR Reader Component -->
+        <TwMicrCheckReader OnInsertMarkdown="HandleInsertMarkdown" />
+    }
+    else
+    {
+        <!-- Multi-Page Form / PDF Inspector -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+            
+            <!-- Left: Document Preview & Spatial Coordinates -->
+            <div class="w-full min-w-0 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-4 sm:p-6 space-y-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">@(_documentResult?.Title ?? "Document Preview")</h4>
+                        <span class="text-xs text-slate-500 dark:text-slate-400 font-mono">@(_documentResult?.FileName) • @(_documentResult?.FileSizeFormatted)</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                        @(((_documentResult?.ConfidenceScore ?? 0.98) * 100).ToString("F1"))% Confidence
+                    </span>
+                </div>
+
+                <!-- Simulated Document Paper Sheet -->
+                <div class="relative w-full min-h-[520px] rounded-2xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-850 p-4 sm:p-6 shadow-inner font-sans text-xs space-y-4 select-none overflow-y-auto">
+                    
+                    @if (_selectedDocType == OcrDocumentType.CommercialInvoice)
+                    {
+                        <!-- Invoice Layout Mock -->
+                        <div class="flex items-start justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
+                            <div>
+                                <span class="font-black text-base text-slate-900 dark:text-white uppercase tracking-wider">APEX CLOUD COMPUTE CORP</span>
+                                <p class="text-[10px] text-slate-500">101 Innovation Way, Tech District, Austin, TX 78701</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-bold font-mono text-emerald-600 dark:text-emerald-400">INVOICE #INV-88219</span>
+                                <p class="text-[10px] text-slate-400">Date: Oct 21, 2026</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 py-2 text-[11px]">
+                            <div>
+                                <span class="font-bold text-slate-400 uppercase text-[9px] block">Billed To:</span>
+                                <p class="font-semibold text-slate-900 dark:text-white">Acme Enterprise Dynamics Inc.</p>
+                                <p class="text-slate-500 text-[10px]">Accounts Payable Dept</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-bold text-slate-400 uppercase text-[9px] block">Payment Terms:</span>
+                                <p class="font-semibold text-slate-900 dark:text-white">Net 30 Days (Due Nov 20, 2026)</p>
+                                <p class="text-slate-500 text-[10px]">PO Ref: PO-2026-HQ-091</p>
+                            </div>
+                        </div>
+
+                        <!-- Line Items Table -->
+                        <div class="border rounded-xl border-slate-200 dark:border-slate-700 overflow-hidden text-[10px]">
+                            <div class="grid grid-cols-12 bg-slate-100 dark:bg-slate-800 p-2 font-bold text-slate-600 dark:text-slate-300">
+                                <span class="col-span-6">Description</span>
+                                <span class="col-span-2 text-center">Qty</span>
+                                <span class="col-span-2 text-right">Rate</span>
+                                <span class="col-span-2 text-right">Amount</span>
+                            </div>
+                            <div class="grid grid-cols-12 p-2 border-t border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                                <span class="col-span-6 font-medium">Enterprise Kubernetes Master Nodes (3-AZ)</span>
+                                <span class="col-span-2 text-center">1</span>
+                                <span class="col-span-2 text-right">$1,850.00</span>
+                                <span class="col-span-2 text-right font-mono">$1,850.00</span>
+                            </div>
+                            <div class="grid grid-cols-12 p-2 border-t border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                                <span class="col-span-6 font-medium">Fast SSD NVMe Block Storage (10 TB Provisioned)</span>
+                                <span class="col-span-2 text-center">10</span>
+                                <span class="col-span-2 text-right">$130.00</span>
+                                <span class="col-span-2 text-right font-mono">$1,300.00</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-2 text-right space-y-1">
+                            <div class="text-xs text-slate-500">Subtotal: <strong class="text-slate-800 dark:text-slate-200 font-mono">$3,150.00</strong></div>
+                            <div class="text-xs text-slate-500">Sales Tax (8.825%): <strong class="text-slate-800 dark:text-slate-200 font-mono">$278.15</strong></div>
+                            <div class="text-sm font-bold text-slate-900 dark:text-white pt-1 border-t border-slate-300 dark:border-slate-700">
+                                Total Balance Due: <span class="text-emerald-600 dark:text-emerald-400 font-mono">$3,428.15</span>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Tax Form W-9 Mock -->
+                        <div class="border-b-2 border-slate-900 dark:border-slate-400 pb-2 flex items-center justify-between">
+                            <div>
+                                <span class="font-black text-sm text-slate-900 dark:text-white">Form W-9</span>
+                                <p class="text-[9px] text-slate-500">(Rev. March 2024)</p>
+                            </div>
+                            <div class="text-center">
+                                <span class="font-bold text-xs text-slate-900 dark:text-white">Request for Taxpayer Identification Number and Certification</span>
+                            </div>
+                            <span class="text-[10px] font-mono text-slate-500">IRS Department</span>
+                        </div>
+
+                        <div class="space-y-2 text-[10px]">
+                            <div class="border p-2 rounded border-slate-300 dark:border-slate-700">
+                                <span class="text-slate-400 block text-[9px]">1. Name (as shown on income tax return)</span>
+                                <span class="font-bold text-slate-900 dark:text-white">Acme Global Technologies Inc.</span>
+                            </div>
+                            <div class="border p-2 rounded border-slate-300 dark:border-slate-700">
+                                <span class="text-slate-400 block text-[9px]">3. Federal Tax Classification</span>
+                                <span class="font-bold text-emerald-600 dark:text-emerald-400">☑ C Corporation</span>
+                            </div>
+                            <div class="border p-2 rounded border-slate-300 dark:border-slate-700">
+                                <span class="text-slate-400 block text-[9px]">Part I: Employer Identification Number (EIN)</span>
+                                <span class="font-mono font-bold text-xs text-slate-900 dark:text-white">12 - 3456789</span>
+                            </div>
+                            <div class="border p-2 rounded border-slate-300 dark:border-slate-700">
+                                <span class="text-slate-400 block text-[9px]">Part II: Certification</span>
+                                <span class="text-slate-600 dark:text-slate-300 italic">Under penalties of perjury, I certify that the number shown on this form is my correct taxpayer identification number...</span>
+                                <div class="mt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-700 pt-1">
+                                    <span class="font-bold font-serif italic text-blue-600 dark:text-blue-400">Jane Doe, CFO</span>
+                                    <span class="font-mono text-[9px] text-slate-400">Date: Oct 20, 2026</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right: Recognized Key-Value Entities & Markdown Generation -->
+            <div class="w-full min-w-0 rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-4 sm:p-6 space-y-4 flex flex-col justify-between">
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                        <div>
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Structured Entity Extraction</h4>
+                            <p class="text-sm font-bold text-slate-900 dark:text-white">Key-Value Pairs & Audit Trails</p>
+                        </div>
+                        <span class="text-xs font-mono text-slate-500">@(_documentResult?.Fields.Count ?? 0) Fields Mapped</span>
+                    </div>
+
+                    <!-- Fields List -->
+                    <div class="space-y-2 max-h-[380px] overflow-y-auto pr-1 text-xs">
+                        @if (_documentResult?.Fields != null)
+                        {
+                            @foreach (var field in _documentResult.Fields)
+                            {
+                                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-700/80 flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <span class="text-[10px] font-bold uppercase text-slate-400 block">@field.Label</span>
+                                        <span class="font-semibold text-slate-900 dark:text-white truncate block">@field.Value</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                                            @((field.Confidence * 100).ToString("F0"))%
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <!-- Action Buttons: Insert into Editor / Copy Markdown -->
+                <div class="space-y-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" @onclick="CopyExtractedMarkdownAsync"
+                            class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2">
+                        <span>📋 Copy Form Markdown Table</span>
+                    </button>
+
+                    <button type="button" @onclick="CopyJsonPayloadAsync"
+                            class="w-full py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs transition flex items-center justify-center gap-1.5">
+                        <span>📦 Export Structured JSON Payload</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public EventCallback<string> OnMarkdownExtracted { get; set; }
+
+    private OcrDocumentType _selectedDocType = OcrDocumentType.PaperCheck;
+    private DocumentOcrResult? _documentResult;
+    private bool _isProcessing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDocumentAsync(_selectedDocType);
+    }
+
+    private async Task SelectCategory(OcrDocumentType docType)
+    {
+        _selectedDocType = docType;
+        await Sound.PlayPopAsync();
+        await LoadDocumentAsync(docType);
+    }
+
+    private async Task LoadDocumentAsync(OcrDocumentType docType)
+    {
+        _isProcessing = true;
+        StateHasChanged();
+
+        _documentResult = await OcrEngine.ScanDocumentAsync(docType);
+        _isProcessing = false;
+    }
+
+    private async Task TriggerScanAsync()
+    {
+        await Sound.PlayPopAsync();
+        await LoadDocumentAsync(_selectedDocType);
+        await Sound.PlayChimeAsync();
+        Toast.Show("OCR Extraction Complete", $"Successfully processed {_documentResult?.Title}", SemanticVariant.Success);
+    }
+
+    private async Task CopyExtractedMarkdownAsync()
+    {
+        if (_documentResult != null)
+        {
+            var md = _documentResult.MarkdownTableRepresentation;
+            try
+            {
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", md);
+            }
+            catch
+            { }
+            await Sound.PlayPopAsync();
+            Toast.Show("Markdown Table Copied", "Extracted table copied to clipboard", SemanticVariant.Success);
+
+            if (OnMarkdownExtracted.HasDelegate)
+            {
+                await OnMarkdownExtracted.InvokeAsync(md);
+            }
+        }
+    }
+
+    private async Task CopyJsonPayloadAsync()
+    {
+        if (_documentResult != null)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(_documentResult, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            try
+            {
+                await JS.InvokeVoidAsync("navigator.clipboard.writeText", json);
+            }
+            catch
+            { }
+            await Sound.PlayPopAsync();
+            Toast.Show("JSON Payload Copied", "Serialized DocumentOcrResult payload copied to clipboard", SemanticVariant.Success);
+        }
+    }
+
+    private async Task HandleInsertMarkdown(string markdown)
+    {
+        if (OnMarkdownExtracted.HasDelegate)
+        {
+            await OnMarkdownExtracted.InvokeAsync(markdown);
+        }
+    }
+}

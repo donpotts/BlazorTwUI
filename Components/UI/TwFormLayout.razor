@@ -1,0 +1,19 @@
+@* Responsive form grid: 1 column on phones, up to Columns on wide screens. Put TwFormGroup and TwFormItem inside. *@
+<div class="grid gap-x-6 gap-y-4 @ColumnClass @Class" data-testid="form-layout" data-columns="@Columns">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    /// <summary>1 to 4 columns from the lg breakpoint up.</summary>
+    [Parameter] public int Columns { get; set; } = 2;
+    [Parameter] public string? Class { get; set; }
+
+    private string ColumnClass => Math.Clamp(Columns, 1, 4) switch
+    {
+        1 => "grid-cols-1",
+        2 => "grid-cols-1 lg:grid-cols-2",
+        3 => "grid-cols-1 md:grid-cols-2 lg:grid-cols-3",
+        _ => "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
+    };
+}

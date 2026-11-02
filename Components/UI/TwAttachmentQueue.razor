@@ -1,0 +1,82 @@
+@* Files staged on a message before sending react-ui; own implementation). Validates size/type; the host owns the list. *@
+@using Microsoft.AspNetCore.Components.Forms
+
+<div class="space-y-2 @Class" data-testid="attachment-queue">
+    <div class="flex items-center gap-2">
+        <label class="inline-flex items-center gap-2 cursor-pointer min-h-[36px] px-3 rounded-xl border border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus-within:ring-2 focus-within:ring-brand-500">
+            <span>Attach files</span>
+            <InputFile OnChange="OnFilesAsync" multiple accept="@Accept" class="sr-only" data-testid="attachment-input" />
+        </label>
+        <span class="text-xs text-slate-600 dark:text-slate-400">Up to @MaxFiles files, @FormatSize(MaxBytes) each</span>
+    </div>
+
+    @if (_error is not null)
+    {
+        <p role="alert" class="text-xs font-semibold text-red-700 dark:text-red-300" data-testid="attachment-error">@_error</p>
+    }
+
+    @if (Items.Count > 0)
+    {
+        <ul class="flex flex-wrap gap-2" aria-label="Attached files">
+            @foreach (var a in Items)
+            {
+                <li class="inline-flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 ps-3 pe-1 py-1" data-testid="attachment-item" data-name="@a.Name">
+                    <span class="text-xs font-semibold text-slate-900 dark:text-slate-100 max-w-[12rem] truncate">@a.Name</span>
+                    <span class="text-xs text-slate-600 dark:text-slate-400">@FormatSize(a.Size)</span>
+                    <button type="button" @onclick="() => RemoveAsync(a)" aria-label="@($"Remove {a.Name}")" data-testid="attachment-remove"
+                            class="w-7 h-7 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </li>
+            }
+        </ul>
+    }
+</div>
+
+@code {
+    public sealed record AttachmentInfo(string Name, long Size, string ContentType);
+
+    private string? _error;
+
+    [Parameter] public List<AttachmentInfo> Items { get; set; } = new();
+    [Parameter] public EventCallback<List<AttachmentInfo>> ItemsChanged { get; set; }
+    [Parameter] public int MaxFiles { get; set; } = 5;
+    [Parameter] public long MaxBytes { get; set; } = 5 * 1024 * 1024;
+    [Parameter] public string? Accept { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>Validates and stages one file. Returns the reason it was refused, or null when accepted.</summary>
+    public string? TryAdd(AttachmentInfo file)
+    {
+        if (Items.Count >= MaxFiles) return $"You can attach at most {MaxFiles} files.";
+        if (file.Size > MaxBytes) return $"{file.Name} is larger than {FormatSize(MaxBytes)}.";
+        if (Items.Any(i => i.Name == file.Name && i.Size == file.Size)) return $"{file.Name} is already attached.";
+        Items = new List<AttachmentInfo>(Items) { file };
+        return null;
+    }
+
+    private async Task OnFilesAsync(InputFileChangeEventArgs e)
+    {
+        _error = null;
+        foreach (var f in e.GetMultipleFiles(MaxFiles + 10))
+        {
+            var problem = TryAdd(new AttachmentInfo(f.Name, f.Size, f.ContentType));
+            if (problem is not null) _error = problem;
+        }
+        await ItemsChanged.InvokeAsync(Items);
+    }
+
+    private async Task RemoveAsync(AttachmentInfo a)
+    {
+        Items = Items.Where(i => i != a).ToList();
+        _error = null;
+        await ItemsChanged.InvokeAsync(Items);
+    }
+
+    private static string FormatSize(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024.0:0.#} KB",
+        _ => $"{bytes / 1024.0 / 1024.0:0.#} MB"
+    };
+}

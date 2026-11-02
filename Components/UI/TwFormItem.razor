@@ -1,0 +1,36 @@
+@* A label, a control, a hint and an error, wired together for assistive tech. Give the control the id from FieldId (or set your own). *@
+<div class="@SpanClass flex @(LabelBeside ? "flex-col sm:flex-row sm:items-start sm:gap-4" : "flex-col") gap-1 @Class" data-testid="form-item">
+    <label for="@FieldId" class="@(LabelBeside ? "sm:w-40 sm:pt-2 shrink-0" : "") text-sm font-semibold text-slate-900 dark:text-slate-100">
+        @Label@if (Required){<span class="text-red-700 dark:text-red-300" aria-hidden="true"> *</span><span class="sr-only"> (required)</span>}
+    </label>
+    <div class="flex-1 min-w-0">
+        @ChildContent
+        @if (!string.IsNullOrEmpty(Error))
+        {
+            <p id="@($"{FieldId}-err")" role="alert" class="mt-1 text-xs font-semibold text-red-700 dark:text-red-300" data-testid="form-item-error">@Error</p>
+        }
+        else if (!string.IsNullOrEmpty(Hint))
+        {
+            <p id="@($"{FieldId}-hint")" class="mt-1 text-xs text-slate-700 dark:text-slate-300">@Hint</p>
+        }
+    </div>
+</div>
+
+@code {
+    private static readonly string[] Spans = { "", "", "md:col-span-2", "md:col-span-3", "md:col-span-4" };
+
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    /// <summary>Id of the control inside, so the label points at it.</summary>
+    [Parameter] public string FieldId { get; set; } = "fi-" + Guid.NewGuid().ToString("N")[..6];
+    [Parameter] public bool Required { get; set; }
+    [Parameter] public string? Hint { get; set; }
+    [Parameter] public string? Error { get; set; }
+    [Parameter] public bool LabelBeside { get; set; }
+    /// <summary>How many columns of the form layout this item spans (1 to 4).</summary>
+    [Parameter] public int ColSpan { get; set; } = 1;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string SpanClass => Spans[Math.Clamp(ColSpan, 1, 4)];
+
+}

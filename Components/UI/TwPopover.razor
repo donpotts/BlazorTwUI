@@ -1,0 +1,280 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@inject IJSRuntime JSRuntime
+@implements IAsyncDisposable
+
+<div class="relative inline-block @Class" @attributes="AdditionalAttributes" @onmouseleave="HandleMouseLeave">
+    @* Anchor target element *@
+    <div id="@_anchorId"
+         class="inline-flex cursor-pointer relative z-50"
+         @onclick="HandleAnchorClick"
+         @onmouseenter="HandleMouseEnter">
+        @if (AnchorContent != null)
+        {
+            @AnchorContent
+        }
+        else
+        {
+            <button type="button" class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 shadow-sm transition-colors">
+                <span>@AnchorText</span>
+                <svg class="w-3.5 h-3.5 text-slate-400 transition-transform @(IsOpen ? "rotate-180" : "")" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
+        }
+    </div>
+
+    @* Popover Flyout *@
+    @if (IsOpen)
+    {
+        <div id="@_popoverId"
+             class="@(Strategy == TwPopoverStrategy.Fixed ? "fixed z-[9999]" : $"absolute z-50 {GetPlacementClasses()}") @Width"
+             style="@(Strategy == TwPopoverStrategy.Fixed ? "position: fixed; z-index: 9999; margin: 0;" : "")"
+             role="dialog"
+             aria-modal="false"
+             tabindex="-1"
+             @onmouseenter="HandlePopoverMouseEnter"
+             @onmouseleave="HandlePopoverMouseLeave"
+             @onkeydown="HandleKeyDown">
+
+            @* Arrow pointer *@
+            @if (ShowArrow)
+            {
+                <div id="@_arrowId"
+                     class="absolute w-2.5 h-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 transform rotate-45 z-0 @(Strategy == TwPopoverStrategy.Absolute ? GetArrowClasses() : "")"></div>
+            }
+
+            @* Popover Card Content *@
+            <div class="relative z-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl overflow-hidden backdrop-blur-md">
+                @if (Header != null || !string.IsNullOrEmpty(Title))
+                {
+                    <div class="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 dark:border-slate-700/70 bg-slate-50/70 dark:bg-slate-900/40">
+                        @if (Header != null)
+                        {
+                            @Header
+                        }
+                        else
+                        {
+                            <span class="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">@Title</span>
+                        }
+
+                        @if (ShowCloseButton)
+                        {
+                            <button type="button" @onclick="CloseAsync" class="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+                                <span class="sr-only">Close</span>
+                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        }
+                    </div>
+                }
+
+                <div class="p-4 text-xs text-slate-600 dark:text-slate-300">
+                    @ChildContent
+                </div>
+
+                @if (Footer != null)
+                {
+                    <div class="px-4 py-2.5 bg-slate-50 dark:bg-slate-900/60 border-t border-slate-100 dark:border-slate-700/70 flex items-center justify-end gap-2">
+                        @Footer
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Click outside transparent backdrop for click trigger *@
+        @if (Trigger == TwPopoverTrigger.Click)
+        {
+            <div class="fixed inset-0 z-40 bg-transparent" @onclick="CloseAsync"></div>
+        }
+    }
+</div>
+
+@code {
+    private readonly string _anchorId = "tw-popover-anchor-" + Guid.NewGuid().ToString("N");
+    private readonly string _popoverId = "tw-popover-panel-" + Guid.NewGuid().ToString("N");
+    private readonly string _arrowId = "tw-popover-arrow-" + Guid.NewGuid().ToString("N");
+
+    private DotNetObjectReference<TwPopover>? _dotNetRef;
+
+    [Parameter] public RenderFragment? AnchorContent { get; set; }
+    [Parameter] public string AnchorText { get; set; } = "Toggle Popover";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? Header { get; set; }
+    [Parameter] public RenderFragment? Footer { get; set; }
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public bool ShowCloseButton { get; set; } = true;
+    [Parameter] public bool ShowArrow { get; set; } = true;
+    [Parameter] public string Width { get; set; } = "w-72";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public TwPopoverPlacement Placement { get; set; } = TwPopoverPlacement.Bottom;
+    [Parameter] public TwPopoverTrigger Trigger { get; set; } = TwPopoverTrigger.Click;
+    [Parameter] public TwPopoverStrategy Strategy { get; set; } = TwPopoverStrategy.Fixed;
+
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback OnOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+
+    private bool _isHovering = false;
+
+    protected override void OnInitialized()
+    {
+        _dotNetRef = DotNetObjectReference.Create(this);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (IsOpen && Strategy == TwPopoverStrategy.Fixed)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("twPopover.position", _anchorId, _popoverId, Placement.ToString(), ShowArrow, _arrowId, _dotNetRef);
+            }
+            catch
+            {
+                // Ignore JS disconnected errors during test teardown
+            }
+        }
+    }
+
+    [JSInvokable]
+    public async Task CloseFromJs()
+    {
+        await CloseAsync();
+    }
+
+    private async Task HandleAnchorClick()
+    {
+        if (Trigger == TwPopoverTrigger.Click)
+        {
+            await ToggleAsync();
+        }
+    }
+
+    private async Task HandleMouseEnter()
+    {
+        _isHovering = true;
+        if (Trigger == TwPopoverTrigger.Hover && !IsOpen)
+        {
+            await OpenAsync();
+        }
+    }
+
+    private async Task HandleMouseLeave()
+    {
+        _isHovering = false;
+        if (Trigger == TwPopoverTrigger.Hover && IsOpen)
+        {
+            await Task.Delay(100);
+            if (!_isHovering)
+            {
+                await CloseAsync();
+            }
+        }
+    }
+
+    private void HandlePopoverMouseEnter()
+    {
+        _isHovering = true;
+    }
+
+    private async Task HandlePopoverMouseLeave()
+    {
+        _isHovering = false;
+        if (Trigger == TwPopoverTrigger.Hover && IsOpen)
+        {
+            await Task.Delay(100);
+            if (!_isHovering)
+            {
+                await CloseAsync();
+            }
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && IsOpen)
+        {
+            await CloseAsync();
+        }
+    }
+
+    public async Task ToggleAsync()
+    {
+        if (IsOpen)
+            await CloseAsync();
+        else
+            await OpenAsync();
+    }
+
+    public async Task OpenAsync()
+    {
+        IsOpen = true;
+        await IsOpenChanged.InvokeAsync(true);
+        await OnOpen.InvokeAsync();
+        StateHasChanged();
+    }
+
+    public async Task CloseAsync()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(false);
+        await OnClose.InvokeAsync();
+
+        if (Strategy == TwPopoverStrategy.Fixed)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("twPopover.cleanup", _popoverId);
+            }
+            catch {}
+        }
+
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Strategy == TwPopoverStrategy.Fixed)
+        {
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("twPopover.cleanup", _popoverId);
+            }
+            catch {}
+        }
+
+        _dotNetRef?.Dispose();
+    }
+
+    private string GetPlacementClasses() => Placement switch
+    {
+        TwPopoverPlacement.Top => "bottom-full left-1/2 -translate-x-1/2 mb-2",
+        TwPopoverPlacement.TopStart => "bottom-full left-0 mb-2",
+        TwPopoverPlacement.TopEnd => "bottom-full right-0 mb-2",
+        TwPopoverPlacement.Bottom => "top-full left-1/2 -translate-x-1/2 mt-2",
+        TwPopoverPlacement.BottomStart => "top-full left-0 mt-2",
+        TwPopoverPlacement.BottomEnd => "top-full right-0 mt-2",
+        TwPopoverPlacement.Left => "right-full top-1/2 -translate-y-1/2 mr-2",
+        TwPopoverPlacement.Right => "left-full top-1/2 -translate-y-1/2 ml-2",
+        _ => "top-full left-1/2 -translate-x-1/2 mt-2"
+    };
+
+    private string GetArrowClasses() => Placement switch
+    {
+        TwPopoverPlacement.Top => "top-full -mt-1.5 left-1/2 -translate-x-1/2 border-t-0 border-l-0",
+        TwPopoverPlacement.TopStart => "top-full -mt-1.5 left-6 border-t-0 border-l-0",
+        TwPopoverPlacement.TopEnd => "top-full -mt-1.5 right-6 border-t-0 border-l-0",
+        TwPopoverPlacement.Bottom => "bottom-full -mb-1.5 left-1/2 -translate-x-1/2 border-b-0 border-r-0",
+        TwPopoverPlacement.BottomStart => "bottom-full -mb-1.5 left-6 border-b-0 border-r-0",
+        TwPopoverPlacement.BottomEnd => "bottom-full -mb-1.5 right-6 border-b-0 border-r-0",
+        TwPopoverPlacement.Left => "left-full -ml-1.5 top-1/2 -translate-y-1/2 border-l-0 border-b-0",
+        TwPopoverPlacement.Right => "right-full -mr-1.5 top-1/2 -translate-y-1/2 border-r-0 border-t-0",
+        _ => "bottom-full -mb-1.5 left-1/2 -translate-x-1/2 border-b-0 border-r-0"
+    };
+}

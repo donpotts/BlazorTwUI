@@ -1,0 +1,64 @@
+@using BlazorTwUI.Models
+
+<div class="flex items-center -space-x-2.5 overflow-hidden hover:space-x-0.5 transition-all duration-300 p-1 @Class">
+    @{
+        var visibleItems = Avatars.Take(Max).ToList();
+        var excessCount = Avatars.Count - Max;
+    }
+
+    @foreach (var avatar in visibleItems)
+    {
+        <div class="relative group/avatar inline-block transition-transform duration-200 hover:scale-110 hover:z-20">
+            <div class="relative inline-flex items-center justify-center shrink-0 rounded-full ring-2 ring-white dark:ring-slate-900 bg-brand-100 dark:bg-brand-500/20 text-brand-700 dark:text-brand-100 font-semibold select-none @SizeClass">
+                @if (!string.IsNullOrWhiteSpace(avatar.ImageUrl))
+                {
+                    <img src="@avatar.ImageUrl" alt="@avatar.Name" class="h-full w-full rounded-full object-cover" />
+                }
+                else
+                {
+                    <span>@avatar.Initials</span>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(avatar.Status))
+                {
+                    <span class="absolute bottom-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white dark:ring-slate-900 @GetStatusColor(avatar.Status)"></span>
+                }
+            </div>
+
+            <!-- Hover Tooltip -->
+            <div class="pointer-events-none absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover/avatar:opacity-100 transition-opacity duration-200 z-30 px-2 py-0.5 rounded-md bg-slate-900 dark:bg-slate-800 text-white text-xs font-medium whitespace-nowrap shadow-md">
+                @avatar.Name @(!string.IsNullOrWhiteSpace(avatar.Role) ? $"· {avatar.Role}" : "")
+            </div>
+        </div>
+    }
+
+    @if (excessCount > 0)
+    {
+        <div class="relative inline-flex items-center justify-center shrink-0 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold select-none text-xs @SizeClass">
+            +@excessCount
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public List<AvatarItem> Avatars { get; set; } = new();
+    [Parameter] public int Max { get; set; } = 4;
+    [Parameter] public ComponentSize Size { get; set; } = ComponentSize.Md;
+    [Parameter] public string? Class { get; set; }
+
+    private string SizeClass => Size switch
+    {
+        ComponentSize.Xs => "h-7 w-7 text-xs",
+        ComponentSize.Sm => "h-8 w-8 text-xs",
+        ComponentSize.Lg => "h-12 w-12 text-base",
+        _ => "h-10 w-10 text-sm"
+    };
+
+    private string GetStatusColor(string status) => status.ToLowerInvariant() switch
+    {
+        "online" => "bg-emerald-500",
+        "away" => "bg-amber-500",
+        "busy" => "bg-rose-500",
+        _ => "bg-slate-400"
+    };
+}

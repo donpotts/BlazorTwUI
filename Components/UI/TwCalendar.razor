@@ -1,0 +1,158 @@
+@using System.Globalization
+@inject IJSRuntime JS
+@* Month calendar with full keyboard support (arrows, Home/End, PageUp/PageDown) and a roving tabindex, per the ARIA date-grid pattern. *@
+<div @ref="_root" class="inline-block w-72 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-3 @Class" data-testid="calendar" @onkeydown="OnKeyAsync">
+    <div class="flex items-center justify-between mb-2">
+        <button type="button" @onclick="() => ShiftMonth(-1)" aria-label="Previous month" data-testid="cal-prev"
+                class="w-9 h-9 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><span aria-hidden="true" class="rtl:hidden">‹</span><span aria-hidden="true" class="hidden rtl:inline">›</span></button>
+        <h2 class="text-sm font-bold text-slate-900 dark:text-white" aria-live="polite" data-testid="cal-title">@_visible.ToString("MMMM yyyy", Culture)</h2>
+        <button type="button" @onclick="() => ShiftMonth(1)" aria-label="Next month" data-testid="cal-next"
+                class="w-9 h-9 rounded-lg text-slate-800 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><span aria-hidden="true" class="rtl:hidden">›</span><span aria-hidden="true" class="hidden rtl:inline">‹</span></button>
+    </div>
+
+    <table role="grid" aria-label="@_visible.ToString("MMMM yyyy", Culture)" class="w-full text-center">
+        <thead>
+            <tr>
+                @foreach (var d in WeekdayHeaders())
+                {
+                    <th scope="col" abbr="@d.Full" class="text-xs font-semibold text-slate-700 dark:text-slate-300 pb-1"><span aria-hidden="true">@d.Short</span><span class="sr-only">@d.Full</span></th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var week in Weeks())
+            {
+                <tr>
+                    @foreach (var day in week)
+                    {
+                        var inMonth = day.Month == _visible.Month;
+                        var selected = Value == day;
+                        var disabled = IsDisabled(day);
+                        <td role="gridcell" aria-selected="@(selected ? "true" : "false")" class="p-0.5">
+                            <button type="button" tabindex="@(day == _focus ? 0 : -1)" disabled="@disabled" @onclick="() => PickAsync(day)"
+                                    aria-label="@day.ToString("D", Culture)" aria-current="@(day == Today ? "date" : null)"
+                                    data-testid="cal-day" data-date="@day.ToString("yyyy-MM-dd")" data-selected="@selected.ToString().ToLowerInvariant()"
+                                    class="w-9 h-9 rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-40 disabled:cursor-not-allowed @DayClass(inMonth, selected, day == Today)">
+                                @day.Day
+                            </button>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    private DateOnly _visible = DateOnly.FromDateTime(DateTime.Today).AddDays(1 - DateTime.Today.Day);
+    private DateOnly _focus = DateOnly.FromDateTime(DateTime.Today);
+    private bool _seeded;
+    private bool _moveFocus;
+    private ElementReference _root;
+
+    [Parameter] public DateOnly? Value { get; set; }
+    [Parameter] public EventCallback<DateOnly?> ValueChanged { get; set; }
+    [Parameter] public DateOnly? Min { get; set; }
+    [Parameter] public DateOnly? Max { get; set; }
+    [Parameter] public DayOfWeek FirstDayOfWeek { get; set; } = DayOfWeek.Sunday;
+    [Parameter] public CultureInfo? CultureOverride { get; set; }
+    /// <summary>Overrides "today" (tests and demos).</summary>
+    [Parameter] public DateOnly? TodayOverride { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private CultureInfo Culture => CultureOverride ?? CultureInfo.CurrentUICulture;
+    private DateOnly Today => TodayOverride ?? DateOnly.FromDateTime(DateTime.Today);
+
+    protected override void OnParametersSet()
+    {
+        if (_seeded) return;
+        _seeded = true;
+        var start = Value ?? Today;
+        _focus = Clamp(start);
+        _visible = new DateOnly(_focus.Year, _focus.Month, 1);
+    }
+
+    private DateOnly Clamp(DateOnly d)
+    {
+        if (Min is { } min && d < min) return min;
+        if (Max is { } max && d > max) return max;
+        return d;
+    }
+
+    private bool IsDisabled(DateOnly d) => (Min is { } min && d < min) || (Max is { } max && d > max);
+
+    private IEnumerable<(string Short, string Full)> WeekdayHeaders()
+    {
+        for (var i = 0; i < 7; i++)
+        {
+            var day = (DayOfWeek)(((int)FirstDayOfWeek + i) % 7);
+            yield return (Culture.DateTimeFormat.GetShortestDayName(day), Culture.DateTimeFormat.GetDayName(day));
+        }
+    }
+
+    private IEnumerable<IReadOnlyList<DateOnly>> Weeks()
+    {
+        var lead = ((int)_visible.DayOfWeek - (int)FirstDayOfWeek + 7) % 7;
+        var cursor = _visible.AddDays(-lead);
+        for (var w = 0; w < 6; w++)
+        {
+            var week = new List<DateOnly>(7);
+            for (var d = 0; d < 7; d++, cursor = cursor.AddDays(1)) week.Add(cursor);
+            // Skip a trailing week that is entirely next month.
+            if (w >= 4 && week[0].Month != _visible.Month) yield break;
+            yield return week;
+        }
+    }
+
+    private void ShiftMonth(int delta)
+    {
+        _visible = _visible.AddMonths(delta);
+        _focus = Clamp(new DateOnly(_visible.Year, _visible.Month, Math.Min(_focus.Day, DateTime.DaysInMonth(_visible.Year, _visible.Month))));
+    }
+
+    private async Task PickAsync(DateOnly day)
+    {
+        if (IsDisabled(day)) return;
+        _focus = day;
+        Value = day;
+        if (day.Month != _visible.Month) _visible = new DateOnly(day.Year, day.Month, 1);
+        await ValueChanged.InvokeAsync(day);
+    }
+
+    private async Task OnKeyAsync(KeyboardEventArgs e)
+    {
+        var next = e.Key switch
+        {
+            "ArrowLeft" => _focus.AddDays(-1),
+            "ArrowRight" => _focus.AddDays(1),
+            "ArrowUp" => _focus.AddDays(-7),
+            "ArrowDown" => _focus.AddDays(7),
+            "PageUp" => _focus.AddMonths(e.ShiftKey ? -12 : -1),
+            "PageDown" => _focus.AddMonths(e.ShiftKey ? 12 : 1),
+            "Home" => _focus.AddDays(-(((int)_focus.DayOfWeek - (int)FirstDayOfWeek + 7) % 7)),
+            "End" => _focus.AddDays(6 - (((int)_focus.DayOfWeek - (int)FirstDayOfWeek + 7) % 7)),
+            _ => (DateOnly?)null
+        };
+        if (next is null) return;
+
+        _focus = Clamp(next.Value);
+        _visible = new DateOnly(_focus.Year, _focus.Month, 1);
+        _moveFocus = true;
+        await Task.CompletedTask;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_moveFocus) return;
+        _moveFocus = false;
+        try { await JS.InvokeVoidAsync("twAgentKit.focusRoving", _root); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
+    private static string DayClass(bool inMonth, bool selected, bool today)
+    {
+        if (selected) return "bg-brand-700 text-white font-bold";
+        var baseClass = inMonth ? "text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800" : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800";
+        return today ? baseClass + " ring-1 ring-brand-600 font-bold" : baseClass;
+    }
+}

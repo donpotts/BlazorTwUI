@@ -1,0 +1,76 @@
+@inject ToastService Toast
+@implements IDisposable
+
+<!-- Responsive Toast Stack: Full width at top on mobile, bottom-right on sm+ -->
+<div aria-live="assertive" class="pointer-events-none fixed inset-0 z-50 flex flex-col p-4 sm:p-6 sm:items-end justify-start sm:justify-end gap-2.5">
+    @foreach (var toast in Toast.Toasts)
+    {
+        <div class="pointer-events-auto w-full max-w-sm rounded-2xl border p-4 shadow-lg backdrop-blur-md transition-all duration-200 animate-in fade-in slide-in-from-top-4 sm:slide-in-from-bottom-4 @GetVariantStyles(toast.Variant)">
+            <div class="flex items-start gap-3">
+                <div class="shrink-0 mt-0.5">
+                    @switch (toast.Variant)
+                    {
+                        case SemanticVariant.Success:
+                            <svg class="w-5 h-5 text-emerald-600 dark:text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            break;
+                        case SemanticVariant.Warning:
+                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                            break;
+                        case SemanticVariant.Danger:
+                            <svg class="w-5 h-5 text-rose-600 dark:text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            break;
+                        default:
+                            <svg class="w-5 h-5 text-brand-600 dark:text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            break;
+                    }
+                </div>
+
+                <div class="flex-1">
+                    <p class="text-sm font-semibold text-slate-900 dark:text-slate-100">@toast.Title</p>
+                    @if (!string.IsNullOrWhiteSpace(toast.Description))
+                    {
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5">@toast.Description</p>
+                    }
+                </div>
+
+                <button type="button"
+                        @onclick="() => Toast.Dismiss(toast.Id)"
+                        class="shrink-0 p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Toast.OnChange += HandleChange;
+    }
+
+    private void HandleChange() => InvokeAsync(StateHasChanged);
+
+    private static string GetVariantStyles(SemanticVariant variant) => variant switch
+    {
+        SemanticVariant.Success => "bg-white/95 dark:bg-slate-900/95 border-emerald-500/40 text-slate-900",
+        SemanticVariant.Warning => "bg-white/95 dark:bg-slate-900/95 border-amber-500/40 text-slate-900",
+        SemanticVariant.Danger => "bg-white/95 dark:bg-slate-900/95 border-rose-500/40 text-slate-900",
+        _ => "bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-slate-800 text-slate-900"
+    };
+
+    public void Dispose()
+    {
+        Toast.OnChange -= HandleChange;
+    }
+}

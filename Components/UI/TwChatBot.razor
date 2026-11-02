@@ -1,0 +1,501 @@
+@inject IJSRuntime JS
+@inject ToastService Toast
+
+<div class="flex flex-col h-full w-full bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xl @Class">
+    <!-- Header -->
+    <header class="px-4 py-3.5 sm:px-6 bg-slate-50/80 dark:bg-slate-950/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-brand-600 via-indigo-500 to-indigo-400 text-white flex items-center justify-center shadow-sm">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                </div>
+                <span class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900"></span>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="font-semibold text-sm sm:text-base text-slate-900 dark:text-white leading-tight">@BotName</h3>
+                    <span class="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-full bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-200/50 dark:border-brand-500/20">
+                        @SelectedModel
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-none mt-0.5">
+                    @(IsGenerating ? "Generating response..." : "Online & ready")
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-1">
+            <button type="button"
+                    @onclick="ClearChat"
+                    title="Clear Conversation"
+                    class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            </button>
+            @if (ShowCloseButton)
+            {
+                <button type="button"
+                        @onclick="OnClose"
+                        title="Close Chat"
+                        class="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            }
+        </div>
+    </header>
+
+    <!-- Top Generating / Thinking Progress Animation Bar -->
+    @if (IsGenerating)
+    {
+        <div class="h-1 w-full bg-slate-100 dark:bg-slate-800 overflow-hidden relative shrink-0">
+            <div class="absolute inset-y-0 w-2/5 bg-gradient-to-r from-brand-500 via-indigo-400 to-brand-600 rounded-full animate-[progress_1.4s_ease-in-out_infinite]"></div>
+        </div>
+    }
+
+    <!-- Chat Message List (Auto-scroll container) -->
+    <div id="@_scrollContainerId" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        @if (!Messages.Any())
+        {
+            <!-- Empty State / Starter Suggestions -->
+            <div class="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto py-8 space-y-6">
+                <div class="w-14 h-14 rounded-3xl bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 flex items-center justify-center shadow-inner">
+                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                </div>
+
+                <div class="space-y-1.5">
+                    <h4 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">How can I assist you today?</h4>
+                    <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+                        Ask questions, analyze components, generate code, or try reasoning mode.
+                    </p>
+                </div>
+
+                <!-- Suggested Starters Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full text-left">
+                    @foreach (var prompt in StarterPrompts)
+                    {
+                        <button type="button"
+                                @onclick="() => SendQuickPrompt(prompt.Prompt)"
+                                class="p-3 rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition-all text-xs font-medium text-slate-700 dark:text-slate-300 group">
+                            <span class="block font-semibold text-slate-900 dark:text-white mb-0.5 group-hover:text-brand-600 dark:group-hover:text-brand-400">
+                                @prompt.Title
+                            </span>
+                            <span class="text-slate-500 dark:text-slate-400 line-clamp-1">
+                                @prompt.Prompt
+                            </span>
+                        </button>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            @foreach (var msg in Messages)
+            {
+                <div class="flex gap-3 @(msg.Role == ChatRole.User ? "justify-end" : "justify-start")">
+                    @if (msg.Role == ChatRole.Assistant)
+                    {
+                        <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 text-white flex items-center justify-center shrink-0 text-xs shadow-xs mt-1">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                    }
+
+                    <div class="max-w-[88%] sm:max-w-[78%] space-y-2">
+                        <!-- Message Bubble -->
+                        <div class="rounded-3xl p-4 sm:p-5 text-sm @(msg.Role == ChatRole.User ? "bg-brand-600 text-white rounded-br-xs shadow-sm" : "bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-800 dark:text-slate-200 rounded-bl-xs shadow-xs")">
+                            
+                            <!-- Multi-stage reasoning animation accordion -->
+                            @if (msg.IsThinking || msg.ReasoningSteps != null)
+                            {
+                                <TwAiReasoningProgress IsThinking="@msg.IsThinking"
+                                                       DurationSeconds="@msg.ThinkingDurationSeconds"
+                                                       Steps="@msg.ReasoningSteps"
+                                                       ReasoningText="@msg.ReasoningSummary" />
+                            }
+
+                            <!-- Message Body -->
+                            <div class="whitespace-pre-wrap leading-relaxed">
+                                @((MarkupString)FormatMessageContent(msg.Content))
+                                @if (msg.IsStreaming)
+                                {
+                                    <span class="inline-block w-2 h-4 ml-1 bg-brand-500 animate-pulse align-middle"></span>
+                                }
+                            </div>
+
+                            <!-- Sources & Citations -->
+                            @if (msg.Sources != null && msg.Sources.Any())
+                            {
+                                <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/70 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                                    <span class="font-semibold text-[11px] text-slate-400">Sources:</span>
+                                    @foreach (var src in msg.Sources)
+                                    {
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 text-[11px]">
+                                            <svg class="w-3 h-3 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                            </svg>
+                                            @src
+                                        </span>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Assistant Message Action Bar (Copy, Thumbs Feedback, Timestamp) -->
+                        @if (msg.Role == ChatRole.Assistant && !msg.IsStreaming && !msg.IsThinking)
+                        {
+                            <div class="flex items-center gap-2 text-xs text-slate-400 px-1">
+                                <span>@msg.Timestamp.ToString("h:mm tt")</span>
+
+                                <div class="flex items-center gap-0.5 ml-2">
+                                    <button type="button"
+                                            @onclick="() => CopyToClipboard(msg.Content)"
+                                            title="Copy message"
+                                            class="p-1 rounded-lg hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                    </button>
+                                    <button type="button"
+                                            @onclick="() => SetFeedback(msg, true)"
+                                            title="Good response"
+                                            class="p-1 rounded-lg hover:text-emerald-600 transition @(msg.FeedbackThumb == true ? "text-emerald-600 font-bold" : "")">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                                        </svg>
+                                    </button>
+                                    <button type="button"
+                                            @onclick="() => SetFeedback(msg, false)"
+                                            title="Poor response"
+                                            class="p-1 rounded-lg hover:text-rose-600 transition @(msg.FeedbackThumb == false ? "text-rose-600 font-bold" : "")">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Follow-up Suggested Prompts Chips -->
+                        @if (msg.SuggestedPrompts != null && msg.SuggestedPrompts.Any())
+                        {
+                            <div class="flex flex-wrap gap-1.5 pt-1">
+                                @foreach (var prompt in msg.SuggestedPrompts)
+                                {
+                                    <button type="button"
+                                            @onclick="() => SendQuickPrompt(prompt)"
+                                            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs text-slate-700 dark:text-slate-300 hover:border-brand-500 hover:text-brand-600 dark:hover:text-brand-400 transition-all shadow-2xs">
+                                        <span>@prompt</span>
+                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    @if (msg.Role == ChatRole.User)
+                    {
+                        <div class="w-8 h-8 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 flex items-center justify-center shrink-0 text-xs font-semibold mt-1">
+                            U
+                        </div>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    <!-- Bottom Input Box -->
+    <div class="p-3 sm:p-4 bg-slate-50/80 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800 shrink-0 pb-safe">
+        @if (_attachedFiles.Count > 0)
+        {
+            <div class="flex flex-wrap items-center gap-1.5 pb-2">
+                @foreach (var file in _attachedFiles)
+                {
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-brand-50 dark:bg-brand-950/50 text-brand-700 dark:text-brand-300 border border-brand-200/80 dark:border-brand-800/80">
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                        </svg>
+                        <span>@file</span>
+                        <button type="button" @onclick="() => RemoveAttachment(file)" class="text-brand-500 hover:text-red-500 dark:hover:text-red-400 font-bold ml-0.5">×</button>
+                    </span>
+                }
+            </div>
+        }
+        <form @onsubmit="HandleSubmit" class="relative">
+            <div class="flex items-end gap-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-700/80 p-1.5 focus-within:border-brand-500 focus-within:ring-2 focus-within:ring-brand-500/20 shadow-xs">
+                
+                <!-- Attachment Button -->
+                <button type="button"
+                        @onclick="AttachSampleFileAsync"
+                        title="Attach sample dataset or context file"
+                        class="p-2.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                </button>
+
+                <!-- Multiline auto-expanding textarea -->
+                <textarea @bind="_inputMessage"
+                          @bind:event="oninput"
+                          @onkeydown="HandleKeyDown"
+                          placeholder="Ask a question... (Enter to send, Shift+Enter for new line)"
+                          rows="1"
+                          class="flex-1 max-h-36 min-h-[40px] py-2 px-1 text-sm bg-transparent border-0 focus:outline-none resize-none text-slate-900 dark:text-slate-100 placeholder:text-slate-400"></textarea>
+
+                <!-- Stop Generating Button OR Send Button -->
+                @if (IsGenerating)
+                {
+                    <button type="button"
+                            @onclick="StopGeneration"
+                            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 text-xs font-semibold hover:bg-rose-100 transition animate-pulse">
+                        <div class="w-2.5 h-2.5 rounded-sm bg-rose-600"></div>
+                        <span>Stop</span>
+                    </button>
+                }
+                else
+                {
+                    <button type="submit"
+                            disabled="@string.IsNullOrWhiteSpace(_inputMessage)"
+                            class="p-2.5 rounded-xl bg-brand-600 text-white disabled:opacity-40 disabled:pointer-events-none hover:bg-brand-700 transition shadow-sm active:scale-95">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </button>
+                }
+            </div>
+
+            <div class="flex items-center justify-between text-[11px] text-slate-400 px-2 pt-1.5">
+                <span>Shift + Return for line breaks</span>
+                <span class="flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Simulated streaming & reasoning engine active
+                </span>
+            </div>
+        </form>
+    </div>
+</div>
+
+@code {
+    private readonly string _scrollContainerId = $"chat-scroll-{Guid.NewGuid():N}";
+    private string _inputMessage = "";
+    private CancellationTokenSource? _generationCts;
+
+    [Parameter] public string BotName { get; set; } = "NexusAI";
+    [Parameter] public string SelectedModel { get; set; } = "Gemini 2.0 Flash";
+    [Parameter] public bool ShowCloseButton { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<string> OnFileAttached { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private readonly List<string> _attachedFiles = new();
+
+    public bool IsGenerating { get; private set; }
+    public List<ChatMessage> Messages { get; set; } = new();
+
+    public sealed record StarterPrompt(string Title, string Prompt);
+    [Parameter]
+    public IReadOnlyList<StarterPrompt> StarterPrompts { get; set; } = new List<StarterPrompt>
+    {
+        new("Explain Architecture", "Explain how mobile-first Blazor WASM and TailwindCSS work together with zero FOUC."),
+        new("Generate Code", "Write a reusable C# Blazor component for animated radial progress with Tailwind classes."),
+        new("Deep Reasoning Demo", "Solve a complex algorithm step-by-step with multi-stage reasoning checklist progress."),
+        new("Compare Performance", "Compare Blazor WebAssembly AOT compilation vs JIT performance on mobile phones.")
+    };
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.ShiftKey)
+        {
+            await HandleSubmit();
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (string.IsNullOrWhiteSpace(_inputMessage) || IsGenerating) return;
+
+        var userText = _inputMessage.Trim();
+        _inputMessage = "";
+
+        await SendMessageAsync(userText);
+    }
+
+    public async Task SendQuickPrompt(string promptText)
+    {
+        if (IsGenerating) return;
+        await SendMessageAsync(promptText);
+    }
+
+    public async Task SendMessageAsync(string promptText)
+    {
+        // 1. Add user message
+        Messages.Add(new ChatMessage
+        {
+            Role = ChatRole.User,
+            Content = promptText,
+            Timestamp = DateTime.Now
+        });
+
+        // 2. Add assistant placeholder message
+        var assistantMsg = new ChatMessage
+        {
+            Role = ChatRole.Assistant,
+            Content = "",
+            IsStreaming = true,
+            IsThinking = true,
+            Timestamp = DateTime.Now,
+            ReasoningSteps = new List<ReasoningStep>
+            {
+                new("Analyzing query & extracting parameters", StepStatus.InProgress),
+                new("Searching local components & documentation", StepStatus.Pending),
+                new("Synthesizing answer & generating markup", StepStatus.Pending)
+            }
+        };
+        Messages.Add(assistantMsg);
+
+        IsGenerating = true;
+        _generationCts = new CancellationTokenSource();
+        var ct = _generationCts.Token;
+
+        StateHasChanged();
+
+        try
+        {
+            // Stage 1: Thinking animation & steps
+            await Task.Delay(700, ct);
+            assistantMsg.ReasoningSteps[0] = new("Query analyzed successfully", StepStatus.Completed);
+            assistantMsg.ReasoningSteps[1] = new("Retrieving component specs & tokens", StepStatus.InProgress);
+            StateHasChanged();
+
+            await Task.Delay(800, ct);
+            assistantMsg.ReasoningSteps[1] = new("Specs retrieved", StepStatus.Completed);
+            assistantMsg.ReasoningSteps[2] = new("Synthesizing formatted response...", StepStatus.InProgress);
+            StateHasChanged();
+
+            await Task.Delay(600, ct);
+            assistantMsg.ReasoningSteps[2] = new("Synthesis complete", StepStatus.Completed);
+            assistantMsg.IsThinking = false;
+            assistantMsg.ThinkingDurationSeconds = 2.1;
+            assistantMsg.ReasoningSummary = "1. Evaluated mobile constraints\n2. Checked safe-area insets & touch targets\n3. Selected Tailwind responsive class variants\n4. Verified light/dark color contrast.";
+            StateHasChanged();
+
+            // Stage 2: Token-by-token streaming animation
+            var responseText = GenerateMockResponse(promptText);
+            var words = responseText.Split(' ');
+            foreach (var word in words)
+            {
+                if (ct.IsCancellationRequested) break;
+                assistantMsg.Content += (string.IsNullOrEmpty(assistantMsg.Content) ? "" : " ") + word;
+                StateHasChanged();
+                await Task.Delay(35, ct);
+            }
+
+            assistantMsg.IsStreaming = false;
+            assistantMsg.Sources = new List<string> { "TailwindCSS v3.4 Docs", "Blazor WASM Runtime", "WCAG 2.1 AA Target Specs" };
+            assistantMsg.SuggestedPrompts = new List<string> { "Show complete Razor markup", "How do I add light/dark switch?", "Test on mobile screen" };
+        }
+        catch (TaskCanceledException)
+        {
+            assistantMsg.IsStreaming = false;
+            assistantMsg.IsThinking = false;
+            assistantMsg.Content += "\n\n*(Generation stopped by user)*";
+        }
+        finally
+        {
+            IsGenerating = false;
+            StateHasChanged();
+        }
+    }
+
+    public void StopGeneration()
+    {
+        _generationCts?.Cancel();
+    }
+
+    public void ClearChat()
+    {
+        StopGeneration();
+        Messages.Clear();
+        _attachedFiles.Clear();
+        Toast.Show("Conversation cleared", variant: SemanticVariant.Default);
+    }
+
+    private async Task AttachSampleFileAsync()
+    {
+        var sampleFile = $"dataset_analytics_{DateTime.Now:MMdd}.csv";
+        if (!_attachedFiles.Contains(sampleFile))
+        {
+            _attachedFiles.Add(sampleFile);
+            if (OnFileAttached.HasDelegate)
+            {
+                await OnFileAttached.InvokeAsync(sampleFile);
+            }
+        }
+    }
+
+    private void RemoveAttachment(string fileName)
+    {
+        _attachedFiles.Remove(fileName);
+    }
+
+    private void SetFeedback(ChatMessage msg, bool thumbUp)
+    {
+        msg.FeedbackThumb = thumbUp;
+        Toast.Show(thumbUp ? "Feedback noted! 👍" : "Feedback recorded 👎", variant: SemanticVariant.Info);
+    }
+
+    private async Task CopyToClipboard(string text)
+    {
+        // Simple clipboard copy
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", text);
+            Toast.Show("Copied to clipboard", variant: SemanticVariant.Success);
+        }
+        catch
+        {
+            Toast.Show("Copied text", variant: SemanticVariant.Default);
+        }
+    }
+
+    private static string FormatMessageContent(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return "";
+        // Basic markdown formatting for code blocks, inline code, and bold
+        var formatted = content
+            .Replace("<", "&lt;").Replace(">", "&gt;");
+
+        // Code blocks: ```...```
+        while (formatted.Contains("```"))
+        {
+            var first = formatted.IndexOf("```");
+            var second = formatted.IndexOf("```", first + 3);
+            if (second == -1) break;
+
+            var codeContent = formatted.Substring(first + 3, second - (first + 3));
+            var replacement = $"<pre class='my-3 p-3.5 rounded-xl bg-slate-900 text-slate-100 font-mono text-xs overflow-x-auto border border-slate-800'><code>{codeContent.Trim()}</code></pre>";
+            formatted = formatted.Substring(0, first) + replacement + formatted.Substring(second + 3);
+        }
+
+        return formatted;
+    }
+
+    private static string GenerateMockResponse(string prompt)
+    {
+        if (prompt.Contains("code", StringComparison.OrdinalIgnoreCase) || prompt.Contains("component", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Here is how you can implement this with mobile-first Tailwind classes:\n\n```html\n<div class=\"flex flex-col sm:flex-row items-center gap-3 p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm\">\n  <div class=\"h-10 w-10 rounded-full bg-brand-500/15 text-brand-600 flex items-center justify-center font-bold\">\n    UI\n  </div>\n  <div class=\"flex-1 text-center sm:text-left\">\n    <h4 class=\"text-sm font-semibold\">Animated Card</h4>\n    <p class=\"text-xs text-slate-500\">Touch-ready min-height with smooth color transitions.</p>\n  </div>\n</div>\n```\n\nNotice the `sm:flex-row` and `sm:text-left` modifiers that ensure flawless mobile stacked viewing before upgrading to horizontal desktop layouts!";
+        }
+
+        return "Mobile-first architecture ensures that every screen size from compact 375px smartphones to 4K ultra-wide monitors receives a first-class experience.\n\nKey principles applied here:\n• **44px Touch Targets**: Form controls and action icons use `min-h-[44px]` for effortless tapping with thumbs.\n• **Safe Area Insets**: Elements anchored to viewports employ `pb-safe` so iPhone home bars never obscure controls.\n• **Zero FOUC Theme Engine**: An inline script applies `document.documentElement.classList.add('dark')` synchronously before the WASM engine hydrates.\n• **Progressive Stepper**: Multi-stage checklists keep users informed during AI reasoning phases!";
+    }
+}

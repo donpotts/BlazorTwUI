@@ -1,0 +1,1132 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@using System.Text.Json
+@inject AgenticToolRegistry ToolRegistry
+@inject ThemeService Theme
+@inject ToastService Toast
+@inject TwSoundService Sound
+@inject IJSRuntime JS
+
+<div class="relative bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xl space-y-8 @Class">
+    <TwConfetti @ref="_confettiRef" FullScreen="true" />
+    <!-- Studio Header -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-6">
+        <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 mb-2">
+                <span>🤖</span> .NET 10+ Adaptive Generative UI (AG-UI) & HITL Studio
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                AG-UI & Agentic Forms Studio
+            </h2>
+            <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-3xl">
+                Experience next-generation client-side generative UI synthesis: runtime adaptive forms, human-in-the-loop (HITL) approval gates, and dual frontend (WASM) & backend (API) agentic tool calling in pure .NET 10+.
+            </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <div class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center shadow-xs">
+                <div class="text-xl font-black text-blue-600 dark:text-blue-400">@ToolRegistry.GetFrontendTools().Count</div>
+                <div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Frontend WASM Tools</div>
+            </div>
+            <div class="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center shadow-xs">
+                <div class="text-xl font-black text-emerald-600 dark:text-emerald-400">@ToolRegistry.GetBackendTools().Count</div>
+                <div class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Backend API Tools</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. Agentic Prompt & Synthesis Bar -->
+    <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+        <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <span>🪄</span> Prompt-Driven Adaptive Generative UI (AG-UI) Synthesis
+            </span>
+            <span class="text-[11px] font-mono text-slate-400">Agent Engine: .NET 10+ WASM SIMD</span>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+            <div class="relative flex-1">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-purple-500 text-base">
+                    ✨
+                </span>
+                <input type="text"
+                       @bind="_promptInput"
+                       @onkeydown="HandlePromptKeyDown"
+                       placeholder="Describe a form to generate, e.g. 'Provision HA Postgres cluster with 3 replicas and SLA window'..."
+                       class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 shadow-xs" />
+            </div>
+
+            <button type="button"
+                    @onclick="ExecuteAgenticPrompt"
+                    disabled="@_isGenerating"
+                    class="px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 shrink-0">
+                @if (_isGenerating)
+                {
+                    <span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                    <span>Synthesizing AG-UI...</span>
+                }
+                else
+                {
+                    <span>Synthesize & Call Tools</span>
+                    <span>&rarr;</span>
+                }
+            </button>
+        </div>
+
+        <!-- Preset Prompt Pills -->
+        <div class="flex flex-wrap items-center gap-2 pt-1">
+            <span class="text-[11px] font-semibold text-slate-400">Quick Scenarios:</span>
+            <button type="button" @onclick='() => LoadFormScenario("cloud")'
+                    class="px-3 py-1 text-xs rounded-lg border border-purple-300 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 hover:border-purple-500 text-purple-700 dark:text-purple-300 font-bold transition">
+                📋 HA Cloud Cluster Form (HITL)
+            </button>
+            <button type="button" @onclick='() => LoadFormScenario("procure")'
+                    class="px-3 py-1 text-xs rounded-lg border border-purple-300 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 hover:border-purple-500 text-purple-700 dark:text-purple-300 font-bold transition">
+                📑 Ingested PDF Procurement Form
+            </button>
+            <button type="button" @onclick='() => LoadFormScenario("security")'
+                    class="px-3 py-1 text-xs rounded-lg border border-purple-300 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 hover:border-purple-500 text-purple-700 dark:text-purple-300 font-bold transition">
+                🛡️ Zero-Trust Privilege Gate
+            </button>
+            <button type="button" @onclick='() => LoadScenario("cloud")'
+                    class="px-3 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-slate-400 text-slate-700 dark:text-slate-300 font-medium transition">
+                ☁️ Cloud Quota Widget
+            </button>
+            <button type="button" @onclick='() => LoadScenario("finance")'
+                    class="px-3 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-slate-400 text-slate-700 dark:text-slate-300 font-medium transition">
+                📈 Market Depth Ticker
+            </button>
+            <button type="button" @onclick='() => LoadScenario("party")'
+                    class="px-3 py-1 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-slate-400 text-slate-700 dark:text-slate-300 font-medium transition">
+                🎉 Confetti Burst
+            </button>
+        </div>
+    </div>
+
+    <!-- 2. Dual-Column Workbench: Live AG-UI Canvas vs Tool Execution Trace -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Live Synthesized AG-UI Canvas (7 cols) -->
+        <div class="lg:col-span-7 space-y-4">
+            
+            <!-- Canvas Mode Selector & Render Telemetry -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="inline-flex p-1 rounded-2xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700">
+                    <button type="button" @onclick='() => _activeAguiTab = "forms"'
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 @(_activeAguiTab == "forms" ? "bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-sm" : "text-slate-600 dark:text-slate-400")">
+                        <span>📋</span>
+                        <span>AG-UI Adaptive Forms & HITL Gate</span>
+                    </button>
+                    <button type="button" @onclick='() => _activeAguiTab = "widgets"'
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 @(_activeAguiTab == "widgets" ? "bg-white dark:bg-slate-900 text-purple-600 dark:text-purple-400 shadow-sm" : "text-slate-600 dark:text-slate-400")">
+                        <span>📊</span>
+                        <span>Dashboard Widgets</span>
+                    </button>
+                </div>
+
+                @if (_currentExecution != null)
+                {
+                    <span class="text-xs font-mono text-slate-400">
+                        Synthesized in <strong class="text-emerald-500">@(_currentExecution.TotalExecutionMs)ms</strong>
+                    </span>
+                }
+            </div>
+
+            @if (_activeAguiTab == "forms")
+            {
+                <!-- Form Scenario Switcher Pills -->
+                <div class="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/60 dark:border-purple-800/40">
+                    <span class="text-[11px] font-bold text-purple-700 dark:text-purple-300 flex items-center gap-1">
+                        <span>⚡</span> Preset Forms:
+                    </span>
+                    <button type="button" @onclick='() => LoadFormScenario("cloud")'
+                            class="px-2.5 py-1 text-xs rounded-xl font-bold transition border @(_selectedFormKey == "cloud" ? "bg-purple-600 text-white border-purple-600 shadow-xs" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-purple-400")">
+                        ☁️ HA Cluster Provisioning
+                    </button>
+                    <button type="button" @onclick='() => LoadFormScenario("procure")'
+                            class="px-2.5 py-1 text-xs rounded-xl font-bold transition border @(_selectedFormKey == "procure" ? "bg-purple-600 text-white border-purple-600 shadow-xs" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-purple-400")">
+                        📑 PDF Procurement Ingest
+                    </button>
+                    <button type="button" @onclick='() => LoadFormScenario("security")'
+                            class="px-2.5 py-1 text-xs rounded-xl font-bold transition border @(_selectedFormKey == "security" ? "bg-purple-600 text-white border-purple-600 shadow-xs" : "bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-purple-400")">
+                        🛡️ Zero-Trust Privilege Gate
+                    </button>
+                </div>
+
+                <!-- TwAguiFormCanvas Component -->
+                <TwAguiFormCanvas Schema="_activeFormSchema" OnSubmit="HandleFormSubmit" OnCancel="HandleFormCancel" />
+            }
+            else
+            {
+                <TwAguiCanvas Schema="_currentWidget" OnActionTriggered="HandleAguiAction" />
+            }
+
+            <!-- Smart Components Live Interactive Suite -->
+            <div class="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <span class="text-lg">⚡</span>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white">Smart Components Interactive Sandbox</h3>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
+                        Drop-in Blazor Controls
+                    </span>
+                </div>
+
+                <!-- 1. TwSmartSearch -->
+                <div class="space-y-1.5">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">1. TwSmartSearch (Semantic Vector Matching):</span>
+                    <TwSmartSearch OnSearchSubmitted="HandleSmartSearchSubmit" />
+                </div>
+
+                <!-- 2. TwSmartFilter -->
+                <div class="space-y-1.5 pt-2">
+                    <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">2. TwSmartFilter (Natural Query to Filter Predicates):</span>
+                    <TwSmartFilter OnFilterChanged="HandleSmartFilterChange" />
+
+                    <!-- Live Filtered Cluster Instances Table (Real-time Filter Execution) -->
+                    <div class="mt-2 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full @(_activeFilterChips.Count > 0 ? "bg-purple-500 animate-pulse" : "bg-slate-400")"></span>
+                                <span>Live Filtered Cluster Nodes:</span>
+                            </span>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300">
+                                @FilteredInstances.Count of @_allInstances.Count Matching
+                            </span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-[11px] text-left">
+                                <thead class="text-slate-400 font-mono border-b border-slate-200 dark:border-slate-700">
+                                    <tr>
+                                        <th class="py-1">Node Identifier</th>
+                                        <th>Region</th>
+                                        <th>Workload Role</th>
+                                        <th>Tier</th>
+                                        <th>CPU</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                                    @foreach (var inst in FilteredInstances)
+                                    {
+                                        <tr>
+                                            <td class="py-1 font-bold text-slate-900 dark:text-white">@inst.Id</td>
+                                            <td class="text-slate-500">@inst.Region</td>
+                                            <td class="text-slate-700 dark:text-slate-300">@inst.Role</td>
+                                            <td><span class="px-1.5 py-0.2 rounded text-[9px] font-bold @(inst.Status == "Active" ? "bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300" : "bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300")">@inst.Status</span></td>
+                                            <td class="font-bold text-slate-800 dark:text-slate-200">@inst.CpuPercent%</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. TwSmartTextArea with SmartPaste -->
+                <div class="space-y-1.5 pt-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">3. TwSmartTextArea & Smart Ingestion:</span>
+                        <div class="flex items-center gap-1.5">
+                            <TwSmartPasteButton OnApplied="HandleSmartPasteApplied" />
+                            <TwSmartOcrButton OnDocumentScanned="HandleSmartDocScanned" OnCheckScanned="HandleSmartCheckScanned" />
+                        </div>
+                    </div>
+                    <TwSmartTextArea @bind-Value="_smartTextValue" Rows="3" />
+
+                    <!-- Live Populated Fields Form Card (Populated by SmartPaste) -->
+                    @if (_extractedFormFields.Count > 0)
+                    {
+                        <div class="mt-2 p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800 space-y-2 animate-zoom-in">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                                    <span>✨</span>
+                                    <span>Smart Paste Bound Fields:</span>
+                                </span>
+                                <span class="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">@_extractedFormFields.Count Fields Populated</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                                @foreach (var field in _extractedFormFields)
+                                {
+                                    <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/80">
+                                        <span class="text-[10px] text-slate-400 uppercase font-mono block">@field.Key.Replace("_", " "):</span>
+                                        <input type="text"
+                                               value="@field.Value"
+                                               @oninput='(e) => _extractedFormFields[field.Key] = e.Value?.ToString() ?? ""'
+                                               class="w-full bg-transparent font-bold text-slate-900 dark:text-white text-xs focus:outline-none" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Tool Call Trace & Code Inspector (5 cols) -->
+        <div class="lg:col-span-5 space-y-4">
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-100/60 dark:bg-slate-800/40 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm">🔬</span>
+                        <span class="text-xs font-bold text-slate-800 dark:text-slate-200">Agentic Tool Call Trace</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded font-mono text-[10px] font-bold bg-purple-100 dark:bg-purple-900/60 text-purple-700 dark:text-purple-300">
+                        @(_currentExecution?.ToolCalls.Count ?? 0) Calls
+                    </span>
+                </div>
+
+                <div class="p-4 space-y-3 max-h-[580px] overflow-y-auto custom-scrollbar">
+                    @if (_currentExecution != null && _currentExecution.ToolCalls.Count > 0)
+                    {
+                        <div class="p-2.5 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 border border-purple-200/50 dark:border-purple-800/40 text-xs text-purple-900 dark:text-purple-200 space-y-1">
+                            <span class="font-bold block">Agent Reasoning & Coordination:</span>
+                            <p class="text-[11px] leading-relaxed">@_currentExecution.ReasoningSummary</p>
+                        </div>
+
+                        <div class="space-y-2">
+                            @foreach (var call in _currentExecution.ToolCalls)
+                            {
+                                var isFrontend = call.Source == ToolSource.FrontendWasm;
+                                <div class="p-3.5 rounded-2xl border transition-all @(isFrontend ? "border-blue-200 dark:border-blue-900/50 bg-blue-50/30 dark:bg-blue-950/20" : "border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/30 dark:bg-emerald-950/20")">
+                                    <div class="flex items-center justify-between gap-2">
+                                        <div class="flex items-center gap-1.5">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider @(isFrontend ? "bg-blue-600 text-white" : "bg-emerald-600 text-white")">
+                                                @(isFrontend ? "Frontend WASM" : "Backend API")
+                                            </span>
+                                            <span class="font-mono text-xs font-bold text-slate-800 dark:text-slate-200">@call.ToolName</span>
+                                        </div>
+                                        <span class="text-[11px] font-mono text-slate-400">@call.LatencyMs ms</span>
+                                    </div>
+
+                                    <div class="text-xs text-slate-600 dark:text-slate-400 mt-1">@call.DisplayName</div>
+
+                                    <!-- Arguments -->
+                                    <div class="mt-2 pt-2 border-t border-slate-200/50 dark:border-slate-800/60 font-mono text-[10px] text-slate-500 dark:text-slate-400 space-y-1">
+                                        <div><strong class="text-slate-700 dark:text-slate-300">Args:</strong> @JsonSerializer.Serialize(call.Arguments)</div>
+                                        <div><strong class="text-slate-700 dark:text-slate-300">Result:</strong> <span class="text-emerald-600 dark:text-emerald-400">@JsonSerializer.Serialize(call.Result)</span></div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="p-8 text-center text-slate-400 space-y-2">
+                            <span class="text-3xl block">📡</span>
+                            <p class="text-xs">No active tool trace. Run a scenario above to inspect live tool calls.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- C# .NET 10+ AG-UI Tool Calling Code Snippet -->
+            <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 space-y-3">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-800 dark:text-slate-200">C# .NET 10+ AG-UI Implementation:</span>
+                    <button type="button" @onclick="CopyCSharpSnippet"
+                            class="px-2.5 py-1 rounded bg-purple-600 hover:bg-purple-700 text-white text-[11px] font-medium shadow-xs">
+                        Copy C#
+                    </button>
+                </div>
+                <pre class="p-4 rounded-2xl bg-slate-900 text-slate-200 font-mono text-[11px] overflow-x-auto leading-relaxed border border-slate-800 max-h-48">@GetCSharpSnippet()</pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Class { get; set; } = "";
+
+    private string _promptInput = "Synthesize high-availability cloud database provisioning form with human sign-off";
+    private bool _isGenerating = false;
+    private string _activeAguiTab = "forms"; // forms vs widgets
+    private string _selectedFormKey = "cloud";
+    private AgenticExecutionTrace? _currentExecution;
+    private AguiWidgetSchema? _currentWidget;
+    private AguiFormSchema? _activeFormSchema;
+    private TwConfetti? _confettiRef;
+    private string _smartTextValue = "Our distributed stream processing pipeline reduced cluster memory allocation by 45 percent.";
+
+    protected override async Task OnInitializedAsync()
+    {
+        LoadFormScenario("cloud");
+        await Task.CompletedTask;
+    }
+
+    private async Task HandlePromptKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ExecuteAgenticPrompt();
+        }
+    }
+
+    private void LoadFormScenario(string key)
+    {
+        _selectedFormKey = key;
+        _activeAguiTab = "forms";
+
+        switch (key)
+        {
+            case "cloud":
+                _promptInput = "Synthesize high-availability cloud database provisioning form with human sign-off";
+                _activeFormSchema = CreateCloudProvisioningForm();
+                break;
+            case "procure":
+                _promptInput = "Ingest Datadog quote PDF and generate enterprise procurement approval form";
+                _activeFormSchema = CreateProcurementForm();
+                break;
+            case "security":
+                _promptInput = "Create zero-trust emergency bastion access request with MFA approval gate";
+                _activeFormSchema = CreateSecurityElevationForm();
+                break;
+        }
+
+        if (_activeFormSchema != null)
+        {
+            RecordFormTrace(_activeFormSchema);
+        }
+    }
+
+    private async Task LoadScenario(string key)
+    {
+        _activeAguiTab = "widgets";
+        switch (key)
+        {
+            case "cloud":
+                _promptInput = "Query backend cloud cluster quota in us-east and synthesize an adaptive resource sentinel";
+                break;
+            case "finance":
+                _promptInput = "Fetch live NVDA order-book depth from market feed and render high-frequency ticker card";
+                break;
+            case "security":
+                _promptInput = "Run zero-trust security audit across tenant and notify compliance team via toast";
+                break;
+            case "theme":
+                _promptInput = "Execute client WASM tool to switch UI theme to Dark Mode with Cyber Cyan accent";
+                break;
+            case "party":
+                _promptInput = "Trigger frontend celebration tool call with 120 canvas physics confetti particles";
+                break;
+        }
+        await ExecuteAgenticPrompt();
+    }
+
+    private async Task ExecuteAgenticPrompt()
+    {
+        _isGenerating = true;
+        var prompt = _promptInput.ToLowerInvariant();
+
+        // If user prompt mentions form, provisioning, procurement, or approval, route to AG-UI Form synthesis
+        if (prompt.Contains("form") || prompt.Contains("provision") || prompt.Contains("procure") || prompt.Contains("bastion") || prompt.Contains("gate"))
+        {
+            if (prompt.Contains("procure") || prompt.Contains("pdf") || prompt.Contains("invoice") || prompt.Contains("datadog"))
+            {
+                LoadFormScenario("procure");
+            }
+            else if (prompt.Contains("security") || prompt.Contains("bastion") || prompt.Contains("access") || prompt.Contains("elevation"))
+            {
+                LoadFormScenario("security");
+            }
+            else
+            {
+                LoadFormScenario("cloud");
+            }
+
+            _isGenerating = false;
+            return;
+        }
+
+        // Otherwise handle widget synthesis
+        _activeAguiTab = "widgets";
+        var trace = new AgenticExecutionTrace
+        {
+            Prompt = _promptInput,
+            ReasoningSummary = "Identified user intent from prompt. Coordinating dual frontend WASM tools and backend API endpoints."
+        };
+
+        var totalSw = System.Diagnostics.Stopwatch.StartNew();
+
+        if (prompt.Contains("cloud") || prompt.Contains("quota"))
+        {
+            var backendCall = await ToolRegistry.ExecuteToolAsync("sys_cloud_quota_check", new() { ["region"] = "us-east-1", ["clusterId"] = "k8s-prod-primary" });
+            trace.ToolCalls.Add(backendCall);
+
+            var frontendCall = await ToolRegistry.ExecuteToolAsync("tw_render_widget", new() { ["widgetType"] = "metric", ["title"] = "Cloud Cluster Resource Sentinel", ["accentColor"] = "cyan" });
+            trace.ToolCalls.Add(frontendCall);
+
+            _currentWidget = new AguiWidgetSchema
+            {
+                Id = "agui_cloud_quota",
+                Title = "Cloud Infrastructure Sentinel",
+                Subtitle = "Real-time cluster telemetry across 6 worker nodes in us-east-1",
+                WidgetType = "metric",
+                Icon = "☁️",
+                AccentColor = "cyan",
+                Tags = new() { "DevOps", "Kubernetes", "LiveStream" },
+                Metrics = new()
+                {
+                    new() { Label = "vCPU Usage", Value = "38 / 48 Cores", Delta = "+4.2%", IsPositive = true },
+                    new() { Label = "Memory Allocated", Value = "142 / 192 GB", Delta = "-2.1%", IsPositive = true },
+                    new() { Label = "Active Pods", Value = "84 Running", Delta = "100% Healthy", IsPositive = true }
+                },
+                Properties = new()
+                {
+                    ["cluster_version"] = "v1.31.2 (WASM Edge)",
+                    ["network_ingress"] = "2.4 Gbps",
+                    ["auto_scale_status"] = "Nominal",
+                    ["last_heartbeat"] = DateTime.UtcNow.ToString("HH:mm:ss UTC")
+                },
+                Actions = new()
+                {
+                    new() { Id = "scale_up", Label = "Auto-Scale +2 Nodes", Variant = "primary", Icon = "⚡" },
+                    new() { Id = "drain_nodes", Label = "Drain Idle Node", Variant = "outline", Icon = "🔄" }
+                }
+            };
+        }
+        else if (prompt.Contains("finance") || prompt.Contains("market") || prompt.Contains("ticker"))
+        {
+            var backendCall = await ToolRegistry.ExecuteToolAsync("sys_financial_ticker", new() { ["ticker"] = "NVDA", ["timeframe"] = "5m" });
+            trace.ToolCalls.Add(backendCall);
+
+            var frontendCall = await ToolRegistry.ExecuteToolAsync("tw_render_widget", new() { ["widgetType"] = "card", ["title"] = "NVDA Market Depth", ["accentColor"] = "emerald" });
+            trace.ToolCalls.Add(frontendCall);
+
+            _currentWidget = new AguiWidgetSchema
+            {
+                Id = "agui_market_ticker",
+                Title = "NVDA High-Frequency Ticker",
+                Subtitle = "Real-time institutional order-book aggregate with live spread",
+                WidgetType = "card",
+                Icon = "📈",
+                AccentColor = "emerald",
+                Tags = new() { "MarketData", "OrderBook", "FinTech" },
+                Metrics = new()
+                {
+                    new() { Label = "Last Price", Value = "$142.85", Delta = "+4.12%", IsPositive = true },
+                    new() { Label = "Bid / Ask Spread", Value = "$142.84 / $142.86", Delta = "Tight ($0.02)", IsPositive = true },
+                    new() { Label = "24h Volume", Value = "48.2M Shares", Delta = "+12.8% DoD", IsPositive = true }
+                },
+                Properties = new()
+                {
+                    ["liquidity_score"] = "AAA (Deep Book)",
+                    ["market_cap"] = "$3.51T USD",
+                    ["exchange"] = "Direct WASM FIX Gateway"
+                },
+                Actions = new()
+                {
+                    new() { Id = "trade_buy", Label = "Instant Market Buy", Variant = "success", Icon = "▲" },
+                    new() { Id = "depth_chart", Label = "Inspect Full Depth", Variant = "outline", Icon = "📊" }
+                }
+            };
+        }
+        else
+        {
+            var confettiCall = await ToolRegistry.ExecuteToolAsync("tw_confetti_burst", new() { ["count"] = 160 });
+            trace.ToolCalls.Add(confettiCall);
+
+            if (_confettiRef != null)
+            {
+                await _confettiRef.FireStyleAsync(TwConfetti.CelebrationStyle.Fireworks, 0.5, 0.35, 160);
+                await Sound.PlayAsync(TwSoundEffect.Fireworks);
+            }
+
+            _currentWidget = new AguiWidgetSchema
+            {
+                Id = "agui_celebration",
+                Title = "High-Performance Celebration",
+                Subtitle = "Canvas physics particle engine executed locally in browser",
+                WidgetType = "card",
+                Icon = "🎉",
+                AccentColor = "purple",
+                Tags = new() { "HTML5Canvas", "PhysicsEngine", "WASM" },
+                Metrics = new()
+                {
+                    new() { Label = "Active Particles", Value = "160", Delta = "60 FPS", IsPositive = true },
+                    new() { Label = "Gravity Coefficient", Value = "0.92", Delta = "Nominal", IsPositive = true }
+                },
+                Actions = new()
+                {
+                    new() { Id = "more_confetti", Label = "Burst Again!", Variant = "primary", Icon = "✨" }
+                }
+            };
+        }
+
+        totalSw.Stop();
+        trace.TotalExecutionMs = Math.Round(totalSw.Elapsed.TotalMilliseconds, 1);
+        _currentExecution = trace;
+        _isGenerating = false;
+    }
+
+    private void RecordFormTrace(AguiFormSchema schema)
+    {
+        var trace = new AgenticExecutionTrace
+        {
+            Prompt = _promptInput,
+            ReasoningSummary = $"Agent '{schema.AgentName}' synthesized an AG-UI form schema with {schema.Fields.Count} dynamic fields ({schema.OverallConfidence * 100:F0}% confidence, Risk: {schema.RiskLevel}). Awaiting Human-in-the-Loop approval gate.",
+            TotalExecutionMs = 4.8
+        };
+
+        trace.ToolCalls.Add(new ToolCallExecution
+        {
+            ToolName = "sys_synthesize_agui_form",
+            DisplayName = $"Synthesize AG-UI Form ({schema.Title})",
+            Source = ToolSource.BackendApi,
+            LatencyMs = 3.2,
+            Arguments = new() { ["formId"] = schema.Id, ["risk"] = schema.RiskLevel, ["fieldCount"] = schema.Fields.Count },
+            Result = new { status = "SchemaGenerated", formId = schema.Id }
+        });
+
+        trace.ToolCalls.Add(new ToolCallExecution
+        {
+            ToolName = "tw_render_form_canvas",
+            DisplayName = "Render TwAguiFormCanvas with 2-Way Diff Binding",
+            Source = ToolSource.FrontendWasm,
+            LatencyMs = 1.6,
+            Arguments = new() { ["formId"] = schema.Id, ["renderedControls"] = schema.Fields.Select(f => f.Type.ToString()).ToList() },
+            Result = new { status = "Mounted", domNodes = schema.Fields.Count }
+        });
+
+        _currentExecution = trace;
+    }
+
+    private async Task HandleFormSubmit(AguiFormSubmission submission)
+    {
+        if (_currentExecution != null)
+        {
+            _currentExecution.ToolCalls.Add(new ToolCallExecution
+            {
+                ToolName = "human_approval_gate_resolve",
+                DisplayName = "Human-in-the-Loop (HITL) Sign-Off Granted",
+                Source = ToolSource.FrontendWasm,
+                LatencyMs = 0.8,
+                Arguments = new() { ["formId"] = submission.FormId, ["approved"] = true, ["fieldsModified"] = submission.Values.Count },
+                Result = new { status = "ActionExecuted", message = "Agent workflow unblocked and executed." }
+            });
+            _currentExecution.ReasoningSummary = $"Human reviewer approved '{_activeFormSchema?.Title}'. The autonomous agent resumed execution with verified parameters.";
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleFormCancel(string formId)
+    {
+        if (_currentExecution != null)
+        {
+            _currentExecution.ToolCalls.Add(new ToolCallExecution
+            {
+                ToolName = "human_approval_gate_rejected",
+                DisplayName = "Human-in-the-Loop (HITL) Action Rejected",
+                Source = ToolSource.FrontendWasm,
+                LatencyMs = 0.5,
+                Arguments = new() { ["formId"] = formId, ["approved"] = false },
+                Result = new { status = "Aborted", message = "Workflow aborted by human reviewer." }
+            });
+            _currentExecution.ReasoningSummary = "Human reviewer rejected the proposed plan. Workflow aborted safely.";
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private async Task HandleAguiAction(AguiActionItem action)
+    {
+        if (_currentExecution != null)
+        {
+            _currentExecution.ToolCalls.Add(new ToolCallExecution
+            {
+                ToolName = $"agent_exec_{action.Id}",
+                DisplayName = $"Executed Action: {action.Label}",
+                Source = ToolSource.FrontendWasm,
+                LatencyMs = 0.6,
+                Arguments = new() { ["actionId"] = action.Id, ["label"] = action.Label },
+                Result = new { status = "Success", executedAt = DateTime.UtcNow }
+            });
+            _currentExecution.ReasoningSummary = $"Coordinated frontend WASM execution for '{action.Label}'. Live state and metrics updated.";
+        }
+
+        if (action.Id == "reset_theme")
+        {
+            await Theme.SetAccentAsync(AccentTheme.Indigo);
+        }
+        else if (action.Id == "more_confetti")
+        {
+            if (_confettiRef != null)
+            {
+                await _confettiRef.FireStyleAsync(TwConfetti.CelebrationStyle.Confetti, 0.5, 0.35, 180);
+                await Sound.PlayAsync(TwSoundEffect.VictoryFanfare);
+            }
+        }
+        else if (action.Id == "scale_up")
+        {
+            if (_currentWidget != null)
+            {
+                var vcpu = _currentWidget.Metrics.FirstOrDefault(m => m.Label.Contains("vCPU"));
+                if (vcpu != null) vcpu.Value = "46 / 64 Cores";
+                var pods = _currentWidget.Metrics.FirstOrDefault(m => m.Label.Contains("Pods"));
+                if (pods != null) pods.Value = "118 Running";
+                _currentWidget.Properties["cluster_nodes"] = "8 Worker Nodes (+2 Scaled)";
+                _currentWidget.Properties["auto_scale_status"] = "Auto-Scaled +2 Nodes (Active)";
+                _currentWidget.Properties["last_heartbeat"] = DateTime.UtcNow.ToString("HH:mm:ss UTC");
+            }
+            await Sound.PlayAsync(TwSoundEffect.Coins);
+        }
+        else if (action.Id == "drain_nodes")
+        {
+            if (_currentWidget != null)
+            {
+                var vcpu = _currentWidget.Metrics.FirstOrDefault(m => m.Label.Contains("vCPU"));
+                if (vcpu != null) vcpu.Value = "32 / 48 Cores";
+                var pods = _currentWidget.Metrics.FirstOrDefault(m => m.Label.Contains("Pods"));
+                if (pods != null) pods.Value = "72 Running";
+                _currentWidget.Properties["auto_scale_status"] = "Node worker-06 drained and retired.";
+                _currentWidget.Properties["last_heartbeat"] = DateTime.UtcNow.ToString("HH:mm:ss UTC");
+            }
+            await Sound.PlayAsync(TwSoundEffect.FloatingReactions);
+        }
+        else if (action.Id == "trade_buy")
+        {
+            await Sound.PlayAsync(TwSoundEffect.Coins);
+        }
+    }
+
+    private async Task HandleSmartSearchSubmit(string query)
+    {
+        _promptInput = query;
+        await ExecuteAgenticPrompt();
+    }
+
+    private void HandleSmartFilterChange(Dictionary<string, string> chips)
+    {
+        _activeFilterChips = new Dictionary<string, string>(chips);
+    }
+
+    private void HandleSmartPasteApplied(Dictionary<string, string> mappings)
+    {
+        _extractedFormFields = new Dictionary<string, string>(mappings);
+    }
+
+    private void HandleSmartDocScanned(DocumentOcrResult doc)
+    {
+        var dict = new Dictionary<string, string>();
+        foreach (var f in doc.Fields)
+        {
+            dict[f.Key.ToLowerInvariant()] = f.Value;
+        }
+        _extractedFormFields = dict;
+        _smartTextValue = $"Extracted {doc.Title}: {doc.Fields.Count} entities identified with {(doc.ConfidenceScore * 100):F0}% confidence.";
+    }
+
+    private void HandleSmartCheckScanned(CheckDraftOcrResult check)
+    {
+        _extractedFormFields = new Dictionary<string, string>
+        {
+            ["routing_number"] = check.MicrData.TransitRoutingNumber,
+            ["account_number"] = check.MicrData.AccountNumber,
+            ["check_number"] = check.CheckNumber,
+            ["payer"] = check.PayerName,
+            ["payee"] = check.Payee,
+            ["amount"] = $"${check.CourtesyAmount:N2}",
+            ["memo"] = check.Memo,
+            ["bank"] = check.MicrData.BankName
+        };
+        _smartTextValue = $"Check #{check.CheckNumber} for ${check.CourtesyAmount:N2} payable to {check.Payee} from {check.PayerName} (MICR: {check.MicrData.RawMicrLine}).";
+    }
+
+    public class CloudInstanceRow
+    {
+        public string Id { get; set; } = "";
+        public string Region { get; set; } = "";
+        public string Role { get; set; } = "";
+        public string Status { get; set; } = "";
+        public int CpuPercent { get; set; }
+    }
+
+    private List<CloudInstanceRow> _allInstances = new()
+    {
+        new() { Id = "k8s-us-east-01", Region = "us-east-1", Role = "Database Master", Status = "Active", CpuPercent = 74 },
+        new() { Id = "k8s-us-east-02", Region = "us-east-1", Role = "API Gateway", Status = "Active", CpuPercent = 58 },
+        new() { Id = "k8s-us-west-01", Region = "us-west-2", Role = "Worker Pool", Status = "Staging", CpuPercent = 32 },
+        new() { Id = "k8s-eu-west-01", Region = "eu-west-1", Role = "Observability", Status = "Active", CpuPercent = 61 },
+        new() { Id = "k8s-us-east-03", Region = "us-east-1", Role = "Cache Sentinel", Status = "Active", CpuPercent = 19 }
+    };
+
+    private Dictionary<string, string> _activeFilterChips = new();
+    private Dictionary<string, string> _extractedFormFields = new();
+
+    private List<CloudInstanceRow> FilteredInstances
+    {
+        get
+        {
+            if (_activeFilterChips.Count == 0) return _allInstances;
+            return _allInstances.Where(inst =>
+            {
+                foreach (var chip in _activeFilterChips)
+                {
+                    var val = chip.Value.ToLowerInvariant();
+                    var match = inst.Id.ToLowerInvariant().Contains(val) ||
+                                inst.Region.ToLowerInvariant().Contains(val) ||
+                                inst.Role.ToLowerInvariant().Contains(val) ||
+                                inst.Status.ToLowerInvariant().Contains(val);
+                    if (!match) return false;
+                }
+                return true;
+            }).ToList();
+        }
+    }
+
+    private async Task CopyCSharpSnippet()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", GetCSharpSnippet());
+        }
+        catch (Exception)
+        {
+            // Clipboard fallback
+        }
+        Toast.Show("Code Copied", "C# .NET 10+ AG-UI code snippet copied to clipboard.", SemanticVariant.Success);
+    }
+
+    private string GetCSharpSnippet()
+    {
+        return @"// .NET 10+ C# AG-UI (Adaptive Generative UI) Form Engine & HITL Gate
+using BlazorTwUI.Models;
+using BlazorTwUI.Components.UI;
+
+// 1. Synthesize Dynamic AG-UI Form Schema from Agent
+var schema = new AguiFormSchema
+{
+    Title = ""Provision HA Database Cluster"",
+    AgentName = ""DevOps Copilot"",
+    RiskLevel = ""Medium"",
+    OverallConfidence = 0.96,
+    Fields = new()
+    {
+        new AguiFormField { Id = ""ClusterName"", Label = ""Cluster Name"", Type = AguiFieldType.Text, IsRequired = true },
+        new AguiFormField { Id = ""EnableMultiAz"", Label = ""High Availability Multi-AZ"", Type = AguiFieldType.Switch },
+        new AguiFormField { Id = ""ReplicaCount"", Label = ""Read Replicas"", Type = AguiFieldType.Slider, Min = 1, Max = 10, DependsOnField = ""EnableMultiAz"", DependsOnValue = ""true"" },
+        new AguiFormField { Id = ""StorageGb"", Label = ""Storage (GB)"", Type = AguiFieldType.Number, Min = 50, Max = 5000 }
+    },
+    InitialValues = new() { [""ClusterName""] = ""prod-pg-us-east"", [""EnableMultiAz""] = ""true"", [""ReplicaCount""] = 3 }
+};
+
+// 2. Render in Razor Markup with Structured Callback & Sound FX
+<TwAguiFormCanvas Schema=""@schema"" OnSubmit=""HandleApproval"" OnCancel=""HandleRejection"" />";
+    }
+
+    // Helper builders for rich AG-UI Form Scenarios
+    private AguiFormSchema CreateCloudProvisioningForm()
+    {
+        return new AguiFormSchema
+        {
+            Id = "form_cloud_provision_01",
+            Title = "Provision High-Availability Database Cluster",
+            Description = "Copilot synthesized provisioning plan based on Jira ticket #INFRA-9412 & enterprise SLA specifications.",
+            Icon = "☁️",
+            AgentName = "DevOps Copilot",
+            AccentColor = "purple",
+            RiskLevel = "Medium",
+            OverallConfidence = 0.96,
+            Fields = new()
+            {
+                new AguiFormField
+                {
+                    Id = "cluster_name",
+                    Label = "Cluster Identifier",
+                    Type = AguiFieldType.Text,
+                    IsRequired = true,
+                    AiConfidence = 0.99,
+                    ExtractedSource = "Auto-detected from Jira ticket #INFRA-9412",
+                    Group = "Cluster Configuration"
+                },
+                new AguiFormField
+                {
+                    Id = "environment",
+                    Label = "Target Environment",
+                    Type = AguiFieldType.Select,
+                    IsRequired = true,
+                    AiConfidence = 0.98,
+                    Options = new()
+                    {
+                        new() { Value = "production", Label = "Production (us-east-1)" },
+                        new() { Value = "staging", Label = "Staging (us-west-2)" },
+                        new() { Value = "dev", Label = "Development Sandbox" }
+                    },
+                    Group = "Cluster Configuration"
+                },
+                new AguiFormField
+                {
+                    Id = "engine_version",
+                    Label = "Database Engine",
+                    Type = AguiFieldType.RadioGroup,
+                    AiConfidence = 0.96,
+                    Options = new()
+                    {
+                        new() { Value = "pg16", Label = "PostgreSQL 16", Icon = "🐘", Description = "Enterprise Relational" },
+                        new() { Value = "my8", Label = "MySQL 8.4", Icon = "🐬", Description = "LTS Web Stack" },
+                        new() { Value = "redis7", Label = "Redis Enterprise", Icon = "⚡", Description = "In-Memory Caching" }
+                    },
+                    Group = "Cluster Configuration"
+                },
+                new AguiFormField
+                {
+                    Id = "multi_az",
+                    Label = "Multi-AZ Synchronous Replication",
+                    Type = AguiFieldType.Switch,
+                    AiConfidence = 0.95,
+                    ExtractedSource = "Mandated by Production Tier-1 SLA policy",
+                    Group = "High Availability & Scaling"
+                },
+                new AguiFormField
+                {
+                    Id = "replica_count",
+                    Label = "Read Replicas across Availability Zones",
+                    Type = AguiFieldType.Slider,
+                    Min = 1,
+                    Max = 8,
+                    Step = 1,
+                    AiConfidence = 0.94,
+                    DependsOnField = "multi_az",
+                    DependsOnValue = "true",
+                    Group = "High Availability & Scaling"
+                },
+                new AguiFormField
+                {
+                    Id = "storage_gb",
+                    Label = "Allocated NVMe Storage (GB)",
+                    Type = AguiFieldType.Number,
+                    Min = 100,
+                    Max = 5000,
+                    Step = 50,
+                    AiConfidence = 0.92,
+                    Group = "Storage & Backups"
+                },
+                new AguiFormField
+                {
+                    Id = "backup_retention",
+                    Label = "Automated Snapshot Retention (Days)",
+                    Type = AguiFieldType.Slider,
+                    Min = 7,
+                    Max = 90,
+                    Step = 1,
+                    AiConfidence = 0.97,
+                    Group = "Storage & Backups"
+                },
+                new AguiFormField
+                {
+                    Id = "admin_notes",
+                    Label = "DevOps Deployment Notes",
+                    Type = AguiFieldType.TextArea,
+                    Placeholder = "Provisioned with encrypted NVMe storage, VPC private peering, and automated failover.",
+                    Group = "Audit & Compliance"
+                }
+            },
+            InitialValues = new()
+            {
+                ["cluster_name"] = "prod-pg-us-east-01",
+                ["environment"] = "production",
+                ["engine_version"] = "pg16",
+                ["multi_az"] = "true",
+                ["replica_count"] = 3,
+                ["storage_gb"] = 500,
+                ["backup_retention"] = 30,
+                ["admin_notes"] = "SLA Target: 99.99% uptime. Automated failover time < 30 seconds."
+            }
+        };
+    }
+
+    private AguiFormSchema CreateProcurementForm()
+    {
+        return new AguiFormSchema
+        {
+            Id = "form_procurement_02",
+            Title = "Enterprise Software License Procurement",
+            Description = "Extracted from vendor PDF quote (Vendor: Datadog Systems Inc., Quote #Q-84912).",
+            Icon = "📑",
+            AgentName = "Finance & Legal Agent",
+            AccentColor = "emerald",
+            RiskLevel = "High",
+            OverallConfidence = 0.98,
+            Fields = new()
+            {
+                new AguiFormField
+                {
+                    Id = "vendor_name",
+                    Label = "Vendor Legal Entity",
+                    Type = AguiFieldType.Text,
+                    IsRequired = true,
+                    AiConfidence = 0.99,
+                    ExtractedSource = "Extracted from Quote Header Page 1",
+                    Group = "Vendor Details"
+                },
+                new AguiFormField
+                {
+                    Id = "quote_number",
+                    Label = "Quote Reference ID",
+                    Type = AguiFieldType.Text,
+                    IsRequired = true,
+                    AiConfidence = 0.99,
+                    ExtractedSource = "Extracted from Quote Metadata",
+                    Group = "Vendor Details"
+                },
+                new AguiFormField
+                {
+                    Id = "license_tier",
+                    Label = "Subscription Tier",
+                    Type = AguiFieldType.RadioGroup,
+                    AiConfidence = 0.97,
+                    Options = new()
+                    {
+                        new() { Value = "standard", Label = "Standard", Icon = "📦", Description = "Up to 50 hosts" },
+                        new() { Value = "pro", Label = "Professional", Icon = "🚀", Description = "APM + Tracing" },
+                        new() { Value = "enterprise", Label = "Enterprise", Icon = "🏛️", Description = "Unlimited Log Ingest & SAML" }
+                    },
+                    Group = "Contract Terms"
+                },
+                new AguiFormField
+                {
+                    Id = "total_annual_spend",
+                    Label = "Total Annual Contract Value ($ USD)",
+                    Type = AguiFieldType.Number,
+                    IsRequired = true,
+                    AiConfidence = 0.99,
+                    ExtractedSource = "Extracted from Grand Total on Page 2",
+                    Group = "Financial Terms"
+                },
+                new AguiFormField
+                {
+                    Id = "payment_terms",
+                    Label = "Payment Terms",
+                    Type = AguiFieldType.Select,
+                    AiConfidence = 0.95,
+                    Options = new()
+                    {
+                        new() { Value = "net30", Label = "Net-30 Invoice" },
+                        new() { Value = "net60", Label = "Net-60 Invoice" },
+                        new() { Value = "annual_prepay", Label = "Annual Upfront Prepay (5% Discount)" }
+                    },
+                    Group = "Financial Terms"
+                },
+                new AguiFormField
+                {
+                    Id = "requires_legal_review",
+                    Label = "Trigger Senior Legal Review (> $100k)",
+                    Type = AguiFieldType.Switch,
+                    AiConfidence = 0.94,
+                    ExtractedSource = "Automated procurement policy gate triggered",
+                    Group = "Approval & Governance"
+                },
+                new AguiFormField
+                {
+                    Id = "approver_notes",
+                    Label = "Department Justification",
+                    Type = AguiFieldType.TextArea,
+                    Placeholder = "Annual observability and APM renewal for infrastructure clusters.",
+                    Group = "Approval & Governance"
+                }
+            },
+            InitialValues = new()
+            {
+                ["vendor_name"] = "Datadog Systems Inc.",
+                ["quote_number"] = "Q-84912-REV3",
+                ["license_tier"] = "enterprise",
+                ["total_annual_spend"] = 124500,
+                ["payment_terms"] = "annual_prepay",
+                ["requires_legal_review"] = "true",
+                ["approver_notes"] = "Mission-critical observability infrastructure for production Kubernetes clusters."
+            }
+        };
+    }
+
+    private AguiFormSchema CreateSecurityElevationForm()
+    {
+        return new AguiFormSchema
+        {
+            Id = "form_security_03",
+            Title = "Production Bastion Zero-Trust Access Gate",
+            Description = "Temporary break-glass privilege elevation for emergency hotfix #HOT-381.",
+            Icon = "🛡️",
+            AgentName = "Security Sentinel",
+            AccentColor = "rose",
+            RiskLevel = "High",
+            OverallConfidence = 0.91,
+            Fields = new()
+            {
+                new AguiFormField
+                {
+                    Id = "target_host",
+                    Label = "Target Bastion / Host",
+                    Type = AguiFieldType.Text,
+                    IsRequired = true,
+                    AiConfidence = 0.99,
+                    ExtractedSource = "Resolved from incident telemetry #HOT-381",
+                    Group = "Access Details"
+                },
+                new AguiFormField
+                {
+                    Id = "privilege_role",
+                    Label = "Privilege Level Requested",
+                    Type = AguiFieldType.Select,
+                    IsRequired = true,
+                    AiConfidence = 0.92,
+                    Options = new()
+                    {
+                        new() { Value = "auditor", Label = "Read-Only Observability Auditor" },
+                        new() { Value = "operator", Label = "Service Restart Operator" },
+                        new() { Value = "root_admin", Label = "Root SuperAdmin (Full Access)" }
+                    },
+                    Group = "Access Details"
+                },
+                new AguiFormField
+                {
+                    Id = "duration_hours",
+                    Label = "Access Elevation TTL (Hours)",
+                    Type = AguiFieldType.Slider,
+                    Min = 1,
+                    Max = 8,
+                    Step = 1,
+                    AiConfidence = 0.90,
+                    Group = "Access Details"
+                },
+                new AguiFormField
+                {
+                    Id = "passkey_verified",
+                    Label = "FIDO2 WebAuthn Hardware Passkey Authenticated",
+                    Type = AguiFieldType.Switch,
+                    AiConfidence = 0.99,
+                    ExtractedSource = "Verified via client biometric authenticator",
+                    Group = "Zero-Trust Credentials"
+                },
+                new AguiFormField
+                {
+                    Id = "incident_ticket",
+                    Label = "Jira / PagerDuty Incident ID",
+                    Type = AguiFieldType.Text,
+                    IsRequired = true,
+                    AiConfidence = 0.95,
+                    Group = "Audit Log"
+                },
+                new AguiFormField
+                {
+                    Id = "emergency_justification",
+                    Label = "Break-Glass Justification",
+                    Type = AguiFieldType.TextArea,
+                    IsRequired = true,
+                    Placeholder = "Describe root cause and remediation actions to be performed...",
+                    Group = "Audit Log"
+                }
+            },
+            InitialValues = new()
+            {
+                ["target_host"] = "prod-bastion-us-east-01.internal",
+                ["privilege_role"] = "root_admin",
+                ["duration_hours"] = 2,
+                ["passkey_verified"] = "true",
+                ["incident_ticket"] = "INC-8942-BILLING-OUTAGE",
+                ["emergency_justification"] = "Emergency database connection pool thread dump and thread restart to resolve payment gateway degradation."
+            }
+        };
+    }
+}

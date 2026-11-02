@@ -1,0 +1,50 @@
+@namespace BlazorTwUI.Components.UI
+@using Microsoft.AspNetCore.Components
+
+<li class="list-none">
+    <a href="@Href"
+       @onclick="HandleClick"
+       title="@(IsMini ? Text : null)"
+       class="group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all select-none @(IsActive ? "bg-brand-500 text-white shadow-xs shadow-brand-500/30" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800") @(IsMini ? "justify-center" : "") @Class">
+        
+        @if (!string.IsNullOrEmpty(Icon))
+        {
+            <span class="text-base shrink-0 select-none">@Icon</span>
+        }
+        else if (IconTemplate != null)
+        {
+            <span class="shrink-0">@IconTemplate</span>
+        }
+
+        @if (!IsMini)
+        {
+            <span class="truncate flex-1">@Text</span>
+
+            @if (!string.IsNullOrEmpty(Badge))
+            {
+                <span class="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold leading-none @(IsActive ? "bg-white/20 text-white" : "bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300")">
+                    @Badge
+                </span>
+            }
+        }
+    </a>
+</li>
+
+@code {
+    [CascadingParameter(Name = "NavDrawerIsMini")]
+    public bool IsMini { get; set; }
+
+    [Parameter] public string Text { get; set; } = "Navigation Item";
+    [Parameter] public string? Href { get; set; }
+    [Parameter] public string? Icon { get; set; }
+    [Parameter] public RenderFragment? IconTemplate { get; set; }
+    [Parameter] public string? Badge { get; set; }
+    [Parameter] public bool IsActive { get; set; }
+    [Parameter] public EventCallback OnClick { get; set; }
+    [Parameter] public string Class { get; set; } = string.Empty;
+
+    private async Task HandleClick()
+    {
+        await OnClick.InvokeAsync();
+    }
+}

@@ -1,0 +1,73 @@
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@using System.Text.RegularExpressions
+@* Hosts an MCP app / widget in a sandboxed iframe, MIT). The frame gets an opaque origin: scripts and forms only,
+   no cookies, storage or DOM access to this page. Messages flow through postMessage. *@
+<figure class="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-white dark:bg-slate-900 @Class" data-testid="mcp-app">
+    <figcaption class="flex items-center justify-between gap-2 px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 text-xs">
+        <span class="font-bold text-slate-900 dark:text-slate-100">@Title</span>
+        <span class="text-slate-700 dark:text-slate-300" data-testid="mcp-sandbox">Sandboxed: @SandboxFlags</span>
+    </figcaption>
+    <iframe @ref="_frame" title="@Title" sandbox="@SandboxFlags" srcdoc="@Document" referrerpolicy="no-referrer"
+            class="w-full block bg-white" style="height:@Height" data-testid="mcp-frame"></iframe>
+</figure>
+
+@code {
+    /// <summary>Granted to the frame. Never includes <c>allow-same-origin</c>: that would hand the widget this page's cookies, storage and DOM.</summary>
+    public const string SandboxFlags = "allow-scripts allow-forms";
+
+    // A CSP host source: optional scheme, host (leading *. allowed), optional port and path. Anything else could end the policy early.
+    private static readonly Regex CspHost = new(
+        @"^(?:[a-z][a-z0-9+.-]*://)?(?:\*\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*(?::(?:\d+|\*))?(?:/[\w.~%/!$()*+=:@-]*)?$",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+    private ElementReference _frame;
+    private DotNetObjectReference<TwMcpAppFrame>? _self;
+    private bool _attached;
+
+    [Parameter, EditorRequired] public string Html { get; set; } = "";
+    [Parameter] public string Title { get; set; } = "App";
+    [Parameter] public string Height { get; set; } = "16rem";
+    /// <summary>Extra origins the widget may load scripts from or embed. Invalid entries are dropped.</summary>
+    [Parameter] public IReadOnlyList<string>? AllowedDomains { get; set; }
+    /// <summary>Raw JSON of each message the app posts to its host.</summary>
+    [Parameter] public EventCallback<string> OnMessage { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string Document => BuildDocument(Html, AllowedDomains);
+
+    /// <summary>Wraps widget HTML with a Content-Security-Policy that blocks network access except for validated domains.</summary>
+    public static string BuildDocument(string html, IEnumerable<string>? allowedDomains = null)
+    {
+        var extra = (allowedDomains ?? Array.Empty<string>()).Where(d => CspHost.IsMatch(d)).ToList();
+        var hosts = extra.Count > 0 ? " " + string.Join(' ', extra) : "";
+        var csp = $"default-src 'none'; script-src 'unsafe-inline' blob: data:{hosts}; style-src 'unsafe-inline'; img-src data: blob:{hosts}; connect-src 'none'; frame-src 'none'; form-action 'none'";
+        return $"<!doctype html><html><head><meta charset=\"utf-8\"><meta http-equiv=\"Content-Security-Policy\" content=\"{csp}\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body>{html}</body></html>";
+    }
+
+    /// <summary>Sends a JSON message into the app (it receives it as a window <c>message</c> event).</summary>
+    public async Task PostAsync(string json)
+    {
+        try { await JS.InvokeVoidAsync("twAgentKit.postToFrame", _frame, json); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _attached) return;
+        _attached = true;
+        _self = DotNetObjectReference.Create(this);
+        try { await JS.InvokeVoidAsync("twAgentKit.attachFrame", _frame, _self); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException) { }
+    }
+
+    [JSInvokable]
+    public Task OnFrameMessage(string json) => OnMessage.InvokeAsync(json);
+
+    public async ValueTask DisposeAsync()
+    {
+        try { if (_attached) await JS.InvokeVoidAsync("twAgentKit.detachFrame", _frame); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+        _self?.Dispose();
+    }
+}

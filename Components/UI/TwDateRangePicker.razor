@@ -1,0 +1,165 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="relative inline-block w-full @CustomClass">
+    @if (!string.IsNullOrEmpty(Label))
+    {
+        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+            @Label
+        </label>
+    }
+
+    <!-- Trigger Input -->
+    <button type="button"
+            @onclick="TogglePopover"
+            class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm shadow-2xs hover:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 text-left">
+        <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span class="font-mono text-xs">
+                @StartDate.ToString("MMM dd, yyyy") &mdash; @EndDate.ToString("MMM dd, yyyy")
+            </span>
+        </div>
+
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-brand-50 dark:bg-brand-950/60 text-brand-600 dark:text-brand-400 font-bold">
+            @((EndDate - StartDate).Days + 1) Days
+        </span>
+    </button>
+
+    <!-- Calendar Popover -->
+    @if (IsOpen)
+    {
+        <div class="absolute left-0 top-full mt-2 z-50 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-2xl flex flex-col md:flex-row gap-4">
+            <!-- Presets Sidebar -->
+            <div class="flex md:flex-col gap-1 pr-0 md:pr-3 border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-800 pb-3 md:pb-0 overflow-x-auto">
+                <button type="button" @onclick='() => SelectPreset("today")' class="px-3 py-1.5 rounded-lg text-xs text-left text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Today</button>
+                <button type="button" @onclick='() => SelectPreset("7days")' class="px-3 py-1.5 rounded-lg text-xs text-left text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Last 7 Days</button>
+                <button type="button" @onclick='() => SelectPreset("30days")' class="px-3 py-1.5 rounded-lg text-xs text-left text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Last 30 Days</button>
+                <button type="button" @onclick='() => SelectPreset("thisMonth")' class="px-3 py-1.5 rounded-lg text-xs text-left text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">This Month</button>
+                <button type="button" @onclick='() => SelectPreset("ytd")' class="px-3 py-1.5 rounded-lg text-xs text-left text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 whitespace-nowrap">Year to Date</button>
+            </div>
+
+            <!-- Dual Month View -->
+            <div class="space-y-3">
+                <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <button type="button" @onclick="PrevMonth" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+                        ◀
+                    </button>
+                    <span class="text-xs font-bold font-mono text-slate-800 dark:text-slate-200">
+                        @_viewDate.ToString("MMMM yyyy")
+                    </span>
+                    <button type="button" @onclick="NextMonth" class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500">
+                        ▶
+                    </button>
+                </div>
+
+                <!-- Days of Week Header -->
+                <div class="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400">
+                    <div>Su</div><div>Mo</div><div>Tu</div><div>We</div><div>Th</div><div>Fr</div><div>Sa</div>
+                </div>
+
+                <!-- Calendar Days Grid -->
+                <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                    @for (int i = 0; i < GetLeadingEmptyDays(); i++)
+                    {
+                        <div class="h-7 w-7"></div>
+                    }
+
+                    @for (int day = 1; day <= DateTime.DaysInMonth(_viewDate.Year, _viewDate.Month); day++)
+                    {
+                        var currDate = new DateTime(_viewDate.Year, _viewDate.Month, day);
+                        var isStart = currDate.Date == StartDate.Date;
+                        var isEnd = currDate.Date == EndDate.Date;
+                        var isInRange = currDate.Date > StartDate.Date && currDate.Date < EndDate.Date;
+
+                        <button type="button"
+                                @onclick="() => HandleDateClick(currDate)"
+                                class="h-7 w-7 rounded-lg text-xs font-mono font-medium transition @(isStart || isEnd ? "bg-brand-600 text-white font-bold shadow-xs" : isInRange ? "bg-brand-500/15 text-brand-700 dark:text-brand-300 rounded-none" : "hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200")">
+                            @day
+                        </button>
+                    }
+                </div>
+
+                <!-- Action Footer -->
+                <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span class="text-[11px] font-mono text-slate-500">
+                        @StartDate.ToString("MM/dd") &ndash; @EndDate.ToString("MM/dd")
+                    </span>
+                    <button type="button" @onclick="ClosePopover" class="px-3 py-1 rounded-lg text-xs font-semibold bg-brand-600 text-white shadow-xs">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; } = "Date Range Selection";
+    [Parameter] public DateTime StartDate { get; set; } = DateTime.Today.AddDays(-14);
+    [Parameter] public DateTime EndDate { get; set; } = DateTime.Today;
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<(DateTime Start, DateTime End)> OnRangeSelected { get; set; }
+
+    private bool IsOpen = false;
+    private DateTime _viewDate = DateTime.Today;
+    private bool _isPickingEnd = false;
+
+    private void TogglePopover() => IsOpen = !IsOpen;
+    private void ClosePopover() => IsOpen = false;
+
+    private void PrevMonth() => _viewDate = _viewDate.AddMonths(-1);
+    private void NextMonth() => _viewDate = _viewDate.AddMonths(1);
+
+    private int GetLeadingEmptyDays()
+    {
+        var firstDayOfMonth = new DateTime(_viewDate.Year, _viewDate.Month, 1);
+        return (int)firstDayOfMonth.DayOfWeek;
+    }
+
+    private void HandleDateClick(DateTime date)
+    {
+        if (!_isPickingEnd || date < StartDate)
+        {
+            StartDate = date;
+            EndDate = date;
+            _isPickingEnd = true;
+        }
+        else
+        {
+            EndDate = date;
+            _isPickingEnd = false;
+            OnRangeSelected.InvokeAsync((StartDate, EndDate));
+        }
+    }
+
+    private void SelectPreset(string preset)
+    {
+        var today = DateTime.Today;
+        switch (preset)
+        {
+            case "today":
+                StartDate = today;
+                EndDate = today;
+                break;
+            case "7days":
+                StartDate = today.AddDays(-6);
+                EndDate = today;
+                break;
+            case "30days":
+                StartDate = today.AddDays(-29);
+                EndDate = today;
+                break;
+            case "thisMonth":
+                StartDate = new DateTime(today.Year, today.Month, 1);
+                EndDate = today;
+                break;
+            case "ytd":
+                StartDate = new DateTime(today.Year, 1, 1);
+                EndDate = today;
+                break;
+        }
+        _isPickingEnd = false;
+        OnRangeSelected.InvokeAsync((StartDate, EndDate));
+    }
+}

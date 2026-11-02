@@ -1,0 +1,46 @@
+@* A field that opens a panel holding any content (a grid, a tree, a form). Closes on Escape, on an outside click, and optionally after a pick. *@
+<div class="relative inline-block @Class" data-testid="dropdown-box" @onkeydown="OnKeyAsync">
+    <button type="button" id="@_id" aria-haspopup="dialog" aria-expanded="@Open.ToString().ToLowerInvariant()" aria-controls="@($"{_id}-panel")" disabled="@Disabled" @onclick="ToggleAsync" data-testid="dropdown-trigger"
+            class="inline-flex items-center justify-between gap-3 min-w-[12rem] min-h-[40px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+        <span class="truncate @(string.IsNullOrEmpty(Text) ? "text-slate-600 dark:text-slate-400" : "")" data-testid="dropdown-text">@(string.IsNullOrEmpty(Text) ? Placeholder : Text)</span>
+        <span aria-hidden="true" class="transition-transform motion-reduce:transition-none @(Open ? "rotate-180" : "")">▾</span>
+    </button>
+    @if (Open)
+    {
+        <div class="fixed inset-0 z-30" @onclick="CloseAsync" aria-hidden="true" data-testid="dropdown-backdrop"></div>
+        <div id="@($"{_id}-panel")" role="dialog" aria-label="@(string.IsNullOrEmpty(Label) ? Placeholder : Label)" tabindex="-1"
+             class="absolute start-0 top-full mt-1 z-40 min-w-full w-max max-w-[90vw] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-2" data-testid="dropdown-panel">
+            @ChildContent(this)
+        </div>
+    }
+</div>
+
+@code {
+    private readonly string _id = "ddb-" + Guid.NewGuid().ToString("N")[..6];
+
+    /// <summary>The panel content. The component is passed in so the content can call <see cref="CloseAsync"/> after a pick.</summary>
+    [Parameter] public RenderFragment<TwDropDownBox> ChildContent { get; set; } = _ => __builder => { };
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select…";
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public bool Open { get; set; }
+    [Parameter] public EventCallback<bool> OpenChanged { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private async Task SetOpenAsync(bool value)
+    {
+        if (Open == value) return;
+        Open = value;
+        await OpenChanged.InvokeAsync(value);
+    }
+
+    private Task ToggleAsync() => SetOpenAsync(!Open);
+
+    public Task CloseAsync() => SetOpenAsync(false);
+
+    private async Task OnKeyAsync(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape" && Open) await SetOpenAsync(false);
+    }
+}

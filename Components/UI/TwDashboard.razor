@@ -1,0 +1,1221 @@
+@namespace BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@using System.Text.Json
+@inject IJSRuntime JS
+@inject ToastService Toast
+@inject TwOpenTelemetryService OtelService
+@implements IAsyncDisposable
+
+<div class="tw-dashboard-root space-y-6 @Class" id="@_dashboardContainerId">
+    <!-- Dashboard Top Action & Control Toolbar -->
+    <div class="p-4 sm:p-5 rounded-3xl bg-slate-900 border border-slate-800 text-white shadow-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-brand-600 via-indigo-600 to-purple-600 flex items-center justify-center text-2xl shadow-lg shrink-0">
+                📊
+            </div>
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 class="text-lg sm:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        @Title
+                    </h3>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold @(IsLocked ? "bg-amber-500/20 text-amber-300 border border-amber-500/30" : "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30")">
+                        <span class="w-2 h-2 rounded-full @(IsLocked ? "bg-amber-400" : "bg-emerald-400 animate-pulse")"></span>
+                        @(IsLocked ? "🔒 LOCKED (VIEW ONLY)" : "⚡ DRAGGABLE & EDITABLE")
+                    </span>
+                    <span class="text-xs font-mono text-slate-400">
+                        @_currentLayout.Count Active Cards
+                    </span>
+                </div>
+                <p class="text-xs text-slate-400 mt-0.5">
+                    @Subtitle
+                </p>
+            </div>
+        </div>
+
+        <!-- Controls: Add Card, Lock Toggle, Reset, Compact, Export -->
+        <div class="flex flex-wrap items-center gap-2 sm:gap-2.5">
+            <button type="button" @onclick="OpenAddCardModal"
+                    class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold shadow-md transition flex items-center gap-1.5">
+                <span>➕ Add Card</span>
+            </button>
+
+            <button type="button" @onclick="ToggleLockAsync"
+                    class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5"
+                    title="@(IsLocked ? "Unlock dashboard to enable dragging & resizing" : "Lock dashboard to freeze card positions for mobile touch scrolling")">
+                <span>@(IsLocked ? "🔓 Unlock Layout" : "🔒 Lock Layout")</span>
+            </button>
+
+            <button type="button" @onclick="CompactLayoutAsync"
+                    class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5"
+                    title="Compact cards vertically to eliminate empty gaps">
+                <span>📦 Compact</span>
+            </button>
+
+            <button type="button" @onclick="() => _showExportModal = true"
+                    class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5"
+                    title="Export or Import Dashboard Layout JSON">
+                <span>📋 JSON</span>
+            </button>
+
+            <button type="button" @onclick="ResetLayoutAsync"
+                    class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 text-xs font-semibold border border-rose-500/30 transition flex items-center gap-1.5"
+                    title="Reset dashboard back to initial default layout">
+                <span>🔄 Reset</span>
+            </button>
+
+            @HeaderExtra
+        </div>
+    </div>
+
+    <!-- Mobile Drag Guidance Banner (Visible on mobile/tablet) -->
+    <div class="md:hidden p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-300 flex items-center justify-between text-xs">
+        <div class="flex items-center gap-2">
+            <span class="text-base">📱</span>
+            <span><strong>Mobile First:</strong> Touch &amp; drag the <strong class="font-mono">⠿ grip handle</strong> or use the <strong>⬆️ ⬇️ tap buttons</strong> to rearrange cards.</span>
+        </div>
+        <button type="button" @onclick="ToggleLockAsync" class="font-bold underline text-[11px] shrink-0 ml-2">
+            @(IsLocked ? "Unlock" : "Lock Scroll")
+        </button>
+    </div>
+
+    <!-- Main GridStack Container -->
+    <div class="tw-dashboard-container relative w-full min-w-0 min-h-[400px]">
+        <div class="grid-stack w-full"></div>
+    </div>
+
+    <!-- Hidden Content Placeholders (Cloned into GridStack widgets) -->
+    <div style="display: none;" id="tw-card-content-placeholders">
+        @foreach (var card in _currentLayout)
+        {
+            <div id="content-for-@card.Id" class="h-full w-full">
+                <div class="h-full flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all overflow-hidden group">
+                    <!-- Card Header with Drag Handle & Actions -->
+                    <div class="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2 shrink-0 bg-slate-50/70 dark:bg-slate-950/40 select-none">
+                        <!-- Left: Drag Handle & Title -->
+                        <div class="flex items-center gap-2 min-w-0">
+                            <!-- Mobile-First Touch Drag Handle -->
+                            <div class="move-handle p-1.5 -ml-1 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-grab active:cursor-grabbing transition shrink-0"
+                                 title="Drag to rearrange card (Touch &amp; Desktop)">
+                                <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M7 2a2 2 0 100 4 2 2 0 000-4zM7 8a2 2 0 100 4 2 2 0 000-4zM7 14a2 2 0 100 4 2 2 0 000-4zM13 2a2 2 0 100 4 2 2 0 000-4zM13 8a2 2 0 100 4 2 2 0 000-4zM13 14a2 2 0 100 4 2 2 0 000-4z" />
+                                </svg>
+                            </div>
+
+                            <div class="min-w-0">
+                                <h4 class="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate flex items-center gap-1.5">
+                                    @if (!string.IsNullOrEmpty(card.Icon))
+                                    {
+                                        <span>@card.Icon</span>
+                                    }
+                                    <span>@card.Title</span>
+                                </h4>
+                                @if (!string.IsNullOrEmpty(card.Subtitle))
+                                {
+                                    <p class="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                                        @card.Subtitle
+                                    </p>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Right: Mobile Tap Steppers, Config, Collapse & Delete -->
+                        <div class="flex items-center gap-1 shrink-0 font-sans">
+                            <!-- Mobile 1-Tap Quick Move Buttons -->
+                            <div class="flex items-center sm:hidden text-slate-400">
+                                <button type="button" data-tw-action="moveup" data-card-id="@card.Id" @onclick="() => MoveCardUpAsync(card.Id)"
+                                        class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-[11px]" title="Move Card Up">
+                                    ⬆️
+                                </button>
+                                <button type="button" data-tw-action="movedown" data-card-id="@card.Id" @onclick="() => MoveCardDownAsync(card.Id)"
+                                        class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-800 text-[11px]" title="Move Card Down">
+                                    ⬇️
+                                </button>
+                            </div>
+
+                            <!-- Toggle Full Width (6 vs 12) -->
+                            <button type="button" data-tw-action="fullwidth" data-card-id="@card.Id" @onclick="() => ToggleCardFullWidthAsync(card.Id)"
+                                    class="hidden sm:inline-flex p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs"
+                                    title="Toggle Card Width (Half vs Full)">
+                                ↔️
+                            </button>
+
+                            <!-- Configure Card Properties -->
+                            <button type="button" data-tw-action="configure" data-card-id="@card.Id" @onclick="() => OpenConfigureCardModal(card)"
+                                    class="p-1 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs"
+                                    title="Configure Card Properties &amp; Size">
+                                ⚙️
+                            </button>
+
+                            <!-- Delete Handle -->
+                            <button type="button" data-tw-action="delete" data-card-id="@card.Id" @onclick="() => RemoveCardAsync(card.Id)"
+                                    class="p-1 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-xs transition"
+                                    title="Remove this card">
+                                🗑️
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="flex-1 p-4 overflow-y-auto min-w-0">
+                        @if (CardRenderer != null)
+                        {
+                            @CardRenderer(card)
+                        }
+                        else
+                        {
+                            @RenderDefaultCardContent(card)
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- ADD CARD MODAL                                                            -->
+    <!-- ========================================================================= -->
+    @if (_showAddCardModal)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+            <div class="w-full max-w-xl rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div class="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">📊</span>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Add Dashboard Card</h3>
+                    </div>
+                    <button type="button" @onclick="() => _showAddCardModal = false"
+                            class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-900 dark:hover:text-white flex items-center justify-center text-sm font-bold">
+                        ✕
+                    </button>
+                </div>
+
+                <div class="p-6 space-y-4 overflow-y-auto flex-1 text-xs">
+                    <p class="text-slate-600 dark:text-slate-400">
+                        Select a widget template to insert onto your custom dashboard. Cards are fully draggable, resizable, and auto-persist to local storage.
+                    </p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button type="button" @onclick='() => AddPredefinedCard("sales-line")'
+                                class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50 dark:bg-slate-800/40 text-left transition flex items-start gap-3">
+                            <span class="text-2xl">📈</span>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-white">Sales Over Time</div>
+                                <div class="text-[11px] text-slate-500">Interactive Line Chart (Monthly trend)</div>
+                            </div>
+                        </button>
+
+                        <button type="button" @onclick='() => AddPredefinedCard("leads-donut")'
+                                class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50 dark:bg-slate-800/40 text-left transition flex items-start gap-3">
+                            <span class="text-2xl">🍩</span>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-white">Lead Sources</div>
+                                <div class="text-[11px] text-slate-500">Doughnut Chart (Organic, Ads, Referrals)</div>
+                            </div>
+                        </button>
+
+                        <button type="button" @onclick='() => AddPredefinedCard("pipeline-bar")'
+                                class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50 dark:bg-slate-800/40 text-left transition flex items-start gap-3">
+                            <span class="text-2xl">📊</span>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-white">Pipeline Value</div>
+                                <div class="text-[11px] text-slate-500">Bar Chart by Sales Funnel Stage</div>
+                            </div>
+                        </button>
+
+                        <button type="button" @onclick='() => AddPredefinedCard("kpi-revenue")'
+                                class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50 dark:bg-slate-800/40 text-left transition flex items-start gap-3">
+                            <span class="text-2xl">💰</span>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-white">Total Revenue KPI</div>
+                                <div class="text-[11px] text-slate-500">Stat card with trend sparkline</div>
+                            </div>
+                        </button>
+
+                        <button type="button" @onclick='() => AddPredefinedCard("kpi-leads")'
+                                class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50 dark:bg-slate-800/40 text-left transition flex items-start gap-3">
+                            <span class="text-2xl">👥</span>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-white">New Leads KPI</div>
+                                <div class="text-[11px] text-slate-500">Customer Acquisition Metric</div>
+                            </div>
+                        </button>
+
+                        <button type="button" @onclick='() => AddPredefinedCard("activity")'
+                                class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50 dark:bg-slate-800/40 text-left transition flex items-start gap-3">
+                            <span class="text-2xl">⏱️</span>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-white">Recent Activity Feed</div>
+                                <div class="text-[11px] text-slate-500">Calls, meetings, notes &amp; emails</div>
+                            </div>
+                        </button>
+
+                        <button type="button" @onclick='() => AddPredefinedCard("opportunities")'
+                                class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50 dark:bg-slate-800/40 text-left transition flex items-start gap-3">
+                            <span class="text-2xl">🏆</span>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-white">Top Opportunities</div>
+                                <div class="text-[11px] text-slate-500">High-value pipeline deals table</div>
+                            </div>
+                        </button>
+
+                        <button type="button" @onclick='() => AddPredefinedCard("notes")'
+                                class="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 dark:hover:border-brand-400 bg-slate-50 dark:bg-slate-800/40 text-left transition flex items-start gap-3">
+                            <span class="text-2xl">📝</span>
+                            <div>
+                                <div class="font-bold text-slate-900 dark:text-white">Quick Notes Scratchpad</div>
+                                <div class="text-[11px] text-slate-500">Live editable notepad with auto-save</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                    <button type="button" @onclick="() => _showAddCardModal = false"
+                            class="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold text-xs">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- CONFIGURE CARD PROPERTIES MODAL                                           -->
+    <!-- ========================================================================= -->
+    @if (_selectedConfigureCard != null)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+            <div class="w-full max-w-md rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden flex flex-col p-6 space-y-4 text-xs">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                        <span>⚙️</span>
+                        <span>Card Properties: @_selectedConfigureCard.Title</span>
+                    </h3>
+                    <button type="button" @onclick="() => _selectedConfigureCard = null"
+                            class="text-slate-400 hover:text-white font-bold">✕</button>
+                </div>
+
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-slate-500 dark:text-slate-400 font-semibold mb-1">Card Title</label>
+                        <input type="text" @bind="_selectedConfigureCard.Title"
+                               class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-slate-500 dark:text-slate-400 font-semibold mb-1">Width (Columns: 2-12)</label>
+                            <input type="number" min="2" max="12" @bind="_selectedConfigureCard.W"
+                                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 dark:text-slate-400 font-semibold mb-1">Height (Rows: 2-10)</label>
+                            <input type="number" min="2" max="10" @bind="_selectedConfigureCard.H"
+                                   class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-slate-500 dark:text-slate-400 font-semibold mb-1">Accent Theme</label>
+                        <select @bind="_selectedConfigureCard.AccentColor"
+                                class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                            <option value="indigo">Indigo Glow</option>
+                            <option value="emerald">Emerald Success</option>
+                            <option value="amber">Amber Warning</option>
+                            <option value="rose">Rose Metric</option>
+                            <option value="cyan">Cyan Modern</option>
+                            <option value="purple">Purple Royalty</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" @onclick="() => _selectedConfigureCard = null"
+                            class="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 font-semibold">
+                        Cancel
+                    </button>
+                    <button type="button" @onclick="SaveConfiguredCardAsync"
+                            class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow-md">
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ========================================================================= -->
+    <!-- EXPORT / IMPORT JSON MODAL                                                -->
+    <!-- ========================================================================= -->
+    @if (_showExportModal)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs">
+            <div class="w-full max-w-xl rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl overflow-hidden flex flex-col p-6 space-y-4 text-xs">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <span>📋</span>
+                        <span>Dashboard Layout Configuration (JSON)</span>
+                    </h3>
+                    <button type="button" @onclick="() => _showExportModal = false" class="text-slate-400 hover:text-white">✕</button>
+                </div>
+
+                <p class="text-slate-400">
+                    Copy the persistent layout configuration below, or paste a new JSON definition to restore:
+                </p>
+
+                <textarea rows="10" @bind="_exportJsonText"
+                          class="w-full font-mono text-[11px] p-3 rounded-2xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:ring-1 focus:ring-brand-500"></textarea>
+
+                <div class="flex items-center justify-between pt-2 border-t border-slate-800">
+                    <button type="button" @onclick="CopyJsonToClipboardAsync"
+                            class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold">
+                        📋 Copy JSON
+                    </button>
+                    <div class="flex items-center gap-2">
+                        <button type="button" @onclick="() => _showExportModal = false"
+                                class="px-4 py-2 rounded-xl text-slate-400 hover:text-white">
+                            Close
+                        </button>
+                        <button type="button" @onclick="ImportJsonAsync"
+                                class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold shadow-md">
+                            Apply JSON Layout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string StorageKey { get; set; } = "blazor-tw-dashboard";
+    [Parameter] public string Title { get; set; } = "Enterprise Analytics & CRM Dashboard";
+    [Parameter] public string Subtitle { get; set; } = "Draggable, resizable, persistent, customizable cards with mobile drag handles";
+    [Parameter] public bool IsLocked { get; set; } = false;
+    [Parameter] public int CellHeight { get; set; } = 75;
+    [Parameter] public Func<List<TwDashboardCard>>? InitialLayoutFactory { get; set; }
+    [Parameter] public RenderFragment<TwDashboardCard>? CardRenderer { get; set; }
+    [Parameter] public RenderFragment? HeaderExtra { get; set; }
+    [Parameter] public EventCallback<List<TwDashboardCard>> OnLayoutChanged { get; set; }
+    [Parameter] public EventCallback<TwDashboardCard> OnCardClick { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string _dashboardContainerId = $"tw-dash-{Guid.NewGuid().ToString("N")[..6]}";
+    private IJSObjectReference? _jsModule;
+    private DotNetObjectReference<TwDashboard>? _dotNetHelper;
+    private List<TwDashboardCard> _currentLayout = new();
+    private bool _isInitialized = false;
+    private bool _showAddCardModal = false;
+    private bool _showExportModal = false;
+    private TwDashboardCard? _selectedConfigureCard = null;
+    private string _exportJsonText = string.Empty;
+
+    // Mock CRM data state
+    private TwCrmKpiSummary _kpis = new();
+    private List<TwCrmRecentActivity> _recentActivities = new()
+    {
+        new() { Type = "Call", Subject = "Quarterly Architecture Review", EntityName = "Acme Corp", Date = DateTime.UtcNow.AddHours(-2) },
+        new() { Type = "Email", Subject = "Contract Executed & Sealed", EntityName = "Global Cloud Inc", Date = DateTime.UtcNow.AddHours(-5) },
+        new() { Type = "Meeting", Subject = "SOC-2 Compliance Strategy", EntityName = "Vertex Systems", Date = DateTime.UtcNow.AddDays(-1) },
+        new() { Type = "Task", Subject = "Deploy Zero-Trust Enclave", EntityName = "Apex Enterprise", Date = DateTime.UtcNow.AddDays(-2) }
+    };
+    private List<TwCrmOpportunity> _topOpportunities = new()
+    {
+        new() { Name = "Global Migration Phase II", Value = 450000m, Stage = "Negotiation", Probability = 85, CustomerName = "Apex Cloud Corp" },
+        new() { Name = "AI Agentic Workflow Rollout", Value = 280000m, Stage = "Proposal", Probability = 65, CustomerName = "Horizon Media" },
+        new() { Name = "Kubernetes Edge Expansion", Value = 195000m, Stage = "Qualification", Probability = 40, CustomerName = "Starlight Logistics" }
+    };
+
+    protected override void OnInitialized()
+    {
+        using (OtelService.StartSpan("TwDashboard", "OnInitialized", "Lifecycle"))
+        {
+            _dotNetHelper = DotNetObjectReference.Create(this);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_isInitialized)
+        {
+            _isInitialized = true;
+            await LoadLayoutFromStorageAsync();
+        }
+    }
+
+    private async Task LoadLayoutFromStorageAsync()
+    {
+        try
+        {
+            var savedJson = await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+            if (!string.IsNullOrEmpty(savedJson))
+            {
+                var savedCards = JsonSerializer.Deserialize<List<TwDashboardCard>>(savedJson);
+                if (savedCards != null && savedCards.Any())
+                {
+                    _currentLayout = savedCards;
+                }
+                else
+                {
+                    _currentLayout = GetDefaultCrmLayout();
+                }
+            }
+            else
+            {
+                _currentLayout = InitialLayoutFactory?.Invoke() ?? GetDefaultCrmLayout();
+            }
+        }
+        catch
+        {
+            _currentLayout = InitialLayoutFactory?.Invoke() ?? GetDefaultCrmLayout();
+        }
+
+        await InvokeAsync(StateHasChanged);
+        await InitGridJsAsync();
+    }
+
+    private async Task InitGridJsAsync()
+    {
+        try
+        {
+            if (_jsModule == null)
+            {
+                _jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "./js/tw-dashboard-manager.js");
+            }
+
+            var simplifiedLayout = _currentLayout.Select(c => new
+            {
+                id = c.Id,
+                x = c.X,
+                y = c.Y,
+                w = c.W,
+                h = c.H,
+                minW = c.MinW ?? 2,
+                minH = c.MinH ?? 2
+            }).ToList();
+
+            await _jsModule.InvokeVoidAsync("init", $"#{_dashboardContainerId}", _dotNetHelper, simplifiedLayout, IsLocked, CellHeight);
+            await OnLayoutChanged.InvokeAsync(_currentLayout);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"TwDashboard JS init note: {ex.Message}");
+        }
+    }
+
+    [JSInvokable]
+    public async Task OnLayoutUpdatedFromJS(List<TwDashboardCard> updatedLayout)
+    {
+        var dict = _currentLayout.ToDictionary(c => c.Id);
+        foreach (var item in updatedLayout)
+        {
+            if (dict.TryGetValue(item.Id, out var card))
+            {
+                card.X = item.X;
+                card.Y = item.Y;
+                card.W = item.W;
+                card.H = item.H;
+            }
+        }
+
+        await SaveLayoutAsync();
+        await OnLayoutChanged.InvokeAsync(_currentLayout);
+    }
+
+    [JSInvokable]
+    public async Task OnCardActionFromJS(string action, string cardId)
+    {
+        switch (action)
+        {
+            case "configure":
+                var card = _currentLayout.FirstOrDefault(c => c.Id == cardId);
+                if (card != null)
+                {
+                    _selectedConfigureCard = card;
+                    await InvokeAsync(StateHasChanged);
+                }
+                break;
+            case "delete":
+                await RemoveCardAsync(cardId);
+                break;
+            case "fullwidth":
+                await ToggleCardFullWidthAsync(cardId);
+                break;
+            case "moveup":
+                await MoveCardUpAsync(cardId);
+                break;
+            case "movedown":
+                await MoveCardDownAsync(cardId);
+                break;
+        }
+    }
+
+    public async Task SaveLayoutAsync()
+    {
+        using (OtelService.StartSpan("TwDashboard", "SaveLayoutAsync", "StateChange", new() { ["layout.cards"] = _currentLayout.Count.ToString() }))
+        {
+            try
+            {
+                var json = JsonSerializer.Serialize(_currentLayout);
+                await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, json);
+            }
+            catch
+            {
+                // fallback
+            }
+        }
+    }
+
+    public async Task ResetLayoutAsync()
+    {
+        _currentLayout = InitialLayoutFactory?.Invoke() ?? GetDefaultCrmLayout();
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.removeItem", StorageKey);
+        }
+        catch { }
+
+        await InvokeAsync(StateHasChanged);
+        if (_jsModule != null)
+        {
+            try
+            {
+                await _jsModule.InvokeVoidAsync("loadData", $"#{_dashboardContainerId}", _currentLayout);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TwDashboard] loadData error: {ex.Message}");
+            }
+        }
+        await OnLayoutChanged.InvokeAsync(_currentLayout);
+        Toast?.Show("Dashboard layout reset to initial default factory.", variant: SemanticVariant.Info);
+    }
+
+    public async Task ToggleLockAsync()
+    {
+        IsLocked = !IsLocked;
+        if (_jsModule != null)
+        {
+            try
+            {
+                await _jsModule.InvokeVoidAsync("setLocked", $"#{_dashboardContainerId}", IsLocked);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TwDashboard] setLocked error: {ex.Message}");
+            }
+        }
+        Toast?.Show(IsLocked ? "Dashboard locked (View Only mode)." : "Dashboard unlocked (Drag & Resize active).", variant: SemanticVariant.Info);
+    }
+
+    public async Task CompactLayoutAsync()
+    {
+        if (_jsModule != null)
+        {
+            try
+            {
+                await _jsModule.InvokeVoidAsync("compact", $"#{_dashboardContainerId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TwDashboard] compact error: {ex.Message}");
+            }
+        }
+        Toast?.Show("Dashboard compact executed.", variant: SemanticVariant.Success);
+    }
+
+    public async Task AddCardAsync(TwDashboardCard card)
+    {
+        _currentLayout.Add(card);
+        await SaveLayoutAsync();
+        await InvokeAsync(StateHasChanged);
+
+        if (_jsModule != null)
+        {
+            try
+            {
+                await _jsModule.InvokeVoidAsync("addCard", $"#{_dashboardContainerId}", new
+                {
+                    id = card.Id,
+                    x = card.X,
+                    y = card.Y,
+                    w = card.W,
+                    h = card.H,
+                    minW = card.MinW ?? 2,
+                    minH = card.MinH ?? 2
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TwDashboard] addCard error: {ex.Message}");
+            }
+        }
+        await OnLayoutChanged.InvokeAsync(_currentLayout);
+        Toast?.Show($"Added card: {card.Title}", variant: SemanticVariant.Success);
+    }
+
+    public async Task RemoveCardAsync(string cardId)
+    {
+        var card = _currentLayout.FirstOrDefault(c => c.Id == cardId);
+        if (card != null)
+        {
+            _currentLayout.Remove(card);
+            await SaveLayoutAsync();
+            if (_jsModule != null)
+            {
+                try
+                {
+                    await _jsModule.InvokeVoidAsync("removeCard", $"#{_dashboardContainerId}", cardId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[TwDashboard] removeCard error: {ex.Message}");
+                }
+            }
+            await InvokeAsync(StateHasChanged);
+            await OnLayoutChanged.InvokeAsync(_currentLayout);
+            Toast?.Show($"Removed card: {card.Title}", variant: SemanticVariant.Info);
+        }
+    }
+
+    public async Task MoveCardUpAsync(string cardId)
+    {
+        var index = _currentLayout.FindIndex(c => c.Id == cardId);
+        if (index > 0)
+        {
+            var temp = _currentLayout[index];
+            _currentLayout[index] = _currentLayout[index - 1];
+            _currentLayout[index - 1] = temp;
+            await ReloadGridAsync();
+        }
+    }
+
+    public async Task MoveCardDownAsync(string cardId)
+    {
+        var index = _currentLayout.FindIndex(c => c.Id == cardId);
+        if (index >= 0 && index < _currentLayout.Count - 1)
+        {
+            var temp = _currentLayout[index];
+            _currentLayout[index] = _currentLayout[index + 1];
+            _currentLayout[index + 1] = temp;
+            await ReloadGridAsync();
+        }
+    }
+
+    public async Task ToggleCardFullWidthAsync(string cardId)
+    {
+        var card = _currentLayout.FirstOrDefault(c => c.Id == cardId);
+        if (card != null)
+        {
+            card.W = (card.W >= 12) ? 6 : 12;
+            card.X = 0;
+            await ReloadGridAsync();
+        }
+    }
+
+    private async Task ReloadGridAsync()
+    {
+        await SaveLayoutAsync();
+        await InvokeAsync(StateHasChanged);
+        if (_jsModule != null)
+        {
+            try
+            {
+                await _jsModule.InvokeVoidAsync("loadData", $"#{_dashboardContainerId}", _currentLayout);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[TwDashboard] loadData error: {ex.Message}");
+            }
+        }
+        await OnLayoutChanged.InvokeAsync(_currentLayout);
+    }
+
+    private void OpenAddCardModal()
+    {
+        _showAddCardModal = true;
+    }
+
+    private async Task AddPredefinedCard(string templateKey)
+    {
+        _showAddCardModal = false;
+        int nextY = _currentLayout.Any() ? _currentLayout.Max(c => c.Y + c.H) : 0;
+
+        var card = templateKey switch
+        {
+            "sales-line" => new TwDashboardCard
+            {
+                Id = $"card-sales-{DateTime.UtcNow.Ticks % 10000}",
+                Title = "Sales Revenue Trajectory",
+                Subtitle = "Monthly GAAP Revenue ($)",
+                CardType = "chart",
+                Icon = "📈",
+                X = 0, Y = nextY, W = 6, H = 4,
+                ChartConfig = new()
+                {
+                    Type = "line",
+                    Labels = new() { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug" },
+                    Datasets = new()
+                    {
+                        new() { Label = "Revenue ($)", Data = new() { 120000, 145000, 168000, 192000, 220000, 245000, 268000, 284500 }, BorderColor = "#4f46e5", BackgroundColor = "rgba(79, 70, 229, 0.15)" }
+                    }
+                }
+            },
+            "leads-donut" => new TwDashboardCard
+            {
+                Id = $"card-leads-{DateTime.UtcNow.Ticks % 10000}",
+                Title = "Lead Source Attribution",
+                Subtitle = "Conversion Channels",
+                CardType = "chart",
+                Icon = "🍩",
+                X = 6, Y = nextY, W = 6, H = 4,
+                ChartConfig = new()
+                {
+                    Type = "doughnut",
+                    Labels = new() { "Direct / Organic", "Cloud Marketplace", "Developer Referrals", "Enterprise Sales" },
+                    Datasets = new()
+                    {
+                        new() { Label = "Leads", Data = new() { 45, 30, 15, 10 }, BackgroundColors = new() { "#4f46e5", "#10b981", "#f59e0b", "#06b6d4" } }
+                    }
+                }
+            },
+            "pipeline-bar" => new TwDashboardCard
+            {
+                Id = $"card-pipe-{DateTime.UtcNow.Ticks % 10000}",
+                Title = "Active Pipeline Funnel",
+                Subtitle = "Opportunity Value by Stage",
+                CardType = "chart",
+                Icon = "📊",
+                X = 0, Y = nextY, W = 6, H = 4,
+                ChartConfig = new()
+                {
+                    Type = "bar",
+                    Labels = new() { "Prospecting", "Qualified", "Proposal", "Negotiation", "Closed Won" },
+                    Datasets = new()
+                    {
+                        new() { Label = "Value ($)", Data = new() { 480000, 320000, 260000, 140000, 85000 }, BackgroundColors = new() { "#6366f1", "#3b82f6", "#06b6d4", "#10b981", "#8b5cf6" } }
+                    }
+                }
+            },
+            "kpi-revenue" => new TwDashboardCard
+            {
+                Id = $"card-rev-{DateTime.UtcNow.Ticks % 10000}",
+                Title = "Total Revenue",
+                Subtitle = "Trailing 30 Days",
+                CardType = "revenue",
+                Icon = "💰",
+                Value = "$284,500",
+                ChangePercent = "+24.8%",
+                IsPositiveTrend = true,
+                AccentColor = "indigo",
+                X = 0, Y = nextY, W = 3, H = 3
+            },
+            "kpi-leads" => new TwDashboardCard
+            {
+                Id = $"card-kpi-leads-{DateTime.UtcNow.Ticks % 10000}",
+                Title = "New Qualified Leads",
+                Subtitle = "Marketing Inbound",
+                CardType = "leads",
+                Icon = "👥",
+                Value = "142",
+                ChangePercent = "+18.2%",
+                IsPositiveTrend = true,
+                AccentColor = "emerald",
+                X = 3, Y = nextY, W = 3, H = 3
+            },
+            "activity" => new TwDashboardCard
+            {
+                Id = $"card-act-{DateTime.UtcNow.Ticks % 10000}",
+                Title = "Recent Activity Feed",
+                Subtitle = "Audit & Customer Interactions",
+                CardType = "activity",
+                Icon = "⏱️",
+                X = 0, Y = nextY, W = 6, H = 4
+            },
+            "opportunities" => new TwDashboardCard
+            {
+                Id = $"card-opps-{DateTime.UtcNow.Ticks % 10000}",
+                Title = "Top Opportunities",
+                Subtitle = "High-Probability Deals",
+                CardType = "opportunities",
+                Icon = "🏆",
+                X = 6, Y = nextY, W = 6, H = 4
+            },
+            _ => new TwDashboardCard
+            {
+                Id = $"card-notes-{DateTime.UtcNow.Ticks % 10000}",
+                Title = "Quick Notes",
+                Subtitle = "Operator Scratchpad",
+                CardType = "notes",
+                Icon = "📝",
+                NoteText = "• Prioritize SOC-2 audit review\n• Schedule cloud cluster expansion\n• Review signed MSA contracts",
+                X = 0, Y = nextY, W = 6, H = 3
+            }
+        };
+
+        await AddCardAsync(card);
+    }
+
+    private void OpenConfigureCardModal(TwDashboardCard card)
+    {
+        _selectedConfigureCard = card;
+    }
+
+    private async Task SaveConfiguredCardAsync()
+    {
+        if (_selectedConfigureCard != null)
+        {
+            _selectedConfigureCard = null;
+            await ReloadGridAsync();
+            Toast?.Show("Card configuration saved.", variant: SemanticVariant.Success);
+        }
+    }
+
+    private async Task CopyJsonToClipboardAsync()
+    {
+        _exportJsonText = JsonSerializer.Serialize(_currentLayout, new JsonSerializerOptions { WriteIndented = true });
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _exportJsonText);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[TwDashboard] clipboard copy error: {ex.Message}");
+        }
+        Toast?.Show("JSON copied to clipboard!", variant: SemanticVariant.Success);
+    }
+
+    private async Task ImportJsonAsync()
+    {
+        try
+        {
+            var parsed = JsonSerializer.Deserialize<List<TwDashboardCard>>(_exportJsonText);
+            if (parsed != null && parsed.Any())
+            {
+                _currentLayout = parsed;
+                _showExportModal = false;
+                await ReloadGridAsync();
+                Toast?.Show("Custom JSON layout applied successfully!", variant: SemanticVariant.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Toast?.Show($"Invalid JSON: {ex.Message}", variant: SemanticVariant.Warning);
+        }
+    }
+
+    private RenderFragment RenderDefaultCardContent(TwDashboardCard card) => __builder =>
+    {
+        switch (card.CardType)
+        {
+            case "chart":
+                @RenderPureSvgChart(card)
+                break;
+            case "revenue":
+            case "leads":
+            case "kpi":
+                <div class="h-full flex flex-col justify-between py-2">
+                    <div>
+                        <div class="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white font-mono">
+                            @(card.Value ?? "$284,500")
+                        </div>
+                        <div class="flex items-center gap-2 mt-1.5">
+                            <span class="inline-flex items-center gap-0.5 text-xs font-bold font-mono px-2 py-0.5 rounded-full @(card.IsPositiveTrend == true ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" : "bg-rose-500/10 text-rose-600 dark:text-rose-400")">
+                                <span>@(card.IsPositiveTrend == true ? "▲" : "▼")</span>
+                                <span>@(card.ChangePercent ?? "+18.4%")</span>
+                            </span>
+                            <span class="text-[11px] text-slate-400">vs last month</span>
+                        </div>
+                    </div>
+                    <!-- Sparkline Graphic (Pure SVG) -->
+                    <div class="w-full h-12 mt-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                        <svg class="w-full h-full overflow-visible" viewBox="0 0 100 30" preserveAspectRatio="none">
+                            <path d="M0 24 Q 20 8, 40 18 T 80 6 T 100 2" fill="none" stroke="currentColor" stroke-width="2.5" class="text-brand-500" />
+                        </svg>
+                    </div>
+                </div>
+                break;
+            case "activity":
+                <div class="space-y-3">
+                    @foreach (var act in _recentActivities)
+                    {
+                        <div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 text-xs">
+                            <span class="text-base shrink-0">
+                                @(act.Type switch { "Call" => "📞", "Email" => "✉️", "Meeting" => "👥", _ => "📋" })
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <div class="font-bold text-slate-900 dark:text-white truncate">@act.Subject</div>
+                                <div class="text-[11px] text-slate-500 dark:text-slate-400">@act.EntityName • @act.Date.ToString("MMM dd, HH:mm UTC")</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                break;
+            case "opportunities":
+                <div class="space-y-2.5">
+                    @foreach (var opp in _topOpportunities)
+                    {
+                        <div class="p-3 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 space-y-1.5 text-xs">
+                            <div class="flex items-center justify-between font-bold">
+                                <span class="text-slate-900 dark:text-white truncate">@opp.Name</span>
+                                <span class="font-mono text-emerald-600 dark:text-emerald-400 font-extrabold shrink-0">$@(opp.Value.ToString("N0"))</span>
+                            </div>
+                            <div class="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+                                <span>@opp.CustomerName</span>
+                                <span class="font-mono px-2 py-0.5 rounded bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold">@opp.Stage (@opp.Probability%)</span>
+                            </div>
+                            <div class="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-brand-500 h-full rounded-full" style="width: @(opp.Probability)%"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                break;
+            case "notes":
+                <div class="h-full flex flex-col space-y-2">
+                    <textarea rows="4" @bind="card.NoteText" @bind:after="SaveLayoutAsync"
+                              placeholder="Write notes here... (Changes auto-save)"
+                              class="w-full flex-1 p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 text-slate-800 dark:text-slate-200 text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none font-sans"></textarea>
+                    <div class="text-[10px] text-slate-400 flex items-center justify-between">
+                        <span>⚡ Local scratchpad auto-persisted</span>
+                        <span class="font-mono">@(card.NoteText?.Length ?? 0) chars</span>
+                    </div>
+                </div>
+                break;
+            default:
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500">
+                    <p class="font-bold text-slate-900 dark:text-white mb-1">Custom Dashboard Card</p>
+                    <p>Card ID: <span class="font-mono">@card.Id</span> | Type: @card.CardType</p>
+                </div>
+                break;
+        }
+    };
+
+    private RenderFragment RenderPureSvgChart(TwDashboardCard card) => __builder =>
+    {
+        var config = card.ChartConfig ?? new();
+        if (config.Type == "doughnut")
+        {
+            <div class="h-full flex flex-col justify-between py-1">
+                <div class="flex items-center justify-center p-2 relative h-36">
+                    <svg viewBox="0 0 42 42" class="w-32 h-32 transform -rotate-90">
+                        <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#4f46e5" stroke-width="5" stroke-dasharray="45 55" stroke-dashoffset="0"></circle>
+                        <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#10b981" stroke-width="5" stroke-dasharray="30 70" stroke-dashoffset="-45"></circle>
+                        <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#f59e0b" stroke-width="5" stroke-dasharray="15 85" stroke-dashoffset="-75"></circle>
+                        <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#06b6d4" stroke-width="5" stroke-dasharray="10 90" stroke-dashoffset="-90"></circle>
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <span class="text-sm font-extrabold text-slate-900 dark:text-white font-mono">100%</span>
+                        <span class="text-[9px] uppercase tracking-wider text-slate-400">Share</span>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-[11px] pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span><span class="truncate">Organic (45%)</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span><span class="truncate">Cloud Store (30%)</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span><span class="truncate">Referrals (15%)</span></div>
+                    <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span><span class="truncate">Enterprise (10%)</span></div>
+                </div>
+            </div>
+        }
+        else if (config.Type == "bar")
+        {
+            <div class="h-full flex flex-col justify-end space-y-2 pt-2">
+                <div class="flex items-end justify-between gap-2 h-36 px-2">
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                        <span class="text-[9px] font-mono text-slate-400">$480k</span>
+                        <div class="w-full bg-indigo-600 rounded-t-lg h-28"></div>
+                        <span class="text-[10px] text-slate-500 truncate">Prospect</span>
+                    </div>
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                        <span class="text-[9px] font-mono text-slate-400">$320k</span>
+                        <div class="w-full bg-blue-500 rounded-t-lg h-20"></div>
+                        <span class="text-[10px] text-slate-500 truncate">Qual</span>
+                    </div>
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                        <span class="text-[9px] font-mono text-slate-400">$260k</span>
+                        <div class="w-full bg-cyan-500 rounded-t-lg h-16"></div>
+                        <span class="text-[10px] text-slate-500 truncate">Proposal</span>
+                    </div>
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                        <span class="text-[9px] font-mono text-slate-400">$140k</span>
+                        <div class="w-full bg-emerald-500 rounded-t-lg h-10"></div>
+                        <span class="text-[10px] text-slate-500 truncate">Negot</span>
+                    </div>
+                    <div class="flex-1 flex flex-col items-center gap-1">
+                        <span class="text-[9px] font-mono text-slate-400">$85k</span>
+                        <div class="w-full bg-purple-500 rounded-t-lg h-6"></div>
+                        <span class="text-[10px] text-slate-500 truncate">Closed</span>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <!-- Line Chart (Pure SVG) -->
+            <div class="h-full flex flex-col justify-between py-1">
+                <div class="flex items-center justify-between text-xs font-mono mb-2">
+                    <span class="font-bold text-indigo-600 dark:text-indigo-400">$284.5k Peak</span>
+                    <span class="text-slate-400">+137% YTD</span>
+                </div>
+                <div class="w-full h-36 relative">
+                    <svg viewBox="0 0 300 120" class="w-full h-full overflow-visible">
+                        <defs>
+                            <linearGradient id="chartGrad-@card.Id" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="#4f46e5" stop-opacity="0.3" />
+                                <stop offset="100%" stop-color="#4f46e5" stop-opacity="0.0" />
+                            </linearGradient>
+                        </defs>
+                        <path d="M 0 100 Q 50 80, 100 65 T 200 40 T 300 15 L 300 120 L 0 120 Z" fill="url(#chartGrad-@card.Id)" />
+                        <path d="M 0 100 Q 50 80, 100 65 T 200 40 T 300 15" fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round" />
+                        <circle cx="300" cy="15" r="4" fill="#4f46e5" class="animate-ping" />
+                        <circle cx="300" cy="15" r="3" fill="#ffffff" stroke="#4f46e5" stroke-width="2" />
+                    </svg>
+                </div>
+                <div class="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span>Jan</span><span>Mar</span><span>May</span><span>Jul</span><span>Aug</span>
+                </div>
+            </div>
+        }
+    };
+
+    public static List<TwDashboardCard> GetDefaultCrmLayout()
+    {
+        return new()
+        {
+            // Row 1: Charts
+            new TwDashboardCard
+            {
+                Id = "sales-chart",
+                CardType = "chart",
+                Title = "Sales Revenue Trajectory",
+                Subtitle = "Monthly GAAP Inbound Stream",
+                Icon = "📈",
+                X = 0, Y = 0, W = 6, H = 4,
+                ChartConfig = new() { Type = "line" }
+            },
+            new TwDashboardCard
+            {
+                Id = "lead-chart",
+                CardType = "chart",
+                Title = "Lead Source Attribution",
+                Subtitle = "Acquisition Mix",
+                Icon = "🍩",
+                X = 6, Y = 0, W = 6, H = 4,
+                ChartConfig = new() { Type = "doughnut" }
+            },
+
+            // Row 2: Pipeline Charts
+            new TwDashboardCard
+            {
+                Id = "pipeline-chart",
+                CardType = "chart",
+                Title = "Pipeline Value by Stage",
+                Subtitle = "Weighted Deal Funnel ($)",
+                Icon = "📊",
+                X = 0, Y = 4, W = 6, H = 4,
+                ChartConfig = new() { Type = "bar" }
+            },
+            new TwDashboardCard
+            {
+                Id = "opportunities",
+                CardType = "opportunities",
+                Title = "Top Opportunities",
+                Subtitle = "High-Value Closing Deals",
+                Icon = "🏆",
+                X = 6, Y = 4, W = 6, H = 4
+            },
+
+            // Row 3: KPIs
+            new TwDashboardCard
+            {
+                Id = "kpi-revenue",
+                CardType = "revenue",
+                Title = "Total Revenue",
+                Subtitle = "Trailing 30 Days",
+                Icon = "💰",
+                Value = "$284,500",
+                ChangePercent = "+24.8%",
+                IsPositiveTrend = true,
+                AccentColor = "indigo",
+                X = 0, Y = 8, W = 3, H = 3
+            },
+            new TwDashboardCard
+            {
+                Id = "kpi-leads",
+                CardType = "leads",
+                Title = "New Qualified Leads",
+                Subtitle = "Marketing Inbound",
+                Icon = "👥",
+                Value = "142",
+                ChangePercent = "+18.2%",
+                IsPositiveTrend = true,
+                AccentColor = "emerald",
+                X = 3, Y = 8, W = 3, H = 3
+            },
+            new TwDashboardCard
+            {
+                Id = "kpi-conversion",
+                CardType = "kpi",
+                Title = "Lead Conversion Rate",
+                Subtitle = "Lead-to-Customer",
+                Icon = "⚡",
+                Value = "18.4%",
+                ChangePercent = "+2.6%",
+                IsPositiveTrend = true,
+                AccentColor = "cyan",
+                X = 6, Y = 8, W = 3, H = 3
+            },
+            new TwDashboardCard
+            {
+                Id = "kpi-pipeline",
+                CardType = "kpi",
+                Title = "Open Pipeline Value",
+                Subtitle = "Active Contract Volume",
+                Icon = "💎",
+                Value = "$1,240,000",
+                ChangePercent = "+31.5%",
+                IsPositiveTrend = true,
+                AccentColor = "purple",
+                X = 9, Y = 8, W = 3, H = 3
+            },
+
+            // Row 4: Feed & Scratchpad
+            new TwDashboardCard
+            {
+                Id = "activity-feed",
+                CardType = "activity",
+                Title = "Recent Activity Feed",
+                Subtitle = "Audit Log & Client Contacts",
+                Icon = "⏱️",
+                X = 0, Y = 11, W = 6, H = 4
+            },
+            new TwDashboardCard
+            {
+                Id = "quick-notes",
+                CardType = "notes",
+                Title = "Quick Notes Scratchpad",
+                Subtitle = "Operator Scratchpad (Auto-saved)",
+                Icon = "📝",
+                NoteText = "• Prioritize SOC-2 audit review with Ernst & Global\n• Review Master Services Agreement & Attestation\n• Schedule Kubernetes edge cluster expansion\n• Client meeting at 14:00 UTC",
+                X = 6, Y = 11, W = 6, H = 4
+            }
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_jsModule != null)
+        {
+            try
+            {
+                await _jsModule.InvokeVoidAsync("destroy", $"#{_dashboardContainerId}");
+            }
+            catch { }
+            finally
+            {
+                await _jsModule.DisposeAsync();
+            }
+        }
+        _dotNetHelper?.Dispose();
+    }
+}

@@ -1,0 +1,125 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="relative inline-block @CustomClass" @oncontextmenu="HandleContextMenu" @oncontextmenu:preventDefault="PreventDefaultContextMenu">
+    <!-- Trigger slot -->
+    @if (ChildContent != null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        <div class="p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-850/50 text-center text-xs text-slate-500 cursor-context-menu">
+            Right-click or tap here to open Context Menu
+        </div>
+    }
+
+    <!-- Menu Popover -->
+    @if (IsOpen)
+    {
+        <!-- Backdrop to close on click outside -->
+        <div class="fixed inset-0 z-40" @onclick="CloseMenu"></div>
+
+        <div class="fixed z-50 min-w-[200px] rounded-xl border border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md p-1.5 shadow-2xl space-y-0.5 text-xs select-none"
+             style="left: @(PosX)px; top: @(PosY)px;">
+            @foreach (var item in Items)
+            {
+                if (item.IsDivider)
+                {
+                    <div class="h-px bg-slate-100 dark:bg-slate-800 my-1"></div>
+                }
+                else
+                {
+                    <button type="button"
+                            @onclick="() => TriggerItem(item)"
+                            disabled="@item.Disabled"
+                            class="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white disabled:opacity-40 disabled:hover:bg-transparent transition text-left group">
+                        <div class="flex items-center gap-2">
+                            @if (!string.IsNullOrEmpty(item.Icon))
+                            {
+                                <span class="text-sm opacity-80">@item.Icon</span>
+                            }
+                            <span class="@(item.IsDestructive ? "text-rose-600 dark:text-rose-400 group-hover:text-rose-700" : "")">
+                                @item.Label
+                            </span>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(item.Shortcut))
+                        {
+                            <span class="text-[10px] font-mono text-slate-400 dark:text-slate-500">
+                                @item.Shortcut
+                            </span>
+                        }
+                    </button>
+                }
+            }
+        </div>
+    }
+</div>
+
+@code {
+    public class ContextMenuItem
+    {
+        public string Id { get; set; } = "";
+        public string Label { get; set; } = "";
+        public string? Icon { get; set; }
+        public string? Shortcut { get; set; }
+        public bool IsDivider { get; set; }
+        public bool IsDestructive { get; set; }
+        public bool Disabled { get; set; }
+    }
+
+    [Parameter] public List<ContextMenuItem> Items { get; set; } = new();
+    [Parameter] public bool PreventDefaultContextMenu { get; set; } = true;
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<string> OnItemSelected { get; set; }
+
+    private bool IsOpen = false;
+    private double PosX = 100;
+    private double PosY = 100;
+
+    protected override void OnInitialized()
+    {
+        if (!Items.Any())
+        {
+            Items = new List<ContextMenuItem>
+            {
+                new ContextMenuItem { Id = "copy", Label = "Copy Code", Icon = "📋", Shortcut = "Ctrl+C" },
+                new ContextMenuItem { Id = "paste", Label = "Paste Snippet", Icon = "📑", Shortcut = "Ctrl+V" },
+                new ContextMenuItem { Id = "format", Label = "Prettify Syntax", Icon = "✨", Shortcut = "Shift+Alt+F" },
+                new ContextMenuItem { IsDivider = true },
+                new ContextMenuItem { Id = "export", Label = "Export to Excel", Icon = "📥" },
+                new ContextMenuItem { Id = "share", Label = "Share Component", Icon = "🔗" },
+                new ContextMenuItem { IsDivider = true },
+                new ContextMenuItem { Id = "delete", Label = "Delete Workspace", Icon = "🗑️", IsDestructive = true, Shortcut = "Del" }
+            };
+        }
+    }
+
+    private void HandleContextMenu(MouseEventArgs e)
+    {
+        PosX = Math.Max(10, e.ClientX);
+        PosY = Math.Max(10, e.ClientY);
+        IsOpen = true;
+    }
+
+    public void OpenAt(double x, double y)
+    {
+        PosX = x;
+        PosY = y;
+        IsOpen = true;
+        StateHasChanged();
+    }
+
+    private void CloseMenu() => IsOpen = false;
+
+    private async Task TriggerItem(ContextMenuItem item)
+    {
+        if (item.Disabled) return;
+        IsOpen = false;
+        if (OnItemSelected.HasDelegate)
+        {
+            await OnItemSelected.InvokeAsync(item.Id);
+        }
+    }
+}

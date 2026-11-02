@@ -1,0 +1,75 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="flex flex-col items-center justify-center text-center select-none @Class">
+    <div class="relative w-44 h-28 sm:w-52 sm:h-32 flex items-end justify-center overflow-hidden">
+        <svg class="w-full h-full" viewBox="0 0 200 115">
+            <defs>
+                <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#10b981" />
+                    <stop offset="60%" stop-color="#4f46e5" />
+                    <stop offset="90%" stop-color="#f43f5e" />
+                </linearGradient>
+            </defs>
+
+            <!-- Background Semicircle Arc (180 deg) -->
+            <!-- Radius = 80, Center = (100, 100), Circumference = PI * 80 ~= 251.327 -->
+            <path d="M 20 100 A 80 80 0 0 1 180 100"
+                  fill="none"
+                  stroke-width="16"
+                  stroke-linecap="round"
+                  class="stroke-slate-100 dark:stroke-slate-800" />
+
+            <!-- Active Value Semicircle Arc -->
+            @{
+                double pct = Math.Clamp((Value - Min) / (Max - Min), 0.0, 1.0);
+                double totalArc = Math.PI * 80; // 251.327
+                double dashLen = pct * totalArc;
+                double dashOffset = totalArc - dashLen;
+            }
+            <path d="M 20 100 A 80 80 0 0 1 180 100"
+                  fill="none"
+                  stroke="@(string.IsNullOrEmpty(Color) ? "url(#gaugeGrad)" : Color)"
+                  stroke-width="16"
+                  stroke-linecap="round"
+                  stroke-dasharray="@($"{totalArc:F2}")"
+                  stroke-dashoffset="@($"{dashOffset:F2}")"
+                  class="transition-all duration-700 ease-out" />
+        </svg>
+
+        <!-- Center Value Display -->
+        <div class="absolute bottom-1 flex flex-col items-center">
+            <span class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                @($"{Value:F0}{Unit}")
+            </span>
+            @if (!string.IsNullOrEmpty(Label))
+            {
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    @Label
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(Sublabel))
+            {
+                <span class="text-[9px] text-slate-400 font-medium">
+                    @Sublabel
+                </span>
+            }
+        </div>
+    </div>
+
+    <!-- Min / Max Labels -->
+    <div class="flex items-center justify-between w-44 sm:w-52 text-[10px] font-semibold text-slate-400 px-3 mt-1">
+        <span>@($"{Min:F0}{Unit}")</span>
+        <span>@($"{Max:F0}{Unit}")</span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public double Value { get; set; } = 72;
+    [Parameter] public double Min { get; set; } = 0;
+    [Parameter] public double Max { get; set; } = 100;
+    [Parameter] public string Unit { get; set; } = "%";
+    [Parameter] public string? Label { get; set; } = "Efficiency";
+    [Parameter] public string? Sublabel { get; set; }
+    [Parameter] public string? Color { get; set; }
+    [Parameter] public string? Class { get; set; }
+}

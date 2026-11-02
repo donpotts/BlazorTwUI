@@ -1,0 +1,162 @@
+@typeparam TItem
+@* Hierarchical table (treegrid): rows nest by parent key, expand and collapse, sort within each level, single selection. Right/Left arrows expand and collapse the focused row. *@
+<div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 overflow-x-auto @Class" data-testid="tree-list">
+    <div class="flex items-center gap-2 p-2 border-b border-slate-200 dark:border-slate-700">
+        <button type="button" @onclick="ExpandAll" data-testid="tree-expand-all"
+                class="px-3 min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Expand all</button>
+        <button type="button" @onclick="CollapseAll" data-testid="tree-collapse-all"
+                class="px-3 min-h-[32px] rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Collapse all</button>
+        <span class="text-xs text-slate-700 dark:text-slate-300" role="status" data-testid="tree-count">@Rows().Count of @Items.Count rows shown</span>
+    </div>
+    <table role="treegrid" aria-label="@Label" class="w-full text-sm">
+        <thead>
+            <tr role="row" class="text-start text-xs uppercase text-slate-700 dark:text-slate-300 border-b border-slate-200 dark:border-slate-700">
+                @for (var c = 0; c < Columns.Count; c++)
+                {
+                    var col = Columns[c];
+                    var idx = c;
+                    <th scope="col" role="columnheader" aria-sort="@SortAria(idx)" class="px-3 py-2 text-start font-bold">
+                        @if (col.Sortable)
+                        {
+                            <button type="button" @onclick="() => SortBy(idx)" data-testid="tree-sort" data-col="@col.Header"
+                                    class="inline-flex items-center gap-1 font-bold uppercase rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">@col.Header<span aria-hidden="true">@(_sortCol == idx ? (_desc ? "▼" : "▲") : "")</span></button>
+                        }
+                        else { @col.Header }
+                    </th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Rows())
+            {
+                var key = Key(row.Item);
+                var selected = key == SelectedKey;
+                <tr role="row" aria-level="@(row.Depth + 1)" aria-expanded="@(row.HasChildren ? row.Expanded.ToString().ToLowerInvariant() : null)" aria-selected="@selected.ToString().ToLowerInvariant()"
+                    tabindex="0" @onkeydown="e => OnKeyAsync(e, row)" @onclick="() => SelectAsync(row.Item)" data-testid="tree-row" data-key="@key" data-depth="@row.Depth"
+                    class="border-b border-slate-100 dark:border-slate-800 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 @(selected ? "bg-brand-50 dark:bg-brand-500/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/60")">
+                    @for (var c = 0; c < Columns.Count; c++)
+                    {
+                        <td role="gridcell" class="px-3 py-2 text-slate-900 dark:text-slate-100">
+                            @if (c == 0)
+                            {
+                                <span class="inline-flex items-center" style="padding-inline-start:@(row.Depth * 1.25)rem">
+                                    @if (row.HasChildren)
+                                    {
+                                        <button type="button" @onclick="() => Toggle(key)" @onclick:stopPropagation="true" aria-label="@((row.Expanded ? "Collapse " : "Expand ") + Columns[0].Value(row.Item))" data-testid="tree-toggle"
+                                                class="w-6 h-6 me-1 rounded text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"><span aria-hidden="true" class="inline-block transition-transform motion-reduce:transition-none @(row.Expanded ? "rotate-90 rtl:-rotate-90" : "rtl:rotate-180")">›</span></button>
+                                    }
+                                    else { <span class="inline-block w-7" aria-hidden="true"></span> }
+                                    @Columns[0].Value(row.Item)
+                                </span>
+                            }
+                            else { @Columns[c].Value(row.Item) }
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    public sealed record Column(string Header, Func<TItem, string> Value, bool Sortable = true);
+    private sealed record Row(TItem Item, int Depth, bool HasChildren, bool Expanded);
+
+    private readonly HashSet<string> _expanded = new();
+    private int _sortCol = -1;
+    private bool _desc;
+    private bool _seeded;
+
+    [Parameter, EditorRequired] public IReadOnlyList<TItem> Items { get; set; } = Array.Empty<TItem>();
+    [Parameter, EditorRequired] public Func<TItem, string> KeySelector { get; set; } = default!;
+    [Parameter, EditorRequired] public Func<TItem, string?> ParentSelector { get; set; } = default!;
+    [Parameter, EditorRequired] public IReadOnlyList<Column> Columns { get; set; } = Array.Empty<Column>();
+    [Parameter] public string? SelectedKey { get; set; }
+    [Parameter] public EventCallback<string?> SelectedKeyChanged { get; set; }
+    [Parameter] public bool InitiallyExpanded { get; set; }
+    [Parameter] public string Label { get; set; } = "Tree list";
+    [Parameter] public string? Class { get; set; }
+
+    private string Key(TItem item) => KeySelector(item);
+
+    protected override void OnParametersSet()
+    {
+        if (_seeded) return;
+        _seeded = true;
+        if (InitiallyExpanded) ExpandAll();
+    }
+
+    private IEnumerable<TItem> Children(string? parentKey) => Items.Where(i =>
+    {
+        var p = ParentSelector(i);
+        return parentKey is null ? string.IsNullOrEmpty(p) || Items.All(o => Key(o) != p) : p == parentKey;
+    });
+
+    private IEnumerable<TItem> Sorted(IEnumerable<TItem> siblings)
+    {
+        if (_sortCol < 0 || _sortCol >= Columns.Count) return siblings;
+        var f = Columns[_sortCol].Value;
+        var ordered = siblings.OrderBy(i => f(i), Comparer<string>.Create(Natural));
+        return _desc ? ordered.Reverse() : ordered;
+    }
+
+    private static int Natural(string a, string b) =>
+        double.TryParse(a.Trim('$', '%', ' '), out var x) && double.TryParse(b.Trim('$', '%', ' '), out var y)
+            ? x.CompareTo(y)
+            : string.Compare(a, b, StringComparison.OrdinalIgnoreCase);
+
+    private List<Row> Rows()
+    {
+        var rows = new List<Row>();
+        void Walk(string? parent, int depth)
+        {
+            foreach (var item in Sorted(Children(parent)))
+            {
+                var key = Key(item);
+                var has = Children(key).Any();
+                var open = has && _expanded.Contains(key);
+                rows.Add(new Row(item, depth, has, open));
+                if (open) Walk(key, depth + 1);
+            }
+        }
+        Walk(null, 0);
+        return rows;
+    }
+
+    private void Toggle(string key)
+    {
+        if (!_expanded.Remove(key)) _expanded.Add(key);
+    }
+
+    private void ExpandAll()
+    {
+        foreach (var i in Items) if (Children(Key(i)).Any()) _expanded.Add(Key(i));
+    }
+
+    private void CollapseAll() => _expanded.Clear();
+
+    private void SortBy(int col)
+    {
+        if (_sortCol == col) _desc = !_desc;
+        else { _sortCol = col; _desc = false; }
+    }
+
+    private string? SortAria(int col) => _sortCol != col ? "none" : _desc ? "descending" : "ascending";
+
+    private async Task SelectAsync(TItem item)
+    {
+        SelectedKey = Key(item);
+        await SelectedKeyChanged.InvokeAsync(SelectedKey);
+    }
+
+    private async Task OnKeyAsync(KeyboardEventArgs e, Row row)
+    {
+        var key = Key(row.Item);
+        switch (e.Key)
+        {
+            case "ArrowRight" when row.HasChildren && !row.Expanded: _expanded.Add(key); break;
+            case "ArrowLeft" when row.HasChildren && row.Expanded: _expanded.Remove(key); break;
+            case "Enter" or " ": await SelectAsync(row.Item); break;
+        }
+    }
+}

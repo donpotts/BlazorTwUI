@@ -1,0 +1,215 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden max-w-4xl mx-auto @CustomClass">
+    <!-- Header -->
+    <div class="p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-slate-850 to-indigo-950 text-white border-b border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <span class="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                </span>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xl sm:text-2xl font-black tracking-tight">@Title</h2>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">SOC-2 & GDPR Certified</span>
+                    </div>
+                    <p class="text-xs sm:text-sm text-slate-400 mt-1">Enterprise Privacy Charter, Data Retention & Self-Service DSR Rights</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 self-start sm:self-center">
+                <span class="text-xs text-slate-400 font-mono">DPO PGP: 0x9B4E...A1F0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Pillars Grid -->
+    <div class="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div class="text-brand-600 dark:text-brand-400 font-bold text-sm flex items-center gap-2">
+                <span>🛡️</span>
+                <span>Zero Tracking Architecture</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">All WebAssembly assets, fonts, and stylesheets are loaded locally without external third-party CDN leaks.</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div class="text-indigo-600 dark:text-indigo-400 font-bold text-sm flex items-center gap-2">
+                <span>🔒</span>
+                <span>Client-Side Encryption</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">PII fields are encrypted with AES-GCM before persistent transmission over TLS 1.3 tunnels.</p>
+        </div>
+
+        <div class="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-1.5">
+            <div class="text-emerald-600 dark:text-emerald-400 font-bold text-sm flex items-center gap-2">
+                <span>⚖️</span>
+                <span>Self-Service DSR Rights</span>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Instantly request automated data export archives or execute verified cryptographic account erasures.</p>
+        </div>
+    </div>
+
+    <!-- Interactive Data Subject Request (DSR) Portal -->
+    <div class="p-6 sm:p-8 space-y-6">
+        <div class="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-white flex items-center gap-2">
+                <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                </svg>
+                <span>Automated Data Subject Request (DSR) Portal</span>
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400">Exercise your rights under GDPR Articles 15-22 and CCPA Sections 1798.100-125.</p>
+        </div>
+
+        <!-- Request Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Data Export -->
+            <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                        </span>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">Export My Personal Data</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Generate a machine-readable JSON & ZIP package containing all audit logs, preferences, and account activity.
+                    </p>
+                    <input type="email" @bind="_exportEmail" placeholder="your-email@company.com"
+                           class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 focus:outline-none" />
+                </div>
+                <button type="button" @onclick="HandleDataExport" disabled="@_isExporting"
+                        class="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white transition flex items-center justify-center gap-2">
+                    @if (_isExporting)
+                    {
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Compiling ZIP Archive...</span>
+                    }
+                    else
+                    {
+                        <span>Generate Data Archive (.ZIP)</span>
+                        <span>→</span>
+                    }
+                </button>
+            </div>
+
+            <!-- Erasure Request -->
+            <div class="p-5 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/60 flex flex-col justify-between space-y-4">
+                <div class="space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span class="p-2 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </span>
+                        <h4 class="text-sm font-bold text-slate-900 dark:text-white">Right to Erasure ("Be Forgotten")</h4>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                        Permanently purge all identifiers and stored preferences. Subject to 7-year regulatory financial retention carve-outs.
+                    </p>
+                    <input type="text" @bind="_erasureConfirmCode" placeholder='Type "CONFIRM PURGE" to verify'
+                           class="w-full px-3 py-2 rounded-xl border border-rose-300 dark:border-rose-800 bg-white dark:bg-slate-900 text-rose-900 dark:text-rose-300 text-xs focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500 focus:outline-none font-mono" />
+                </div>
+                <button type="button" @onclick="HandleDataErasure" disabled="@(_erasureConfirmCode != "CONFIRM PURGE" || _isErasing)"
+                        class="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white transition flex items-center justify-center gap-2 shadow-sm shadow-rose-600/20">
+                    @if (_isErasing)
+                    {
+                        <span class="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        <span>Scheduling Erasure Ticket...</span>
+                    }
+                    else
+                    {
+                        <span>Submit Irreversible Erasure Request</span>
+                    }
+                </button>
+            </div>
+        </div>
+
+        <!-- Telemetry Consent Revocation Toggle -->
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4">
+            <div>
+                <h4 class="text-xs font-bold text-slate-900 dark:text-white">Strict Zero-Telemetry Mode (Air-Gapped)</h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Disable all client-side diagnostics and crash telemetry completely.</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" @bind="_telemetryDisabled" class="sr-only peer">
+                <div class="w-10 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
+            </label>
+        </div>
+
+        <!-- Status Result Alert -->
+        @if (!string.IsNullOrEmpty(_statusMessage))
+        {
+            <div class="p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-semibold flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span>✅</span>
+                    <span>@_statusMessage</span>
+                </div>
+                <button type="button" @onclick='() => _statusMessage = null' class="text-emerald-600 hover:text-emerald-800">✕</button>
+            </div>
+        }
+    </div>
+
+    <!-- Footer DPO Contact -->
+    <div class="p-6 sm:p-8 bg-slate-50 dark:bg-slate-950/60 border-t border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400">
+        <div class="flex items-center gap-2">
+            <span>🛡️ Data Protection Officer:</span>
+            <span class="font-mono text-slate-700 dark:text-slate-300">dpo@enterprise-core.org</span>
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="#cookies" class="hover:underline">Cookie Policy</a>
+            <span>•</span>
+            <a href="#terms" class="hover:underline">Terms of Use</a>
+            <span>•</span>
+            <a href="#security" class="hover:underline">Security Whitepaper</a>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Enterprise Privacy & Data Governance";
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public EventCallback<string> OnExportRequested { get; set; }
+    [Parameter] public EventCallback OnErasureRequested { get; set; }
+
+    private string _exportEmail = "architect@enterprise-core.org";
+    private string _erasureConfirmCode = "";
+    private bool _telemetryDisabled = true;
+    private bool _isExporting = false;
+    private bool _isErasing = false;
+    private string? _statusMessage;
+
+    private async Task HandleDataExport()
+    {
+        if (string.IsNullOrWhiteSpace(_exportEmail)) return;
+        _isExporting = true;
+        await Task.Delay(800);
+        _isExporting = false;
+        _statusMessage = $"Export archive generated! A secure download link was transmitted to {_exportEmail}.";
+
+        if (OnExportRequested.HasDelegate)
+        {
+            await OnExportRequested.InvokeAsync(_exportEmail);
+        }
+    }
+
+    private async Task HandleDataErasure()
+    {
+        if (_erasureConfirmCode != "CONFIRM PURGE") return;
+        _isErasing = true;
+        await Task.Delay(900);
+        _isErasing = false;
+        _erasureConfirmCode = "";
+        _statusMessage = "Erasure ticket #PURGE-9021 logged. Scheduled for cryptographic wipe in 24 hours.";
+
+        if (OnErasureRequested.HasDelegate)
+        {
+            await OnErasureRequested.InvokeAsync();
+        }
+    }
+}

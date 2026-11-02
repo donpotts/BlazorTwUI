@@ -1,0 +1,71 @@
+<div class="@ComputedBaseClasses">
+    @if (HeaderContent is not null || !string.IsNullOrWhiteSpace(Title))
+    {
+        <div class="@ComputedHeaderClasses">
+            <div>
+                @if (!string.IsNullOrWhiteSpace(Title))
+                {
+                    <h3 class="@ComputedTitleClasses">@Title</h3>
+                }
+                @if (!string.IsNullOrWhiteSpace(Subtitle))
+                {
+                    <p class="@ComputedSubtitleClasses">@Subtitle</p>
+                }
+            </div>
+            @HeaderContent
+        </div>
+    }
+
+    <div class="@ComputedBodyClasses">
+        @ChildContent
+    </div>
+
+    @if (FooterContent is not null)
+    {
+        <div class="@ComputedFooterClasses">
+            @FooterContent
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Title { get; set; }
+    [Parameter] public string? Subtitle { get; set; }
+    [Parameter] public bool Hoverable { get; set; }
+    [Parameter] public bool NoPadding { get; set; }
+    [Parameter] public bool OverflowVisible { get; set; } = false;
+    [Parameter] public RenderFragment? HeaderContent { get; set; }
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public RenderFragment? FooterContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+    /// <summary>Per-slot class overrides (Base, Header, Title, Subtitle, Body, Footer)</summary>
+    [Parameter] public TwCardSlots? Classes { get; set; }
+
+    private string ComputedBaseClasses => TwClassBuilder
+        .Create("rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs")
+        .AddIf(Hoverable, "hover:shadow-md hover:border-slate-300 dark:hover:border-slate-700 transition-all duration-200")
+        .AddIf(OverflowVisible, "overflow-visible", "overflow-hidden")
+        .Add(Classes?.Base)
+        .Add(Class)
+        .Build();
+
+    private string ComputedHeaderClasses => TwMerge.Merge(
+        "px-4 py-3.5 sm:px-6 sm:py-4 border-b border-slate-100 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2",
+        Classes?.Header);
+
+    private string ComputedTitleClasses => TwMerge.Merge(
+        "text-base sm:text-lg font-semibold text-slate-900 dark:text-white",
+        Classes?.Title);
+
+    private string ComputedSubtitleClasses => TwMerge.Merge(
+        "text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5",
+        Classes?.Subtitle);
+
+    private string ComputedBodyClasses => TwMerge.Merge(
+        NoPadding ? "" : "p-4 sm:p-6",
+        Classes?.Body);
+
+    private string ComputedFooterClasses => TwMerge.Merge(
+        "px-4 py-3 sm:px-6 sm:py-4 bg-slate-50/70 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800/80",
+        Classes?.Footer);
+}

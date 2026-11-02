@@ -1,0 +1,174 @@
+@* Planning, data and layout components working together on sample data. *@
+<div class="space-y-8" data-testid="enterprise-demo">
+    <header>
+        <h2 class="text-xl font-black text-slate-900 dark:text-white">Planning &amp; Enterprise Suite</h2>
+        <p class="text-sm text-slate-700 dark:text-slate-300 mt-1 max-w-3xl">Scheduling, project timelines, hierarchical data, forms, floating windows and rich text, all keyboard accessible.</p>
+    </header>
+
+    <section aria-labelledby="e-sch" class="space-y-2">
+        <h3 id="e-sch" class="text-base font-bold text-slate-900 dark:text-white">Scheduler</h3>
+        <TwScheduler Appointments="_appts" @bind-Date="_date" @bind-View="_view" OnSlotClick="OnSlot" OnAppointmentMoved="OnMoved" OnAppointmentClick="OnAppt" />
+        <p class="text-xs text-slate-700 dark:text-slate-300" role="status">Last action: <span data-testid="sched-out">@_sched</span></p>
+    </section>
+
+    <section aria-labelledby="e-gantt" class="space-y-2">
+        <h3 id="e-gantt" class="text-base font-bold text-slate-900 dark:text-white">Project timeline</h3>
+        <TwGantt Tasks="_tasks" DayWidth="26" OnTaskClick="t => _gantt = t.Name" />
+        <p class="text-xs text-slate-700 dark:text-slate-300" role="status">Selected task: <span data-testid="gantt-out">@(_gantt ?? "none")</span></p>
+    </section>
+
+    <section aria-labelledby="e-tree" class="grid lg:grid-cols-2 gap-6">
+        <div class="space-y-2">
+            <h3 id="e-tree" class="text-base font-bold text-slate-900 dark:text-white">Tree list</h3>
+            <TwTreeList TItem="Dept" Items="_depts" KeySelector="d => d.Id" ParentSelector="d => d.Parent" Columns="_cols" InitiallyExpanded="true" @bind-SelectedKey="_deptKey" Label="Departments" />
+            <p class="text-xs text-slate-700 dark:text-slate-300">Selected: <span data-testid="tree-out">@(_deptKey ?? "none")</span></p>
+        </div>
+        <div class="space-y-3">
+            <h3 class="text-base font-bold text-slate-900 dark:text-white">Range selector and bar gauge</h3>
+            <TwRangeSelector Values="_sales" Labels="_months" @bind-Start="_from" @bind-End="_to" />
+            <TwBarGauge Unit="%" Items="_gaugeItems" />
+        </div>
+    </section>
+
+    <section aria-labelledby="e-tool" class="space-y-3">
+        <h3 id="e-tool" class="text-base font-bold text-slate-900 dark:text-white">Toolbar, window and loading panel</h3>
+        <TwToolbar Items="_tools" MaxVisible="4" OnItemClick="OnTool" Label="Document actions" />
+        <p class="text-xs text-slate-700 dark:text-slate-300" role="status">Toolbar: <span data-testid="tool-out">@_toolOut</span></p>
+        <div class="flex flex-wrap items-start gap-4">
+            <button type="button" @onclick="() => _win = true" data-testid="open-window"
+                    class="min-h-[40px] px-4 rounded-xl bg-brand-700 text-white text-sm font-bold hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-500">Open inspector window</button>
+            <button type="button" @onclick="ToggleBusy" data-testid="toggle-busy"
+                    class="min-h-[40px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">@(_busy ? "Stop loading" : "Simulate loading")</button>
+        </div>
+        <TwLoadingPanel Visible="_busy" Message="Refreshing orders…" Class="rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
+            <TwStackLayout Horizontal="true" Wrap="true" Gap="4" Align="center">
+                <span class="text-sm font-semibold text-slate-900 dark:text-slate-100">Open orders: 42</span>
+                <button type="button" class="px-3 min-h-[36px] rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-900 dark:text-slate-100" data-testid="covered-button">Export</button>
+            </TwStackLayout>
+        </TwLoadingPanel>
+    </section>
+
+    <section aria-labelledby="e-form" class="space-y-3">
+        <h3 id="e-form" class="text-base font-bold text-slate-900 dark:text-white">Form layout with pickers</h3>
+        <TwFormLayout Columns="2">
+            <TwFormGroup Title="Customer" Collapsible="true">
+                <TwFormItem Label="Name" FieldId="f-name" Required="true">
+                    <input id="f-name" @bind="_name" @bind:event="oninput" data-testid="f-name" class="@Field" />
+                </TwFormItem>
+                <TwFormItem Label="Email" FieldId="f-email" Hint="Used for the receipt" Error="@(_name?.Length == 0 ? "Enter the name first" : null)">
+                    <input id="f-email" type="email" class="@Field" />
+                </TwFormItem>
+                <TwFormItem Label="Account owner" FieldId="f-owner">
+                    <TwDropDownBox Text="@_owner" Placeholder="Choose an owner" Label="Owners">
+                        <TwListBox TItem="string" Items="_owners" Multiple="false" Label="Owners" SelectedChanged="async s => { _owner = s.FirstOrDefault(); await context.CloseAsync(); }" />
+                    </TwDropDownBox>
+                </TwFormItem>
+                <TwFormItem Label="Teams" FieldId="f-teams">
+                    <TwListBox TItem="string" Items="_teams" @bind-Selected="_pickedTeams" Label="Teams" />
+                </TwFormItem>
+            </TwFormGroup>
+        </TwFormLayout>
+        <p class="text-xs text-slate-700 dark:text-slate-300" role="status">Owner: <span data-testid="owner-out">@(_owner ?? "none")</span></p>
+    </section>
+
+    <section aria-labelledby="e-html" class="space-y-2">
+        <h3 id="e-html" class="text-base font-bold text-slate-900 dark:text-white">Rich text</h3>
+        <TwHtmlEditor @bind-Value="_html" Label="Message body" />
+        <p class="text-xs font-semibold text-slate-800 dark:text-slate-200">Sanitized output</p>
+        <pre class="rounded-xl bg-slate-100 dark:bg-slate-800 p-3 text-xs text-slate-900 dark:text-slate-100 overflow-x-auto" tabindex="0" data-testid="html-out">@_html</pre>
+    </section>
+
+    <TwWindow Title="Inspector" @bind-Visible="_win" X="140" Y="140" Width="360" Height="220" OnMoved="OnWinMoved">
+        <p>Drag the title bar, or focus it and use the arrow keys.</p>
+        <p class="mt-2 text-xs text-slate-700 dark:text-slate-300">Position: <span data-testid="win-pos">@_winPos</span></p>
+    </TwWindow>
+</div>
+
+@code {
+    private sealed record Dept(string Id, string? Parent, string Name, string Headcount);
+
+    private const string Field = "w-full min-h-[40px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500";
+
+    private static readonly DateTime Monday = DateTime.Today.AddDays(-(((int)DateTime.Today.DayOfWeek + 6) % 7));
+
+    private List<TwScheduler.Appointment> _appts = new()
+    {
+        new() { Title = "Standup", Start = Monday.AddHours(9), End = Monday.AddHours(9.5) },
+        new() { Title = "Design review", Start = Monday.AddHours(9), End = Monday.AddHours(10.5), Color = "emerald" },
+        new() { Title = "Customer call", Start = Monday.AddDays(1).AddHours(11), End = Monday.AddDays(1).AddHours(12), Color = "amber" },
+        new() { Title = "Planning", Start = Monday.AddDays(2).AddHours(14), End = Monday.AddDays(2).AddHours(16), Color = "sky" },
+    };
+    private DateOnly _date = DateOnly.FromDateTime(DateTime.Today);
+    private TwScheduler.SchedulerView _view = TwScheduler.SchedulerView.Week;
+    private string _sched = "none yet";
+
+    private readonly List<TwGantt.GanttTask> _tasks = BuildTasks();
+    private string? _gantt;
+
+    private readonly List<Dept> _depts = new()
+    {
+        new("co", null, "Company", "120"), new("eng", "co", "Engineering", "58"), new("ops", "co", "Operations", "34"), new("fin", "co", "Finance", "12"),
+        new("fe", "eng", "Frontend", "21"), new("be", "eng", "Backend", "27"), new("qa", "eng", "Quality", "10"), new("sup", "ops", "Support", "22"), new("log", "ops", "Logistics", "12"),
+    };
+    private readonly IReadOnlyList<TwTreeList<Dept>.Column> _cols = new[]
+    {
+        new TwTreeList<Dept>.Column("Department", d => d.Name), new TwTreeList<Dept>.Column("Headcount", d => d.Headcount)
+    };
+    private string? _deptKey;
+
+    private readonly double[] _sales = { 12, 18, 15, 22, 30, 26, 34, 29, 41, 38, 45, 52 };
+    private readonly string[] _months = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+    private int _from = 2, _to = 8;
+
+    private IReadOnlyList<TwBarGauge.GaugeItem> _gaugeItems => new[]
+    {
+        new TwBarGauge.GaugeItem("Average", Math.Round(_sales[_from..(_to + 1)].Average(), 1)),
+        new TwBarGauge.GaugeItem("Peak", _sales[_from..(_to + 1)].Max()),
+        new TwBarGauge.GaugeItem("Low", _sales[_from..(_to + 1)].Min()),
+    };
+
+    private readonly List<TwToolbar.ToolbarItem> _tools = new()
+    {
+        new() { Id = "new", Text = "New", Icon = "＋" }, new() { Id = "bold", Text = "Bold", Kind = TwToolbar.ToolbarKind.Toggle },
+        new() { Kind = TwToolbar.ToolbarKind.Separator }, new() { Id = "print", Text = "Print" },
+        new() { Id = "export", Text = "Export" }, new() { Id = "share", Text = "Share" }, new() { Id = "archive", Text = "Archive" },
+    };
+    private string _toolOut = "none yet";
+
+    private bool _win, _busy;
+    private string _winPos = "140,140";
+    private string? _name = "Dana Ruiz", _owner;
+    private readonly string[] _owners = { "Dana Ruiz", "Marcus Vance", "Elena Rostova", "Priya Nair" };
+    private readonly string[] _teams = { "Billing", "Onboarding", "Support", "Success", "Sales" };
+    private IReadOnlyList<string> _pickedTeams = new[] { "Billing" };
+    private string? _html = "<p>Hello <strong>team</strong>, the quarterly review is attached.</p>";
+
+    private static List<TwGantt.GanttTask> BuildTasks()
+    {
+        var d = DateOnly.FromDateTime(DateTime.Today).AddDays(-6);
+        return new()
+        {
+            new() { Id = "spec", Name = "Specification", Start = d, End = d.AddDays(4), Progress = 1 },
+            new() { Id = "design", Name = "Design", Start = d.AddDays(5), End = d.AddDays(11), Progress = 0.7, DependsOn = { "spec" } },
+            new() { Id = "build", Name = "Build", Start = d.AddDays(12), End = d.AddDays(26), Progress = 0.2, DependsOn = { "design" } },
+            new() { Id = "docs", Name = "Documentation", Start = d.AddDays(14), End = d.AddDays(22), Progress = 0.1, DependsOn = { "design" } },
+            new() { Id = "launch", Name = "Launch", Start = d.AddDays(24), End = d.AddDays(25), DependsOn = { "build", "docs" } },
+        };
+    }
+
+    private void OnSlot(DateTime when)
+    {
+        _appts = new List<TwScheduler.Appointment>(_appts) { new() { Title = "New event", Start = when, End = when.AddHours(1), Color = "rose" } };
+        _sched = "created at " + when.ToString("ddd HH:mm");
+    }
+
+    private void OnAppt(TwScheduler.Appointment a) => _sched = a.Title + " selected";
+
+    private void OnWinMoved((int X, int Y) m) => _winPos = m.X + "," + m.Y;
+
+    private void OnMoved(TwScheduler.Appointment a) => _sched = a.Title + " moved to " + a.Start.ToString("ddd HH:mm");
+
+    private void OnTool(TwToolbar.ToolbarItem item) => _toolOut = item.Text + (item.Kind == TwToolbar.ToolbarKind.Toggle ? (item.Pressed ? " on" : " off") : " clicked");
+
+    private void ToggleBusy() => _busy = !_busy;
+}

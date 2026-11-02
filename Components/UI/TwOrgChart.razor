@@ -1,0 +1,258 @@
+@namespace BlazorTwUI.Components.UI
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-5 @CustomClass">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-base">
+                🏢
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
+                        @(_allNodes.Count) Members
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Search & View Scale Controls -->
+        <div class="flex items-center gap-2">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center text-slate-400 text-xs">🔍</span>
+                <input type="text" @bind="_searchQuery" @bind:event="oninput" placeholder="Search executive or engineer..."
+                       class="pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20 w-56" />
+            </div>
+
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+                <button type="button" @onclick="() => AdjustZoom(-0.1)" class="px-2 py-1 rounded hover:bg-white dark:hover:bg-slate-700 font-mono">A-</button>
+                <span class="px-2 font-mono text-[11px] text-slate-400">@((int)(_zoomScale * 100))%</span>
+                <button type="button" @onclick="() => AdjustZoom(0.1)" class="px-2 py-1 rounded hover:bg-white dark:hover:bg-slate-700 font-mono">A+</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Organizational Diagram Canvas -->
+    <div class="w-full overflow-x-auto p-8 rounded-2xl bg-slate-50/50 dark:bg-slate-950/40 border border-slate-200 dark:border-slate-800 min-h-[460px] flex justify-center items-start">
+        <div class="transition-transform duration-200 origin-top" style="transform: scale(@_zoomScale);">
+            @if (_rootNode != null)
+            {
+                <div class="flex flex-col items-center">
+                    @RenderOrgNode(_rootNode)
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    public class OrgNode
+    {
+        public string Id { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Title { get; set; } = "";
+        public string Department { get; set; } = "";
+        public string AvatarUrl { get; set; } = "";
+        public bool IsExpanded { get; set; } = true;
+        public List<OrgNode> Reports { get; set; } = new();
+    }
+
+    [Parameter] public string Title { get; set; } = "Enterprise Organization Tree";
+    [Parameter] public string Subtitle { get; set; } = "Executive leadership structure, reporting hierarchies, and departmental clusters";
+    [Parameter] public string CustomClass { get; set; } = "";
+    [Parameter] public OrgNode? Root { get; set; }
+
+    private OrgNode? _rootNode;
+    private List<OrgNode> _allNodes = new();
+    private string _searchQuery = "";
+    private double _zoomScale = 1.0;
+
+    protected override void OnInitialized()
+    {
+        _rootNode = Root ?? GetSampleOrgData();
+        FlattenNodes(_rootNode);
+    }
+
+    private void FlattenNodes(OrgNode node)
+    {
+        _allNodes.Add(node);
+        foreach (var child in node.Reports)
+        {
+            FlattenNodes(child);
+        }
+    }
+
+    private void AdjustZoom(double delta)
+    {
+        _zoomScale = Math.Clamp(Math.Round(_zoomScale + delta, 1), 0.7, 1.4);
+    }
+
+    private bool IsMatch(OrgNode node)
+    {
+        if (string.IsNullOrWhiteSpace(_searchQuery)) return false;
+        return node.Name.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+               node.Title.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) ||
+               node.Department.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private RenderFragment RenderOrgNode(OrgNode node) => builder =>
+    {
+        var match = IsMatch(node);
+
+        builder.OpenElement(0, "div");
+        builder.AddAttribute(1, "class", "flex flex-col items-center");
+
+        // The Node Card
+        builder.OpenElement(2, "div");
+        var cardClass = $"p-4 rounded-2xl border transition-all duration-200 bg-white dark:bg-slate-900 shadow-md w-60 text-center relative {(match ? "ring-2 ring-brand-500 border-brand-500 scale-105" : "border-slate-200 dark:border-slate-800")}";
+        builder.AddAttribute(3, "class", cardClass);
+
+        // Avatar
+        builder.OpenElement(4, "div");
+        builder.AddAttribute(5, "class", "relative w-12 h-12 mx-auto mb-2");
+        builder.OpenElement(6, "img");
+        builder.AddAttribute(7, "src", node.AvatarUrl);
+        builder.AddAttribute(8, "alt", node.Name);
+        builder.AddAttribute(9, "class", "w-12 h-12 rounded-xl object-cover ring-2 ring-brand-500/30");
+        builder.CloseElement();
+        builder.CloseElement();
+
+        // Name & Title
+        builder.OpenElement(10, "h4");
+        builder.AddAttribute(11, "class", "text-xs font-bold text-slate-900 dark:text-white truncate");
+        builder.AddContent(12, node.Name);
+        builder.CloseElement();
+
+        builder.OpenElement(13, "span");
+        builder.AddAttribute(14, "class", "text-[10px] text-brand-600 dark:text-brand-400 font-semibold block truncate");
+        builder.AddContent(15, node.Title);
+        builder.CloseElement();
+
+        builder.OpenElement(16, "span");
+        builder.AddAttribute(17, "class", "text-[9px] font-mono text-slate-400 block mt-0.5");
+        builder.AddContent(18, node.Department);
+        builder.CloseElement();
+
+        // Expand/Collapse Badge if node has reports
+        if (node.Reports.Any())
+        {
+            builder.OpenElement(19, "button");
+            builder.AddAttribute(20, "type", "button");
+            builder.AddAttribute(21, "class", "absolute -bottom-3 left-1/2 transform -translate-x-1/2 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-slate-800 text-white border border-slate-700 shadow-sm hover:bg-brand-600 transition");
+            builder.AddAttribute(22, "onclick", EventCallback.Factory.Create(this, () => node.IsExpanded = !node.IsExpanded));
+            builder.AddContent(23, node.IsExpanded ? $"− {node.Reports.Count}" : $"+ {node.Reports.Count}");
+            builder.CloseElement();
+        }
+
+        builder.CloseElement(); // card
+
+        // Render Children with Orthogonal Connector Lines
+        if (node.Reports.Any() && node.IsExpanded)
+        {
+            // Vertical line down from parent
+            builder.OpenElement(24, "div");
+            builder.AddAttribute(25, "class", "w-px h-6 bg-slate-300 dark:bg-slate-700");
+            builder.CloseElement();
+
+            builder.OpenElement(26, "div");
+            builder.AddAttribute(27, "class", "flex items-start gap-8 relative");
+
+            for (int i = 0; i < node.Reports.Count; i++)
+            {
+                var child = node.Reports[i];
+                var isFirst = i == 0;
+                var isLast = i == node.Reports.Count - 1;
+                var isOnly = node.Reports.Count == 1;
+
+                builder.OpenElement(28, "div");
+                builder.AddAttribute(29, "class", "flex flex-col items-center relative");
+
+                // Horizontal Connector Bars
+                if (!isOnly)
+                {
+                    builder.OpenElement(30, "div");
+                    var barClass = "absolute top-0 h-px bg-slate-300 dark:bg-slate-700 ";
+                    if (isFirst) barClass += "left-1/2 right-0";
+                    else if (isLast) barClass += "left-0 right-1/2";
+                    else barClass += "left-0 right-0";
+                    builder.AddAttribute(31, "class", barClass);
+                    builder.CloseElement();
+                }
+
+                // Vertical line into child node
+                builder.OpenElement(32, "div");
+                builder.AddAttribute(33, "class", "w-px h-6 bg-slate-300 dark:bg-slate-700");
+                builder.CloseElement();
+
+                // Recursively render child
+                builder.AddContent(34, RenderOrgNode(child));
+
+                builder.CloseElement(); // child column
+            }
+
+            builder.CloseElement(); // children flex container
+        }
+
+        builder.CloseElement(); // parent container
+    };
+
+    private OrgNode GetSampleOrgData() => new OrgNode
+    {
+        Id = "1",
+        Name = "Dr. Sarah Jenkins",
+        Title = "Chief Technology Officer",
+        Department = "Executive Leadership",
+        AvatarUrl = "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=128&q=80",
+        Reports = new()
+        {
+            new OrgNode
+            {
+                Id = "2",
+                Name = "Alexandre Chen",
+                Title = "VP of Infrastructure & Security",
+                Department = "Platform Engineering",
+                AvatarUrl = "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=128&q=80",
+                Reports = new()
+                {
+                    new OrgNode
+                    {
+                        Id = "4",
+                        Name = "Liam Wilson",
+                        Title = "Lead DevOps Architect",
+                        Department = "Cloud Operations",
+                        AvatarUrl = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=128&q=80"
+                    },
+                    new OrgNode
+                    {
+                        Id = "5",
+                        Name = "Zara Patel",
+                        Title = "Senior Cryptography Engineer",
+                        Department = "Cybersecurity & SOC",
+                        AvatarUrl = "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=128&q=80"
+                    }
+                }
+            },
+            new OrgNode
+            {
+                Id = "3",
+                Name = "Elena Rostova",
+                Title = "VP of Design Systems & UX",
+                Department = "Product Experience",
+                AvatarUrl = "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=128&q=80",
+                Reports = new()
+                {
+                    new OrgNode
+                    {
+                        Id = "6",
+                        Name = "David Kim",
+                        Title = "Senior Tailwind UI Architect",
+                        Department = "Component Engineering",
+                        AvatarUrl = "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=128&q=80"
+                    }
+                }
+            }
+        }
+    };
+}

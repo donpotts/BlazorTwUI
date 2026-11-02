@@ -1,0 +1,57 @@
+<CascadingValue Value="this">
+    <div class="@TwMerge.Merge("space-y-4", Class)">
+        @ChildContent
+    </div>
+</CascadingValue>
+
+@code {
+    private readonly List<TwFloatingLabelInput> _inputs = new();
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+    [Parameter] public EventCallback<bool> OnStatusChanged { get; set; }
+
+    public int TotalCount => _inputs.Count;
+    public int ValidCount => _inputs.Count(i => i.CurrentStatus == ValidationStatus.Valid);
+    public int InvalidCount => _inputs.Count(i => i.CurrentStatus == ValidationStatus.Invalid);
+    public bool IsAllValid => _inputs.Count > 0 && _inputs.All(i => i.CurrentStatus == ValidationStatus.Valid);
+
+    internal void Register(TwFloatingLabelInput input)
+    {
+        if (!_inputs.Contains(input))
+            _inputs.Add(input);
+    }
+
+    internal void Unregister(TwFloatingLabelInput input)
+    {
+        _inputs.Remove(input);
+    }
+
+    internal void NotifyStateChanged()
+    {
+        _ = OnStatusChanged.InvokeAsync(IsAllValid);
+        StateHasChanged();
+    }
+
+    public bool ValidateAll()
+    {
+        bool allOk = true;
+        foreach (var input in _inputs)
+        {
+            if (!input.Validate())
+                allOk = false;
+        }
+        _ = OnStatusChanged.InvokeAsync(allOk);
+        StateHasChanged();
+        return allOk;
+    }
+
+    public void ResetAll()
+    {
+        foreach (var input in _inputs)
+        {
+            input.ResetValidation();
+        }
+        StateHasChanged();
+    }
+}

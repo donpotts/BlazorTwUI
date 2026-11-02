@@ -1,0 +1,29 @@
+<div class="animate-pulse bg-slate-200 dark:bg-slate-800 @ShapeClass @Class"
+     style="@InlineStyle"
+     aria-hidden="true"></div>
+
+@code {
+    [Parameter] public string Variant { get; set; } = "text"; // text, circle, card, rectangle
+    [Parameter] public string? Width { get; set; }
+    [Parameter] public string? Height { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string ShapeClass => Variant switch
+    {
+        "circle" => "rounded-full aspect-square",
+        "card" => "rounded-2xl h-44 w-full",
+        "rectangle" => "rounded-xl",
+        _ => "rounded-md h-4 w-full"
+    };
+
+    private string InlineStyle
+    {
+        get
+        {
+            var styles = new List<string>();
+            if (!string.IsNullOrWhiteSpace(Width)) styles.Add($"width: {Width}");
+            if (!string.IsNullOrWhiteSpace(Height)) styles.Add($"height: {Height}");
+            return string.Join("; ", styles);
+        }
+    }
+}

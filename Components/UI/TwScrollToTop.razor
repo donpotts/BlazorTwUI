@@ -1,0 +1,130 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<button type="button"
+        @onclick="ScrollToTopAsync"
+        aria-label="Scroll to top"
+        class="fixed z-40 @PositionClass transition-all duration-300 ease-in-out hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-brand-500 shadow-xl backdrop-blur-md border border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-200 hover:bg-brand-600 hover:text-white dark:hover:bg-brand-600 dark:hover:text-white group @VisibilityClass @ContainerShapeClass @Class">
+    
+    @if (Variant == ScrollToTopVariant.Vertical)
+    {
+        <!-- Vertical Pill with Chevron, Vertical 'TOP' text and Progress indicator -->
+        <div class="flex flex-col items-center justify-center gap-1.5 py-3 px-2">
+            <!-- Animated Arrow -->
+            <svg class="w-4 h-4 text-brand-600 dark:text-brand-400 group-hover:text-white transition-transform duration-200 group-hover:-translate-y-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+            </svg>
+
+            <!-- Vertical Label -->
+            <span class="text-[10px] font-extrabold tracking-widest uppercase [writing-mode:vertical-lr] rotate-180 select-none py-1">
+                @Label
+            </span>
+
+            @if (ShowProgress)
+            {
+                <span class="text-[9px] font-bold font-mono px-1 py-0.5 rounded bg-brand-50 dark:bg-brand-500/20 text-brand-600 dark:text-brand-300 group-hover:bg-white/20 group-hover:text-white transition-colors">
+                    @($"{_progress}%")
+                </span>
+            }
+        </div>
+    }
+    else
+    {
+        <!-- Standard Circular / Rounded Floating Button -->
+        <div class="flex items-center justify-center p-3">
+            @if (ChildContent is not null)
+            {
+                @ChildContent
+            }
+            else
+            {
+                <svg class="w-5 h-5 transition-transform duration-200 group-hover:-translate-y-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 15l7-7 7 7" />
+                </svg>
+            }
+        </div>
+    }
+</button>
+
+@code {
+    public enum ScrollToTopVariant
+    {
+        Vertical,
+        IconOnly
+    }
+
+    private DotNetObjectReference<TwScrollToTop>? _dotNetRef;
+    private bool _isVisible;
+    private int _progress;
+
+    [Parameter] public ScrollToTopVariant Variant { get; set; } = ScrollToTopVariant.Vertical;
+    [Parameter] public string Label { get; set; } = "TOP";
+    [Parameter] public bool ShowProgress { get; set; } = true;
+    [Parameter] public int Threshold { get; set; } = 150;
+    /// <summary>Always stay visible for preview/showcase purposes</summary>
+    [Parameter] public bool AlwaysVisible { get; set; }
+    /// <summary>Mobile-first position: sits safely above bottom navigation (bottom-36 on mobile, bottom-24 on tablet/desktop)</summary>
+    [Parameter] public string PositionClass { get; set; } = "bottom-36 sm:bottom-24 right-4 sm:right-6";
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private string VisibilityClass => (AlwaysVisible || _isVisible)
+        ? "opacity-100 translate-y-0 pointer-events-auto"
+        : "opacity-0 translate-y-4 pointer-events-none";
+
+    private string ContainerShapeClass => Variant == ScrollToTopVariant.Vertical
+        ? "rounded-2xl min-w-[36px]"
+        : "rounded-2xl";
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("blazorTheme.registerScrollListener", _dotNetRef, Threshold);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ScrollToTop register error: {ex.Message}");
+            }
+        }
+    }
+
+    [JSInvokable]
+    public void OnScrollChanged(bool isVisible, int progress)
+    {
+        if (_isVisible != isVisible || _progress != progress)
+        {
+            _isVisible = isVisible;
+            _progress = progress;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ScrollToTopAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("blazorTheme.scrollToTop", true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ScrollToTop action error: {ex.Message}");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("blazorTheme.unregisterScrollListener");
+        }
+        catch
+        {
+            // Circuit disconnected
+        }
+        _dotNetRef?.Dispose();
+    }
+}
