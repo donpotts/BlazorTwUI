@@ -3870,6 +3870,7 @@ public class ComponentCatalogService
                 new ComponentParameterDoc("Title", "string", "Predictable Plans for Every Stage", "Pricing section main heading."),
                 new ComponentParameterDoc("Subtitle", "string?", "null", "Supporting description text."),
                 new ComponentParameterDoc("BadgeText", "string", "Simple Pricing", "Category eyebrow label."),
+                new ComponentParameterDoc("Class", "string?", "null", "Custom CSS classes for outer padding or layout."),
                 new ComponentParameterDoc("Plans", "List<PricingPlan>", "Default 3 plans", "Collection of pricing tier plans."),
                 new ComponentParameterDoc("OnSelectPlan", "EventCallback<PricingPlan>", "null", "Callback triggered when a user selects a plan.")
             }

@@ -4780,6 +4780,7 @@ Kinetic split marketing hero with headline, animated announcement pill, action b
 | `Title` | `string` | `Predictable Plans for Every Stage` | Pricing section main heading. |
 | `Subtitle` | `string?` | `null` | Supporting description text. |
 | `BadgeText` | `string` | `Simple Pricing` | Category eyebrow label. |
+| `Class` | `string?` | `null` | Custom CSS classes for outer padding or layout. |
 | `Plans` | `List<PricingPlan>` | `Default 3 plans` | Collection of pricing tier plans. |
 | `OnSelectPlan` | `EventCallback<PricingPlan>` | `null` | Callback triggered when a user selects a plan. |
 

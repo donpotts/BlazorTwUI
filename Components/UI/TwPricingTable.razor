@@ -50,12 +50,14 @@
                         <span class="text-xs text-slate-400 font-medium">/month</span>
                     </div>
 
-                    @if (_isAnnual && tier.AnnualMonthlyPrice > 0)
-                    {
-                        <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold -mt-3">
-                            Billed annually ($@(price * 12)/yr)
-                        </p>
-                    }
+                    <div class="h-5 -mt-3 flex items-center">
+                        @if (_isAnnual && tier.AnnualMonthlyPrice > 0)
+                        {
+                            <p class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold">
+                                Billed annually ($@(price * 12)/yr)
+                            </p>
+                        }
+                    </div>
 
                     <div class="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                         <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Features included:</p>

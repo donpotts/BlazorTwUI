@@ -101,7 +101,7 @@ def run():
         page.screenshot(path=ai_composer_shot, full_page=False)
         print("  --> Saved: 04b_ai_prompt_composer_and_timeline_e2e.png")
 
-        # Step 5: Validate SaaS Product Marketing Suite
+        # Step 5: Validate SaaS Product Marketing Suite & Pricing Panels
         print("\n[Step 5] Switching to SaaS Product Marketing Suite...")
         page.locator("text=Enterprise Templates Gallery").first.scroll_into_view_if_needed()
         time.sleep(1)
@@ -114,17 +114,34 @@ def run():
         page.screenshot(path=saas_shot, full_page=False)
         print("  --> Saved: 05_saas_product_landing_e2e.png")
 
-        # Scroll down to pricing section and test annual billing toggle
+        # Scroll down to pricing section
+        print("  --> Validating SaaS Pricing Panels (Annual Billing)...")
         page.locator("text=Simple, Transparent Enterprise Licensing").first.scroll_into_view_if_needed()
         time.sleep(1)
-        annual_toggle = page.locator("button:has-text('Annual')").first
-        if annual_toggle.is_visible():
-            annual_toggle.click()
+
+        # Ensure Annual billing is active and capture
+        annual_btn = page.locator("button:has-text('Annual billing')").first
+        if annual_btn.is_visible():
+            annual_btn.click()
             time.sleep(1)
 
         saas_pricing_shot = os.path.join(SCREENSHOTS_DIR, "05b_saas_pricing_matrix_e2e.png")
         page.screenshot(path=saas_pricing_shot, full_page=False)
         print("  --> Saved: 05b_saas_pricing_matrix_e2e.png")
+
+        # Test Monthly billing toggle and capture to prove zero layout shift
+        print("  --> Validating SaaS Pricing Panels (Monthly Billing)...")
+        monthly_btn = page.locator("button:has-text('Monthly billing')").first
+        if monthly_btn.is_visible():
+            monthly_btn.click()
+            time.sleep(1)
+            saas_monthly_shot = os.path.join(SCREENSHOTS_DIR, "05c_saas_pricing_monthly_e2e.png")
+            page.screenshot(path=saas_monthly_shot, full_page=False)
+            print("  --> Saved: 05c_saas_pricing_monthly_e2e.png")
+
+            # Toggle back to Annual
+            annual_btn.click()
+            time.sleep(1)
 
         # Step 6: Validate Building Blocks (5) Category
         print("\n[Step 6] Switching to Building Blocks category...")
