@@ -21,13 +21,15 @@
   <a href="#-component-examples">Examples</a> •
   <a href="#-component-catalog-246-components">Component Catalog</a> •
   <a href="docs/COMPONENT_CATALOG.md">Full API Docs</a> •
-  <a href="wwwroot/videos/hyperframes_masterclass.html">1080p Video Tour</a>
+  <a href="wwwroot/videos/hyperframes_masterclass.html">1080p Video Tour</a> •
+  <a href="wwwroot/videos/hyperframes_showoff_tour.html">4K Video Showcase</a>
 </p>
 
 ---
 
 ## ⚡ Features
 
+- **Turnkey Page Templates & UI Building Blocks** — Modular, slot-composable full-page applications and 50+ section blocks, including the Fintech & Payments Cockpit, AI Agent Telemetry & Control Plane, and SaaS Marketing Suite. 100% native SVG math visualizations with zero heavy graphing dependencies.
 - **246 Components & Deterministic Styling Engine** — Built for .NET 10 Blazor WebAssembly and Tailwind CSS v3.4+, featuring `TwMerge` utility conflict resolution, `TwClassBuilder`, and multi-part `TwSlots` (`TwCardSlots`, `TwButtonSlots`, `TwUserSlots`, `TwHoverCardSlots`, `TwFloatingInputSlots`), with self-hosted local assets for GridStack, Tesseract OCR, and ZXing barcode scanning (zero external CDN dependencies).
 - **Mobile-First by Default** — 44px touch targets, bottom sheets, swipe gestures, and responsive DataGrid mobile cards.
 - **Adaptive Generative UI (AGUI)** — Runtime prompt-to-UI synthesis with dual-plane tool calling (Frontend WASM + Backend API).

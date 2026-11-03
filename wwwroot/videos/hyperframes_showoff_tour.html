@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlazorTwUI — 4K Ultra-HD Showcase (54s)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: radial-gradient(circle at 50% 10%, #1e1b4b 0%, #030712 100%); font-family: ui-sans-serif, system-ui, sans-serif; }
+        .glass-pill { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .glow-indigo { box-shadow: 0 0 40px -10px rgba(99, 102, 241, 0.4); }
+    </style>
+</head>
+<body class="min-h-screen text-slate-100 flex flex-col items-center justify-center p-4 sm:p-8">
+
+    <div class="max-w-6xl w-full space-y-6">
+        <!-- Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-800">
+            <div>
+                <div class="flex items-center gap-3">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-400 border border-indigo-500/40">4K ULTRA HD</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">54 SECONDS</span>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/40">AVA MULTILINGUAL NEURAL</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight mt-2 text-white">
+                    BlazorTwUI <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-sky-300 to-emerald-400">Cinematic Showcase</span>
+                </h1>
+                <p class="text-sm text-slate-400 mt-1">
+                    Utility-First Blazor WebAssembly • Dynamic Themes • Zero-Friction Demo Access • Relational Workflows
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                <a href="blazortwui-showoff-demo-4k.mp4" download class="glass-pill px-4 py-2 rounded-xl text-xs font-bold text-indigo-300 hover:bg-indigo-950/60 transition inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Download 4K Video (65 MB)
+                </a>
+            </div>
+        </div>
+
+        <!-- Video Player Card -->
+        <div class="relative rounded-3xl overflow-hidden border border-slate-700/60 bg-black glow-indigo shadow-2xl">
+            <video id="player" controls preload="metadata" poster="screenshots/crm-showoff-4k-poster.png" class="w-full aspect-video object-cover">
+                <source src="blazortwui-showoff-demo-4k.mp4" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+        </div>
+
+        <!-- Chapter Navigation Pills -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            <button onclick="seekTo(0)" class="chapter-btn glass-pill p-3 rounded-2xl text-left hover:border-indigo-500 transition group focus:outline-none" data-start="0" data-end="11">
+                <span class="text-[10px] font-bold tracking-wider uppercase text-indigo-400 block">00:00 – 00:11</span>
+                <span class="text-xs font-bold text-white group-hover:text-indigo-300 transition block mt-0.5">Power Intro</span>
+                <span class="text-[11px] text-slate-400 block truncate">Next-Gen Architecture</span>
+            </button>
+
+            <button onclick="seekTo(11)" class="chapter-btn glass-pill p-3 rounded-2xl text-left hover:border-indigo-500 transition group focus:outline-none" data-start="11" data-end="19">
+                <span class="text-[10px] font-bold tracking-wider uppercase text-sky-400 block">00:11 – 00:19</span>
+                <span class="text-xs font-bold text-white group-hover:text-sky-300 transition block mt-0.5">Executive Dashboard</span>
+                <span class="text-[11px] text-slate-400 block truncate">Native SVG Analytics</span>
+            </button>
+
+            <button onclick="seekTo(19)" class="chapter-btn glass-pill p-3 rounded-2xl text-left hover:border-rose-500 transition group focus:outline-none" data-start="19" data-end="28">
+                <span class="text-[10px] font-bold tracking-wider uppercase text-rose-400 block">00:19 – 00:28</span>
+                <span class="text-xs font-bold text-white group-hover:text-rose-300 transition block mt-0.5">Theme Engine</span>
+                <span class="text-[11px] text-slate-400 block truncate">Dark Mode & 9 Palettes</span>
+            </button>
+
+            <button onclick="seekTo(28)" class="chapter-btn glass-pill p-3 rounded-2xl text-left hover:border-blue-500 transition group focus:outline-none" data-start="28" data-end="37">
+                <span class="text-[10px] font-bold tracking-wider uppercase text-blue-400 block">00:28 – 00:37</span>
+                <span class="text-xs font-bold text-white group-hover:text-blue-300 transition block mt-0.5">Rapid Login</span>
+                <span class="text-[11px] text-slate-400 block truncate">1-Click Demo Pills</span>
+            </button>
+
+            <button onclick="seekTo(37)" class="chapter-btn glass-pill p-3 rounded-2xl text-left hover:border-emerald-500 transition group focus:outline-none" data-start="37" data-end="46">
+                <span class="text-[10px] font-bold tracking-wider uppercase text-emerald-400 block">00:37 – 00:46</span>
+                <span class="text-xs font-bold text-white group-hover:text-emerald-300 transition block mt-0.5">Relational CRUD</span>
+                <span class="text-[11px] text-slate-400 block truncate">DataGrid, Cards & Modal</span>
+            </button>
+
+            <button onclick="seekTo(46)" class="chapter-btn glass-pill p-3 rounded-2xl text-left hover:border-emerald-500 transition group focus:outline-none" data-start="46" data-end="54">
+                <span class="text-[10px] font-bold tracking-wider uppercase text-indigo-400 block">00:46 – 00:54</span>
+                <span class="text-xs font-bold text-white group-hover:text-indigo-300 transition block mt-0.5">Power Outro</span>
+                <span class="text-[11px] text-slate-400 block truncate">Production Ready</span>
+            </button>
+        </div>
+
+        <!-- Frame Gallery Preview -->
+        <div class="pt-4 border-t border-slate-800">
+            <h2 class="text-xs font-bold tracking-wider uppercase text-slate-400 mb-3">4K Scene Snapshots</h2>
+            <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+                <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-900 group cursor-pointer" onclick="seekTo(5)">
+                    <img src="screenshots/crm-4k-frame-05s.png" class="w-full aspect-video object-cover group-hover:scale-105 transition" alt="Power Intro">
+                    <div class="p-2 text-[11px] font-semibold text-slate-300 truncate">Intro Animation</div>
+                </div>
+                <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-900 group cursor-pointer" onclick="seekTo(15)">
+                    <img src="screenshots/crm-4k-frame-15s.png" class="w-full aspect-video object-cover group-hover:scale-105 transition" alt="Executive Dashboard">
+                    <div class="p-2 text-[11px] font-semibold text-slate-300 truncate">Dashboard & SVG</div>
+                </div>
+                <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-900 group cursor-pointer" onclick="seekTo(24)">
+                    <img src="screenshots/crm-4k-frame-24s.png" class="w-full aspect-video object-cover group-hover:scale-105 transition" alt="Theme Engine">
+                    <div class="p-2 text-[11px] font-semibold text-slate-300 truncate">Dynamic Theming</div>
+                </div>
+                <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-900 group cursor-pointer" onclick="seekTo(32)">
+                    <img src="screenshots/crm-4k-frame-32s.png" class="w-full aspect-video object-cover group-hover:scale-105 transition" alt="1-Click Demo Pills">
+                    <div class="p-2 text-[11px] font-semibold text-slate-300 truncate">Demo Login Pills</div>
+                </div>
+                <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-900 group cursor-pointer" onclick="seekTo(42)">
+                    <img src="screenshots/crm-4k-frame-42s.png" class="w-full aspect-video object-cover group-hover:scale-105 transition" alt="Relational CRUD">
+                    <div class="p-2 text-[11px] font-semibold text-slate-300 truncate">Relational Workflows</div>
+                </div>
+                <div class="rounded-xl overflow-hidden border border-slate-800 bg-slate-900 group cursor-pointer" onclick="seekTo(51)">
+                    <img src="screenshots/crm-4k-frame-51s.png" class="w-full aspect-video object-cover group-hover:scale-105 transition" alt="Power Outro">
+                    <div class="p-2 text-[11px] font-semibold text-slate-300 truncate">Outro Statement</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('player');
+        const buttons = document.querySelectorAll('.chapter-btn');
+
+        function seekTo(sec) {
+            video.currentTime = sec;
+            video.play();
+        }
+
+        video.addEventListener('timeupdate', () => {
+            const cur = video.currentTime;
+            buttons.forEach(btn => {
+                const start = parseFloat(btn.dataset.start);
+                const end = parseFloat(btn.dataset.end);
+                if (cur >= start && cur < end) {
+                    btn.classList.add('border-indigo-500', 'bg-indigo-950/40');
+                } else {
+                    btn.classList.remove('border-indigo-500', 'bg-indigo-950/40');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
