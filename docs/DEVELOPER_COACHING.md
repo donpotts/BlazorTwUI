@@ -98,7 +98,7 @@ The included interactive training video (`wwwroot/videos/demo-video.mp4`, 5m 00s
 
 | # | Start Time | Chapter Title | Badge | Key Architectural Concepts Covered |
 |---|------------|---------------|-------|-----------------------------------|
-| 0 | `0:00` (0.0s) | Intro & Architecture | `.NET 10+ WASM` | Zero-CDN standalone architecture, 255 native components & templates, mobile-first design. |
+| 0 | `0:00` (0.0s) | Intro & Architecture | `.NET 10+ WASM` | Zero-CDN standalone architecture, 259 native components & templates, mobile-first design. |
 | 1 | `0:15` (15.5s) | Adaptive Generative UI (AGUI) | `AGUI Engine` | Dynamic widget synthesis, dual-plane tool dispatching, real-time latency monitoring. |
 | 2 | `0:33` (33.3s) | Smart Components Suite | `Smart Controls` | Smart Paste with entity extraction, ghost text autocomplete, semantic search & filters. |
 | 3 | `0:52` (52.1s) | 100 Web Dev Forms Library | `100 Forms` | Dynamic schema form engine, 10 functional domains, one-click C# code generation. |
@@ -310,3 +310,27 @@ Always preview templates across all three viewport modes using `<TemplatesGaller
 - **Desktop (Full)**: Verifies multi-column grid alignment and elevation shadows.
 - **Tablet (768px)**: Verifies 2-column wrapping and sidebar collapses.
 - **Mobile (375px)**: Verifies touch target sizes (>= 44px), card stacking, and zero horizontal scroll clipping.
+
+---
+
+## 13. Advanced OLAP Pivot Tables & Master-Detail Architectures
+
+BlazorTwUI v0.8.2 provides deep enterprise data analysis and hierarchical management tools:
+
+### 13.1 Generic 4-Axis OLAP Cross-Tabulation (`TwPivotTable<TItem>`)
+- **The 4 Analytical Axes**:
+  1. **Row Area**: Groups records vertically; supports multi-level nested groupings with interactive expand/collapse (`+` / `−`) tree nodes.
+  2. **Column Area**: Spreads dimension values horizontally across the header row for side-by-side comparative period analysis.
+  3. **Data (Value) Area**: Calculates aggregate numeric metrics using configurable operations (`Sum`, `Average`, `Count`, `DistinctCount`, `Min`, `Max`, `Product`).
+  4. **Filter (Page) Area**: Slices records using interactive dropdown value selectors without modifying matrix dimensions.
+- **Cell Drill-Down Raw Records Inspector**: Clicking any aggregate cell opens a modal displaying the exact raw source records (`TItem`) contributing to that cell's calculation, with instant CSV export.
+- **Heatmap Shading**: Normalized color intensity scaling (`NormalizedIntensity`) highlights peak values across the matrix using custom gradient hues.
+
+### 13.2 Hierarchical Nested Grid (`TwMasterDetailGrid<TMaster, TChild>`)
+- Expandable master rows with chevron toggle buttons.
+- `AllowMultipleExpanded` vs. `AutoCollapseDetailRow` modes to balance dense multi-row inspection with clean single-row focus.
+- Embedded child grid with independent columns, child row addition, and removal callbacks.
+
+### 13.3 Split-Pane Workspace & Transactional Forms
+- **`TwMasterDetail<TMaster, TChild>`**: Synchronized split-view coordinator with Column (horizontal) and Row (vertical) layout modes, live search, status chips, and tabbed detail inspector (Details, Child Records, Audit Timeline).
+- **`TwMasterDetailForm`**: Turnkey transactional form (Invoices / Orders) featuring dynamic line item rows, '+ Add Item', and real-time auto-recalculating subtotal, tax %, discount, and grand total.

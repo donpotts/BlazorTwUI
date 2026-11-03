@@ -843,6 +843,25 @@ public class ComponentCatalogService
         },
         new ComponentDocItem
         {
+            Name = "TwPivotTable",
+            Category = "Financial & Analytical Intelligence",
+            Description = "Full-featured generic OLAP 4-Axis pivot matrix (Row Area, Column Area, Data Area, Filter Area) with hierarchical row expansion/collapse, multi-measure aggregators (Sum, Average, Count, DistinctCount, Min, Max, Product), dynamic heatmap color scaling, interactive field list configurator drawer, CSV export, and raw record drill-down cell inspector.",
+            RazorSnippet = "<TwPivotTable TItem=\"SaleRecord\" Items=\"_sales\" Title=\"Global Sales Analysis\" AllowFieldSelector=\"true\" AllowDrillDown=\"true\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Items", "IEnumerable<TItem>?", "null", "Raw tabular record collection to pivot."),
+                new ComponentParameterDoc("Fields", "List<PivotFieldDefinition<TItem>>?", "null", "Explicit field definitions or auto-discovered public properties."),
+                new ComponentParameterDoc("Config", "PivotConfig?", "null", "Configuration of active row/col dimensions, measures, and filter slicers."),
+                new ComponentParameterDoc("Title", "string", "\"Cross-Tabulation Pivot Table\"", "Main title in the header toolbar."),
+                new ComponentParameterDoc("Subtitle", "string", "\"Multi-dimensional analytical OLAP matrix...\"", "Secondary descriptive text."),
+                new ComponentParameterDoc("AllowFieldSelector", "bool", "true", "Enables the interactive 4-axis field list configuration panel."),
+                new ComponentParameterDoc("AllowDrillDown", "bool", "true", "Clicking an aggregate cell opens the raw record drill-down dialog."),
+                new ComponentParameterDoc("AllowExport", "bool", "true", "Enables direct CSV export of the computed cross-tabulation matrix."),
+                new ComponentParameterDoc("Class", "string", "\"\"", "Additional Tailwind utility classes applied to the root container.")
+            }
+        },
+        new ComponentDocItem
+        {
             Name = "TwIconPicker",
             Category = "Developer Studio & Content Creation",
             Description = "Interactive search-and-select icon & emoji explorer with live filtering, outline/solid toggles, size previews, and one-click Razor component snippet copying.",
@@ -2041,6 +2060,58 @@ public class ComponentCatalogService
                 new ComponentParameterDoc("FilterPlaceholder", "string?", "null", "Filter box hint."),
                 new ComponentParameterDoc("HeaderClass", "string?", "null", "Extra header classes."),
                 new ComponentParameterDoc("CellClass", "string?", "null", "Extra cell classes.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwMasterDetailGrid",
+            Category = "Enterprise Data & Tables",
+            Description = "Hierarchical data table featuring expandable master rows with nested child grids, chevron toggles, multi-row or auto-collapse expansion modes, independent child column sorting, and add/delete child line item callbacks.",
+            RazorSnippet = "<TwMasterDetailGrid TMaster=\"Order\" TChild=\"OrderItem\" Items=\"_orders\" ChildSelector=\"o => o.Items\" Title=\"Orders & Line Items\" AllowAddChild=\"true\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Items", "IEnumerable<TMaster>?", "null", "Master record dataset."),
+                new ComponentParameterDoc("ChildSelector", "Func<TMaster, IEnumerable<TChild>>?", "null", "Delegate resolving nested child records for each master row."),
+                new ComponentParameterDoc("Title", "string", "\"Enterprise Hierarchical Grid\"", "Main table title."),
+                new ComponentParameterDoc("AllowMultipleExpanded", "bool", "true", "Permits multiple master rows to be expanded concurrently."),
+                new ComponentParameterDoc("AutoCollapseDetailRow", "bool", "false", "Automatically closes other expanded rows when expanding a new master row."),
+                new ComponentParameterDoc("AllowAddChild", "bool", "false", "Enables '+ Add Item' action inside the nested detail grid."),
+                new ComponentParameterDoc("AllowDeleteChild", "bool", "false", "Enables remove action button on nested child records.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwMasterDetail",
+            Category = "Enterprise Data & Tables",
+            Description = "Synchronized Master/Detail split-pane workspace with Column (horizontal) and Row (vertical) layout modes, live search, status chips, multi-tab detail inspector (Master Form, Child Records Grid, Audit Timeline), and two-way item selection binding.",
+            RazorSnippet = "<TwMasterDetail TMaster=\"Customer\" TChild=\"Invoice\" Items=\"_customers\" ChildSelector=\"c => c.Invoices\" @bind-SelectedItem=\"_selectedCustomer\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Items", "IEnumerable<TMaster>?", "null", "Collection of master records for the master pane."),
+                new ComponentParameterDoc("SelectedItem", "TMaster?", "null", "Active selected master record rendered in the detail inspector."),
+                new ComponentParameterDoc("ChildSelector", "Func<TMaster, IEnumerable<TChild>>?", "null", "Delegate retrieving child items for the selected master record."),
+                new ComponentParameterDoc("AllowCreate", "bool", "true", "Enables the 'New Entry' action button in the toolbar."),
+                new ComponentParameterDoc("AllowDelete", "bool", "true", "Enables the 'Delete' action in the detail inspector."),
+                new ComponentParameterDoc("Title", "string", "\"Master-Detail Enterprise Workspace\"", "Main workspace header title.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwMasterDetailForm",
+            Category = "Enterprise Data & Tables",
+            Description = "Turnkey transactional Master/Detail form designed for Invoices, Purchase Orders, and Service Statements with top metadata fields, dynamic line item table, '+ Add Item', real-time subtotal, tax %, discount, and grand total recalculation.",
+            RazorSnippet = "<TwMasterDetailForm Title=\"Invoice Statement\" DocumentNumber=\"INV-2026-001\" ClientName=\"Acme Corp\" Status=\"Draft\" OnSubmit=\"HandleSubmit\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Title", "string", "\"Invoice & Master Detail Statement\"", "Document form title."),
+                new ComponentParameterDoc("DocumentNumber", "string", "\"INV-2026-8942\"", "Unique transaction or invoice identifier."),
+                new ComponentParameterDoc("Status", "string", "\"Draft\"", "Workflow status badge."),
+                new ComponentParameterDoc("ClientName", "string", "\"Acme Global Financial\"", "Recipient or client name."),
+                new ComponentParameterDoc("DocumentDate", "DateTime", "DateTime.Today", "Transaction date."),
+                new ComponentParameterDoc("PaymentTerms", "string", "\"Net 30\"", "Contractual payment schedule."),
+                new ComponentParameterDoc("CurrencyCode", "string", "\"USD\"", "Currency code (USD, EUR, GBP, CAD)."),
+                new ComponentParameterDoc("TaxRatePercent", "decimal", "8.5m", "Tax percentage applied to line item subtotal."),
+                new ComponentParameterDoc("DiscountAmount", "decimal", "0m", "Fixed discount subtracted from grand total.")
             }
         },
         new ComponentDocItem

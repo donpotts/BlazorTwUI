@@ -2,6 +2,17 @@
 
 All notable changes to BlazorTwUI are documented here. Version 1.0 has not been released: earlier internal labels of the form 1.x were renumbered to 0.x (for example 1.5.0 is now 0.5.0), so the library is in its 0.n.n line. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.8.2] - 2026-11-03
+
+### Added
+- **Full-Featured PivotTable & Master-Detail Suite (`255` → `259 Components`)**:
+  - `TwPivotTable<TItem>`: Generic 4-Axis OLAP cross-tabulation pivot matrix with multi-dimensional Row hierarchy (expand/collapse tree buttons), Column headers, Data measures (Sum, Average, Count, DistinctCount, Min, Max, Product), Page Filters, interactive Field List configurator panel, dynamic heatmap color scaling, cell drill-down raw records inspector dialog, and direct CSV export.
+  - `TwMasterDetailGrid<TMaster, TChild>`: Hierarchical data table featuring expandable master rows with nested child grids, chevron toggles, multi-row or auto-collapse expansion modes, independent child column sorting, and add/delete child line item callbacks.
+  - `TwMasterDetail<TMaster, TChild>`: Synchronized Master/Detail split-pane workspace with Column (horizontal) and Row (vertical) layout modes, live search, status chips, multi-tab detail inspector (Master Form, Child Records Grid, Audit Timeline), and two-way item selection binding.
+  - `TwMasterDetailForm`: Turnkey transactional Master/Detail form designed for Invoices, Purchase Orders, and Service Statements with top metadata fields, dynamic line item table, '+ Add Item', real-time subtotal, tax %, discount, and grand total recalculation.
+- **Test Suite Expansion**:
+  - Added `PivotAndMasterDetailTests.cs` covering matrix aggregation, heatmap styling, field list toggling, cell drilldown, row expansion, nested child grid rendering, workspace tab switching, and dynamic line item calculation (182 total passing tests).
+
 ## [0.8.1] - 2026-11-03
 
 ### Added

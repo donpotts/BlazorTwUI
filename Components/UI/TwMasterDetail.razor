@@ -1,0 +1,611 @@
+@namespace BlazorTwUI.Components.UI
+@typeparam TMaster
+@typeparam TChild
+@using System.Reflection
+@using System.Globalization
+@using BlazorTwUI.Models
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-5 @Class" data-testid="master-detail-workspace">
+    <!-- Top Workspace Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-lg">
+                🗂️
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        Split-Pane Studio
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        @_filteredMasters.Count Total
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Layout Switcher -->
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+                <button type="button" @onclick='() => _activeLayout = MasterDetailLayout.SplitHorizontal'
+                        title="Horizontal Split View"
+                        class="px-2.5 py-1 rounded-lg transition @(_activeLayout == MasterDetailLayout.SplitHorizontal ? "bg-white dark:bg-slate-900 text-brand-600 shadow-2xs font-bold" : "text-slate-500")">
+                    Columns ◫
+                </button>
+                <button type="button" @onclick='() => _activeLayout = MasterDetailLayout.SplitVertical'
+                        title="Vertical Stacked Split"
+                        class="px-2.5 py-1 rounded-lg transition @(_activeLayout == MasterDetailLayout.SplitVertical ? "bg-white dark:bg-slate-900 text-brand-600 shadow-2xs font-bold" : "text-slate-500")">
+                    Rows ⊟
+                </button>
+            </div>
+
+            @if (AllowCreate)
+            {
+                <button type="button" @onclick="HandleCreateNew" data-testid="master-new-btn"
+                        class="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition">
+                    <span>+</span>
+                    <span>New Entry</span>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Workspace Container (Split horizontal or vertical) -->
+    <div class="@GetLayoutContainerClasses()">
+        <!-- Master List Pane -->
+        <div class="@GetMasterPaneClasses()" data-testid="master-list-pane">
+            <div class="p-3.5 border-b border-slate-100 dark:border-slate-800 space-y-3">
+                <div class="relative">
+                    <input type="search" @bind="_searchQuery" @bind:event="oninput"
+                           placeholder="Filter entries..."
+                           data-testid="master-search-input"
+                           class="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+                </div>
+
+                @if (_availableStatuses.Count > 0)
+                {
+                    <div class="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+                        <button type="button" @onclick='() => _selectedStatusFilter = null'
+                                class="px-2 py-0.5 rounded-lg font-bold transition @(_selectedStatusFilter == null ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")">
+                            All
+                        </button>
+                        @foreach (var st in _availableStatuses)
+                        {
+                            <button type="button" @onclick='() => _selectedStatusFilter = st'
+                                    class="px-2 py-0.5 rounded-lg font-semibold transition @(_selectedStatusFilter == st ? "bg-brand-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400")">
+                                @st
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+
+            <!-- Master Items List -->
+            <div class="divide-y divide-slate-100 dark:divide-slate-800 overflow-y-auto max-h-[560px]">
+                @if (_filteredMasters.Count == 0)
+                {
+                    <div class="p-8 text-center text-slate-400 text-xs italic">
+                        No matching master entries found.
+                    </div>
+                }
+                @foreach (var item in _filteredMasters)
+                {
+                    var isSelected = SelectedItem != null && EqualityComparer<TMaster>.Default.Equals(SelectedItem, item);
+
+                    <div @onclick='() => SelectMaster(item)'
+                         data-testid="master-item-card"
+                         class="p-3.5 cursor-pointer transition-colors flex items-start justify-between gap-3 @(isSelected ? "bg-brand-50/70 dark:bg-brand-950/30 border-l-4 border-brand-500" : "hover:bg-slate-50 dark:hover:bg-slate-850")">
+                        @if (MasterItemTemplate != null)
+                        {
+                            @MasterItemTemplate(item)
+                        }
+                        else
+                        {
+                            <div class="min-w-0 flex-1 space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-bold text-xs text-slate-900 dark:text-white truncate">
+                                        @GetMasterDisplayTitle(item)
+                                    </h4>
+                                    @{
+                                        var status = GetMasterStatus(item);
+                                    }
+                                    @if (!string.IsNullOrEmpty(status))
+                                    {
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                                            @status
+                                        </span>
+                                    }
+                                </div>
+                                <p class="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                    @GetMasterDisplaySubtitle(item)
+                                </p>
+                            </div>
+                            <span class="text-xs text-slate-400 font-mono">
+                                ➔
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Detail Inspector Pane -->
+        <div class="@GetDetailPaneClasses()" data-testid="detail-inspector-pane">
+            @if (SelectedItem == null)
+            {
+                <div class="h-full flex flex-col items-center justify-center p-12 text-center text-slate-400 space-y-3">
+                    <span class="text-4xl">📄</span>
+                    <h4 class="font-bold text-sm text-slate-700 dark:text-slate-300">No Item Selected</h4>
+                    <p class="text-xs max-w-sm">Choose an entry from the master list on the left to inspect and edit its details and associated child line items.</p>
+                </div>
+            }
+            else
+            {
+                <!-- Detail Header -->
+                <div class="p-4 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-850/50">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-black text-sm sm:text-base text-slate-900 dark:text-white">
+                                @GetMasterDisplayTitle(SelectedItem)
+                            </h3>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                                @_mode Mode
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">@GetMasterDisplaySubtitle(SelectedItem)</p>
+                    </div>
+
+                    <!-- Action Bar -->
+                    <div class="flex items-center gap-1.5">
+                        @if (_mode == MasterDetailMode.View)
+                        {
+                            <button type="button" @onclick="() => _mode = MasterDetailMode.Edit" data-testid="detail-edit-btn"
+                                    class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 transition">
+                                ✏️ Edit
+                            </button>
+                            @if (AllowDelete)
+                            {
+                                <button type="button" @onclick="HandleDeleteMaster" data-testid="detail-delete-btn"
+                                        class="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 text-xs font-bold hover:bg-rose-100 transition">
+                                    🗑️ Delete
+                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <button type="button" @onclick="HandleCancelEdit" data-testid="detail-cancel-btn"
+                                    class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 transition">
+                                Cancel
+                            </button>
+                            <button type="button" @onclick="HandleSaveMaster" data-testid="detail-save-btn"
+                                    class="px-3.5 py-1.5 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-500 transition shadow-sm">
+                                💾 Save Changes
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs: Form Details vs Child Records vs Activity -->
+                <div class="flex items-center border-b border-slate-100 dark:border-slate-800 px-4 bg-white dark:bg-slate-900 text-xs font-bold">
+                    <button type="button" @onclick='() => _activeTab = MasterDetailTab.Details'
+                            data-testid="tab-details"
+                            class="py-3 px-4 border-b-2 transition flex items-center gap-1.5 @(_activeTab == MasterDetailTab.Details ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+                        <span>📝</span>
+                        <span>Master Details</span>
+                    </button>
+                    <button type="button" @onclick='() => _activeTab = MasterDetailTab.ChildRecords'
+                            data-testid="tab-children"
+                            class="py-3 px-4 border-b-2 transition flex items-center gap-1.5 @(_activeTab == MasterDetailTab.ChildRecords ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+                        <span>📊</span>
+                        <span>Child Records</span>
+                        <span class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 dark:bg-slate-800">
+                            @GetChildCount(SelectedItem)
+                        </span>
+                    </button>
+                    <button type="button" @onclick='() => _activeTab = MasterDetailTab.Activity'
+                            data-testid="tab-activity"
+                            class="py-3 px-4 border-b-2 transition flex items-center gap-1.5 @(_activeTab == MasterDetailTab.Activity ? "border-brand-500 text-brand-600 dark:text-brand-400" : "border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200")">
+                        <span>🕒</span>
+                        <span>Audit Timeline</span>
+                    </button>
+                </div>
+
+                <!-- Tab Content Panes -->
+                <div class="p-5 overflow-y-auto max-h-[500px]">
+                    @if (_activeTab == MasterDetailTab.Details)
+                    {
+                        @if (DetailFormTemplate != null)
+                        {
+                            @DetailFormTemplate(SelectedItem)
+                        }
+                        else
+                        {
+                            <!-- Default Master Form Inspector -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs" data-testid="master-default-form">
+                                @foreach (var p in typeof(TMaster).GetProperties(BindingFlags.Public | BindingFlags.Instance).Take(8))
+                                {
+                                    var val = p.GetValue(SelectedItem);
+                                    <div class="space-y-1">
+                                        <label class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">
+                                            @p.Name
+                                        </label>
+                                        @if (_mode == MasterDetailMode.View)
+                                        {
+                                            <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 font-mono">
+                                                @(val?.ToString() ?? "—")
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <input type="text" value="@val"
+                                                   @onchange='e => SetMasterPropertyValue(SelectedItem, p, e.Value?.ToString())'
+                                                   class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+                    else if (_activeTab == MasterDetailTab.ChildRecords)
+                    {
+                        <!-- Child Records Grid -->
+                        <div class="space-y-4" data-testid="child-records-view">
+                            <div class="flex items-center justify-between">
+                                <span class="font-bold text-xs uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                                    Associated Detail Records
+                                </span>
+                                @if (AllowAddChild)
+                                {
+                                    <button type="button" @onclick='() => HandleAddChild(SelectedItem)' data-testid="tab-add-child-btn"
+                                            class="px-3 py-1 rounded-xl bg-brand-500 text-white text-xs font-bold hover:bg-brand-600 transition flex items-center gap-1 shadow-2xs">
+                                        <span>+</span>
+                                        <span>Add Line Item</span>
+                                    </button>
+                                }
+                            </div>
+
+                            @{
+                                var children = GetChildren(SelectedItem).ToList();
+                            }
+                            @if (children.Count == 0)
+                            {
+                                <div class="p-8 text-center text-slate-400 italic text-xs bg-slate-50 dark:bg-slate-850/50 rounded-2xl">
+                                    No child line items recorded.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                                    <table class="w-full text-left text-xs border-collapse">
+                                        <thead class="bg-slate-100 dark:bg-slate-850 font-bold text-slate-800 dark:text-slate-200">
+                                            <tr>
+                                                @foreach (var ccol in _childColumns)
+                                                {
+                                                    <th class="p-2.5 font-mono text-[11px]">@ccol.Title</th>
+                                                }
+                                                @if (AllowDeleteChild)
+                                                {
+                                                    <th class="p-2.5 text-right font-mono text-[11px] w-20">Actions</th>
+                                                }
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                            @foreach (var child in children)
+                                            {
+                                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                                                    @foreach (var ccol in _childColumns)
+                                                    {
+                                                        var cval = ccol.ValueSelector != null ? ccol.ValueSelector(child) : null;
+                                                        <td class="p-2.5 font-mono text-slate-700 dark:text-slate-300">
+                                                            @(cval?.ToString() ?? "—")
+                                                        </td>
+                                                    }
+                                                    @if (AllowDeleteChild)
+                                                    {
+                                                        <td class="p-2.5 text-right">
+                                                            <button type="button" @onclick='() => HandleDeleteChild(SelectedItem, child)'
+                                                                    class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove">
+                                                                ✕
+                                                            </button>
+                                                        </td>
+                                                    }
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else if (_activeTab == MasterDetailTab.Activity)
+                    {
+                        <!-- Audit Timeline -->
+                        <div class="space-y-3" data-testid="activity-timeline-view">
+                            @if (_auditTrail.Count == 0)
+                            {
+                                <div class="p-8 text-center text-slate-400 italic text-xs">
+                                    No audit entries recorded for this item.
+                                </div>
+                            }
+                            @foreach (var entry in _auditTrail)
+                            {
+                                <div class="p-3 rounded-xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 flex items-start gap-3 text-xs">
+                                    <span class="w-2 h-2 rounded-full bg-brand-500 mt-1.5"></span>
+                                    <div class="flex-1 space-y-0.5">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-slate-800 dark:text-slate-200">@entry.Action</span>
+                                            <span class="text-[10px] text-slate-400 font-mono">@entry.Timestamp.ToString("g")</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-500">By @entry.Author @(entry.Details != null ? $"• {entry.Details}" : "")</p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TMaster>? Items { get; set; }
+    [Parameter] public TMaster? SelectedItem { get; set; }
+    [Parameter] public EventCallback<TMaster?> SelectedItemChanged { get; set; }
+
+    [Parameter] public Func<TMaster, IEnumerable<TChild>>? ChildSelector { get; set; }
+    [Parameter] public Func<TMaster, string>? TitleSelector { get; set; }
+    [Parameter] public Func<TMaster, string>? SubtitleSelector { get; set; }
+    [Parameter] public Func<TMaster, string>? StatusSelector { get; set; }
+
+    [Parameter] public string Title { get; set; } = "Master-Detail Enterprise Workspace";
+    [Parameter] public string Subtitle { get; set; } = "Synchronized split-pane coordinator with responsive drilldown";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public bool AllowCreate { get; set; } = true;
+    [Parameter] public bool AllowDelete { get; set; } = true;
+    [Parameter] public bool AllowAddChild { get; set; } = true;
+    [Parameter] public bool AllowDeleteChild { get; set; } = true;
+
+    [Parameter] public RenderFragment<TMaster>? MasterItemTemplate { get; set; }
+    [Parameter] public RenderFragment<TMaster>? DetailFormTemplate { get; set; }
+
+    [Parameter] public List<ChildRecordColumn<TChild>>? ChildColumns { get; set; }
+
+    [Parameter] public EventCallback<TMaster> OnSave { get; set; }
+    [Parameter] public EventCallback<TMaster> OnDelete { get; set; }
+    [Parameter] public EventCallback OnCreate { get; set; }
+    [Parameter] public EventCallback<TMaster> OnChildAdd { get; set; }
+    [Parameter] public EventCallback<(TMaster Master, TChild Child)> OnChildDelete { get; set; }
+
+    private List<TMaster> _masters = new();
+    private List<ChildRecordColumn<TChild>> _childColumns = new();
+    private List<string> _availableStatuses = new();
+    private List<MasterDetailAuditEntry> _auditTrail = new();
+
+    private MasterDetailLayout _activeLayout = MasterDetailLayout.SplitHorizontal;
+    private MasterDetailMode _mode = MasterDetailMode.View;
+    private MasterDetailTab _activeTab = MasterDetailTab.Details;
+    private string _searchQuery = "";
+    private string? _selectedStatusFilter = null;
+
+    private List<TMaster> _filteredMasters
+    {
+        get
+        {
+            var res = (IEnumerable<TMaster>)_masters;
+            if (!string.IsNullOrWhiteSpace(_selectedStatusFilter))
+            {
+                res = res.Where(m => string.Equals(GetMasterStatus(m), _selectedStatusFilter, StringComparison.OrdinalIgnoreCase));
+            }
+            if (!string.IsNullOrWhiteSpace(_searchQuery))
+            {
+                res = res.Where(m =>
+                {
+                    var t = GetMasterDisplayTitle(m);
+                    var s = GetMasterDisplaySubtitle(m);
+                    return t.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase) || s.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase);
+                });
+            }
+            return res.ToList();
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        _masters = Items?.ToList() ?? new();
+        if (SelectedItem == null && _masters.Count > 0)
+        {
+            SelectedItem = _masters[0];
+        }
+
+        InitializeColumns();
+        InitializeStatuses();
+        InitializeAuditTrail();
+    }
+
+    private void InitializeColumns()
+    {
+        if (ChildColumns != null && ChildColumns.Count > 0)
+        {
+            _childColumns = ChildColumns;
+        }
+        else
+        {
+            _childColumns = new();
+            var cprops = typeof(TChild).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var p in cprops.Take(6))
+            {
+                _childColumns.Add(new ChildRecordColumn<TChild>(p.Name, c => p.GetValue(c)));
+            }
+        }
+    }
+
+    private void InitializeStatuses()
+    {
+        _availableStatuses = _masters.Select(GetMasterStatus).Where(s => !string.IsNullOrEmpty(s)).Distinct().ToList();
+    }
+
+    private void InitializeAuditTrail()
+    {
+        if (_auditTrail.Count == 0)
+        {
+            _auditTrail = new List<MasterDetailAuditEntry>
+            {
+                new() { Timestamp = DateTime.UtcNow.AddMinutes(-42), Author = "Lead Auditor", Action = "Record verified & synced" },
+                new() { Timestamp = DateTime.UtcNow.AddHours(-3), Author = "Operator", Action = "Initial master record created" }
+            };
+        }
+    }
+
+    private string GetMasterDisplayTitle(TMaster master)
+    {
+        if (TitleSelector != null) return TitleSelector(master);
+        var p = typeof(TMaster).GetProperty("Title") ?? typeof(TMaster).GetProperty("Name") ?? typeof(TMaster).GetProperty("Subject") ?? typeof(TMaster).GetProperty("Id");
+        return p?.GetValue(master)?.ToString() ?? master?.ToString() ?? "Record";
+    }
+
+    private string GetMasterDisplaySubtitle(TMaster master)
+    {
+        if (SubtitleSelector != null) return SubtitleSelector(master);
+        var p = typeof(TMaster).GetProperty("Description") ?? typeof(TMaster).GetProperty("Customer") ?? typeof(TMaster).GetProperty("Category") ?? typeof(TMaster).GetProperty("Email");
+        return p?.GetValue(master)?.ToString() ?? "";
+    }
+
+    private string GetMasterStatus(TMaster master)
+    {
+        if (StatusSelector != null) return StatusSelector(master);
+        var p = typeof(TMaster).GetProperty("Status") ?? typeof(TMaster).GetProperty("State");
+        return p?.GetValue(master)?.ToString() ?? "";
+    }
+
+    private IEnumerable<TChild> GetChildren(TMaster master)
+    {
+        if (ChildSelector != null) return ChildSelector(master) ?? Enumerable.Empty<TChild>();
+        var childProp = typeof(TMaster).GetProperty("Items") ?? typeof(TMaster).GetProperty("Details") ?? typeof(TMaster).GetProperty("Orders") ?? typeof(TMaster).GetProperty("Children");
+        if (childProp != null && childProp.GetValue(master) is IEnumerable<TChild> list) return list;
+        return Enumerable.Empty<TChild>();
+    }
+
+    private int GetChildCount(TMaster master) => GetChildren(master).Count();
+
+    private void SetMasterPropertyValue(TMaster master, PropertyInfo prop, string? val)
+    {
+        try
+        {
+            var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+            var converted = Convert.ChangeType(val, targetType, CultureInfo.InvariantCulture);
+            prop.SetValue(master, converted);
+        }
+        catch { /* loose conversion */ }
+    }
+
+    private string GetLayoutContainerClasses() => _activeLayout switch
+    {
+        MasterDetailLayout.SplitVertical => "flex flex-col gap-4",
+        _ => "grid grid-cols-1 lg:grid-cols-12 gap-5"
+    };
+
+    private string GetMasterPaneClasses() => _activeLayout switch
+    {
+        MasterDetailLayout.SplitVertical => "w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs",
+        _ => "lg:col-span-5 xl:col-span-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden"
+    };
+
+    private string GetDetailPaneClasses() => _activeLayout switch
+    {
+        MasterDetailLayout.SplitVertical => "w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs",
+        _ => "lg:col-span-7 xl:col-span-8 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xs overflow-hidden"
+    };
+
+    private async Task SelectMaster(TMaster master)
+    {
+        SelectedItem = master;
+        _mode = MasterDetailMode.View;
+        if (SelectedItemChanged.HasDelegate)
+        {
+            await SelectedItemChanged.InvokeAsync(master);
+        }
+    }
+
+    private async Task HandleCreateNew()
+    {
+        if (OnCreate.HasDelegate)
+        {
+            await OnCreate.InvokeAsync();
+        }
+        else
+        {
+            try
+            {
+                var newInst = Activator.CreateInstance<TMaster>();
+                _masters.Insert(0, newInst);
+                await SelectMaster(newInst);
+                _mode = MasterDetailMode.Edit;
+            }
+            catch { /* fallback */ }
+        }
+    }
+
+    private async Task HandleSaveMaster()
+    {
+        _mode = MasterDetailMode.View;
+        if (SelectedItem != null)
+        {
+            _auditTrail.Insert(0, new MasterDetailAuditEntry
+            {
+                Action = "Saved record modifications",
+                Author = "System Operator",
+                Timestamp = DateTime.UtcNow
+            });
+
+            if (OnSave.HasDelegate)
+            {
+                await OnSave.InvokeAsync(SelectedItem);
+            }
+        }
+    }
+
+    private void HandleCancelEdit()
+    {
+        _mode = MasterDetailMode.View;
+    }
+
+    private async Task HandleDeleteMaster()
+    {
+        if (SelectedItem != null)
+        {
+            var victim = SelectedItem;
+            _masters.Remove(victim);
+            SelectedItem = _masters.FirstOrDefault();
+            _mode = MasterDetailMode.View;
+
+            if (OnDelete.HasDelegate)
+            {
+                await OnDelete.InvokeAsync(victim);
+            }
+            if (SelectedItemChanged.HasDelegate)
+            {
+                await SelectedItemChanged.InvokeAsync(SelectedItem);
+            }
+        }
+    }
+
+    private async Task HandleAddChild(TMaster master)
+    {
+        if (OnChildAdd.HasDelegate)
+        {
+            await OnChildAdd.InvokeAsync(master);
+        }
+    }
+
+    private async Task HandleDeleteChild(TMaster master, TChild child)
+    {
+        if (OnChildDelete.HasDelegate)
+        {
+            await OnChildDelete.InvokeAsync((master, child));
+        }
+    }
+}

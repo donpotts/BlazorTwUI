@@ -3362,6 +3362,87 @@
                                 Multidimensional data aggregation matrix with dynamic Row, Column, and Value field slicers, Sum / Average / Count operations, and automated hierarchical subtotals and grand totals.
                             </p>
                             <TwPivotGrid />
+
+                            <!-- Generic 4-Axis TwPivotTable with Heatmap, Field Configurator & Drilldown -->
+                            <div class="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="w-2.5 h-6 rounded-full bg-indigo-500"></span>
+                                        <h4 class="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                                            TwPivotTable&lt;TItem&gt; — Generic 4-Axis OLAP Cross-Tabulation Matrix
+                                        </h4>
+                                    </div>
+                                    <TwBadge Variant="SemanticVariant.Primary">Generic &amp; 4-Axis</TwBadge>
+                                </div>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    Full-featured generic pivot table with Row hierarchy (with expand/collapse), Column dimensions, Data measures (Sum, Avg, Count, Min, Max), Page Filters, interactive Field List configurator, cell drill-down raw records inspector, and live heatmap shading.
+                                </p>
+                                <TwPivotTable TItem="ShowcaseSaleRecord"
+                                              Items="_showcaseSales"
+                                              Title="Global Cloud Infrastructure Revenue Matrix"
+                                              Subtitle="Dynamic cross-tabulation across Region, Product Line, and Sales Quarter"
+                                              AllowFieldSelector="true"
+                                              AllowDrillDown="true"
+                                              AllowExport="true" />
+                            </div>
+                        </section>
+
+                        <!-- Master-Detail Enterprise Suite Showcase -->
+                        <section id="masterdetail-section" class="space-y-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-2.5 h-6 rounded-full bg-emerald-500"></span>
+                                    <h3 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
+                                        Master-Detail Architecture Suite
+                                    </h3>
+                                </div>
+                                <TwBadge Variant="SemanticVariant.Success">Nested &amp; Split-Pane</TwBadge>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">
+                                Hierarchical data presentation and transactional editing: expandable master table rows hosting nested child grids, synchronized split-pane workspaces, and auto-calculating master-detail forms.
+                            </p>
+
+                            <!-- 1. Expandable Nested Child Grid -->
+                            <div class="space-y-2">
+                                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span>1. Expandable Nested Child Grid</span>
+                                    <span class="text-xs font-mono font-normal text-slate-400">(TwMasterDetailGrid)</span>
+                                </h4>
+                                <TwMasterDetailGrid TMaster="ShowcaseMasterOrder" TChild="ShowcaseOrderLine"
+                                                    Items="_showcaseMasterOrders"
+                                                    ChildSelector="o => o.Lines"
+                                                    Title="Enterprise Purchase Orders"
+                                                    Subtitle="Click ▶ on any master order row to expand its nested child line items grid"
+                                                    AllowAddChild="true"
+                                                    AllowDeleteChild="true" />
+                            </div>
+
+                            <!-- 2. Master/Detail Split Workspace -->
+                            <div class="space-y-2 pt-4">
+                                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span>2. Split-Pane Coordinator Workspace</span>
+                                    <span class="text-xs font-mono font-normal text-slate-400">(TwMasterDetail)</span>
+                                </h4>
+                                <TwMasterDetail TMaster="ShowcaseMasterOrder" TChild="ShowcaseOrderLine"
+                                                Items="_showcaseMasterOrders"
+                                                ChildSelector="o => o.Lines"
+                                                Title="Order Management Workspace"
+                                                Subtitle="Switch between Columns/Rows layout, filter by status, and inspect child items or audit logs"
+                                                AllowCreate="true"
+                                                AllowDelete="true" />
+                            </div>
+
+                            <!-- 3. Transactional Master/Detail Form -->
+                            <div class="space-y-2 pt-4">
+                                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span>3. Transactional Statement Form</span>
+                                    <span class="text-xs font-mono font-normal text-slate-400">(TwMasterDetailForm)</span>
+                                </h4>
+                                <TwMasterDetailForm Title="Client Service Invoice"
+                                                    DocumentNumber="INV-2026-7821"
+                                                    ClientName="Enterprise Systems Group"
+                                                    Status="Draft" />
+                            </div>
                         </section>
 
                         <!-- 5. TwDockManager Showcase -->
@@ -3845,7 +3926,7 @@
                                                 <span class="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-brand-500/10 text-brand-500 border border-brand-500/20">DEMO 01</span>
                                                 <span class="text-xs text-slate-400 font-mono">00:00</span>
                                             </div>
-                                            <h4 class="font-bold text-slate-900 dark:text-white text-base">255 Components, TwMerge & Word Balloon POP</h4>
+                                            <h4 class="font-bold text-slate-900 dark:text-white text-base">259 Components, TwMerge & Word Balloon POP</h4>
                                             <p class="text-xs text-slate-600 dark:text-slate-400">TwMerge conflict engine, multi-part TwSlots, 3D stacked toasts, device mockups, and Word Balloon POP Studio.</p>
                                             <div class="text-xs font-semibold text-brand-600 dark:text-brand-400 flex items-center gap-1">▶ Watch Demo</div>
                                         </div>
@@ -5925,6 +6006,10 @@
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwFinancialChart", Subtitle = "High-frequency candlestick financial stock & crypto chart", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwTreemap", Subtitle = "Squarified 2D valuation treemap with proportional sizing", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwPivotGrid", Subtitle = "Multi-dimensional OLAP cross-tabulation pivot grid", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
+        _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwPivotTable", Subtitle = "Generic 4-Axis OLAP pivot table with drill-down, heatmap & field configurator", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
+        _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwMasterDetailGrid", Subtitle = "Expandable master rows hosting nested child grids with live line items", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
+        _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwMasterDetail", Subtitle = "Split-pane master/detail workspace with column/row modes & audit log", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
+        _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwMasterDetailForm", Subtitle = "Transactional master/detail form with auto-calculating tax & line items", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwMarkdownEditor", Subtitle = "Dual Markdown & HTML editor with multi-format media drawer", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwDockManager", Subtitle = "Multi-pane IDE docking workspace with tabs & toolboxes", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwSpreadsheet", Subtitle = "Reactive formula calculation grid with live recalculation", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
@@ -7067,5 +7152,92 @@ public void Render()
     {
         await ThemeService.CycleModeAsync();
     }
+
+    public class ShowcaseSaleRecord
+    {
+        public string Region { get; set; } = "North America";
+        public string ProductLine { get; set; } = "Cloud Core";
+        public string Quarter { get; set; } = "Q1";
+        public string Tier { get; set; } = "Enterprise";
+        public decimal Revenue { get; set; } = 150000;
+    }
+
+    public class ShowcaseMasterOrder
+    {
+        public string OrderId { get; set; } = "ORD-9410";
+        public string Customer { get; set; } = "Acme Global";
+        public string Status { get; set; } = "Active";
+        public DateTime OrderDate { get; set; } = DateTime.Today;
+        public decimal TotalAmount => Lines.Sum(l => l.Quantity * l.UnitPrice);
+        public List<ShowcaseOrderLine> Lines { get; set; } = new();
+
+        public override string ToString() => $"{OrderId} - {Customer}";
+    }
+
+    public class ShowcaseOrderLine
+    {
+        public string Sku { get; set; } = "SKU-01";
+        public string Description { get; set; } = "Kubernetes Cluster Node";
+        public int Quantity { get; set; } = 4;
+        public decimal UnitPrice { get; set; } = 1200;
+        public decimal Total => Quantity * UnitPrice;
+    }
+
+    private readonly List<ShowcaseSaleRecord> _showcaseSales = new()
+    {
+        new() { Region = "North America", ProductLine = "Cloud Core", Quarter = "Q1", Tier = "Enterprise", Revenue = 240000 },
+        new() { Region = "North America", ProductLine = "Cloud Core", Quarter = "Q2", Tier = "Enterprise", Revenue = 285000 },
+        new() { Region = "North America", ProductLine = "Security Suite", Quarter = "Q1", Tier = "Enterprise", Revenue = 135000 },
+        new() { Region = "North America", ProductLine = "Security Suite", Quarter = "Q2", Tier = "Enterprise", Revenue = 160000 },
+        new() { Region = "Europe", ProductLine = "Cloud Core", Quarter = "Q1", Tier = "Standard", Revenue = 190000 },
+        new() { Region = "Europe", ProductLine = "Cloud Core", Quarter = "Q2", Tier = "Standard", Revenue = 215000 },
+        new() { Region = "Europe", ProductLine = "Security Suite", Quarter = "Q1", Tier = "Enterprise", Revenue = 175000 },
+        new() { Region = "Europe", ProductLine = "Security Suite", Quarter = "Q2", Tier = "Enterprise", Revenue = 195000 },
+        new() { Region = "Asia-Pacific", ProductLine = "Cloud Core", Quarter = "Q1", Tier = "Standard", Revenue = 220000 },
+        new() { Region = "Asia-Pacific", ProductLine = "Cloud Core", Quarter = "Q2", Tier = "Standard", Revenue = 260000 },
+        new() { Region = "Asia-Pacific", ProductLine = "Security Suite", Quarter = "Q1", Tier = "Standard", Revenue = 110000 },
+        new() { Region = "Asia-Pacific", ProductLine = "Security Suite", Quarter = "Q2", Tier = "Standard", Revenue = 140000 }
+    };
+
+    private readonly List<ShowcaseMasterOrder> _showcaseMasterOrders = new()
+    {
+        new()
+        {
+            OrderId = "ORD-2026-901",
+            Customer = "Stripe Capital",
+            Status = "Active",
+            OrderDate = DateTime.Today.AddDays(-2),
+            Lines = new()
+            {
+                new() { Sku = "SRV-H100", Description = "Dedicated GPU Node H100", Quantity = 2, UnitPrice = 4500 },
+                new() { Sku = "NET-400G", Description = "InfiniBand 400G Uplink", Quantity = 4, UnitPrice = 850 },
+                new() { Sku = "STOR-NVME", Description = "15TB NVMe Enterprise SAN", Quantity = 8, UnitPrice = 620 }
+            }
+        },
+        new()
+        {
+            OrderId = "ORD-2026-902",
+            Customer = "Palantir Foundry Ops",
+            Status = "Pending",
+            OrderDate = DateTime.Today.AddDays(-5),
+            Lines = new()
+            {
+                new() { Sku = "LIC-ENTERPRISE", Description = "Zero-Trust Agent Runtime License", Quantity = 25, UnitPrice = 320 },
+                new() { Sku = "CNS-ARCH", Description = "Senior APM Architect Advisory", Quantity = 40, UnitPrice = 225 }
+            }
+        },
+        new()
+        {
+            OrderId = "ORD-2026-903",
+            Customer = "Goldman Sachs Prime",
+            Status = "Completed",
+            OrderDate = DateTime.Today.AddDays(-12),
+            Lines = new()
+            {
+                new() { Sku = "FEDNOW-GW", Description = "Real-Time FedNow Settlement Bridge", Quantity = 1, UnitPrice = 18500 },
+                new() { Sku = "SOC2-AUDIT", Description = "Automated Continuous Compliance Agent", Quantity = 12, UnitPrice = 450 }
+            }
+        }
+    };
 
 }

@@ -425,7 +425,7 @@ This scans all `.razor` and `.cs` files and compiles minified CSS to `wwwroot/cs
 
 ## 6. Page Templates & UI Building Blocks Guide
 
-BlazorTwUI v0.8.1+ introduces higher-order UX composition through **Page Templates** and **UI Building Blocks** (255 total components). Instead of building complex screens from scratch, developers can instantiate complete turnkey solutions or combine individual section blocks.
+BlazorTwUI v0.8.2+ introduces higher-order UX composition through **Page Templates**, **UI Building Blocks**, and **OLAP / Master-Detail Suites** (259 total components). Instead of building complex screens from scratch, developers can instantiate complete turnkey solutions or combine individual section blocks.
 
 ### 1. Using Turnkey Page Templates
 
@@ -492,3 +492,66 @@ Preview and test all templates across Desktop, Tablet, and Mobile viewport frame
 <TemplatesGallery />
 ```
 Or open the **Templates** tab directly on the home page.
+
+---
+
+## 7. Advanced OLAP Pivot & Master-Detail Suites Guide
+
+### Recipe Q: Generic 4-Axis OLAP Cross-Tabulation Matrix
+```razor
+@using BlazorTwUI.Components.UI
+@using BlazorTwUI.Models
+
+<TwPivotTable TItem="SaleTransaction"
+              Items="@_sales"
+              Title="Global Sales Revenue Matrix"
+              Subtitle="Multi-dimensional cross-tabulation with dynamic drill-down"
+              AllowFieldSelector="true"
+              AllowDrillDown="true"
+              AllowExport="true"
+              OnCellClick="HandleCellDrillDown" />
+
+@code {
+    private List<SaleTransaction> _sales = new();
+
+    private void HandleCellDrillDown(PivotCellDrillDown<SaleTransaction> e)
+    {
+        // Inspect e.UnderlyingRecords, e.AggregateValue, e.RowKey, e.ColKey
+    }
+}
+```
+
+### Recipe R: Master-Detail Expandable Nested Grid
+```razor
+@using BlazorTwUI.Components.UI
+
+<TwMasterDetailGrid TMaster="DepartmentOrder" TChild="OrderLine"
+                    Items="@_orders"
+                    ChildSelector="o => o.Lines"
+                    Title="Department Orders & Child Deliverables"
+                    AllowMultipleExpanded="true"
+                    AllowAddChild="true"
+                    AllowDeleteChild="true"
+                    OnAddChild="HandleAddChildLine"
+                    OnDeleteChild="HandleDeleteChildLine" />
+```
+
+### Recipe S: Master-Detail Split Workspace & Transactional Form
+```razor
+@using BlazorTwUI.Components.UI
+
+<!-- 1. Split-Pane Workspace -->
+<TwMasterDetail TMaster="Customer" TChild="Invoice"
+                Items="@_customers"
+                ChildSelector="c => c.Invoices"
+                @bind-SelectedItem="@_activeCustomer"
+                AllowCreate="true"
+                AllowDelete="true" />
+
+<!-- 2. Auto-Calculating Master-Detail Statement Form -->
+<TwMasterDetailForm Title="Service Invoice"
+                    DocumentNumber="INV-2026-904"
+                    ClientName="Stripe Capital"
+                    Status="Draft"
+                    OnSubmit="HandleInvoiceSubmitted" />
+```

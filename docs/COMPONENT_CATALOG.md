@@ -1,6 +1,6 @@
 # BlazorTwUI — Component Catalog & Settings Reference
 
-Comprehensive guide to all **255 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
+Comprehensive guide to all **259 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
 
 > This file is generated from `Services/ComponentCatalogService.cs`. Do not edit it by hand; change the catalog and regenerate with `UPDATE_CATALOG_DOC=1 dotnet test --filter CatalogDocTests`. A test fails when this file is out of date.
 
@@ -24,9 +24,9 @@ Comprehensive guide to all **255 components** in **BlazorTwUI** (.NET 10+ WebAss
 - [Developer Studio & Content Creation](#developer-studio--content-creation) (7 components)
 - [Documents & Forms](#documents--forms) (1 component)
 - [Enterprise & Workplace Operations](#enterprise--workplace-operations) (1 component)
-- [Enterprise Data & Tables](#enterprise-data--tables) (8 components)
+- [Enterprise Data & Tables](#enterprise-data--tables) (11 components)
 - [Feedback & Alerts](#feedback--alerts) (1 component)
-- [Financial & Analytical Intelligence](#financial--analytical-intelligence) (3 components)
+- [Financial & Analytical Intelligence](#financial--analytical-intelligence) (4 components)
 - [Financial & OCR](#financial--ocr) (2 components)
 - [Forms & Controls](#forms--controls) (2 components)
 - [Forms & Inputs](#forms--inputs) (2 components)
@@ -2573,6 +2573,85 @@ Column definition for TwDataGrid: binding, sorting, filtering, width, alignment,
 
 ---
 
+### `TwMasterDetailGrid`
+
+**Location:** [`Components/UI/TwMasterDetailGrid.razor`](../Components/UI/TwMasterDetailGrid.razor)
+
+Hierarchical data table featuring expandable master rows with nested child grids, chevron toggles, multi-row or auto-collapse expansion modes, independent child column sorting, and add/delete child line item callbacks.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Items` | `IEnumerable<TMaster>?` | `null` | Master record dataset. |
+| `ChildSelector` | `Func<TMaster, IEnumerable<TChild>>?` | `null` | Delegate resolving nested child records for each master row. |
+| `Title` | `string` | `"Enterprise Hierarchical Grid"` | Main table title. |
+| `AllowMultipleExpanded` | `bool` | `true` | Permits multiple master rows to be expanded concurrently. |
+| `AutoCollapseDetailRow` | `bool` | `false` | Automatically closes other expanded rows when expanding a new master row. |
+| `AllowAddChild` | `bool` | `false` | Enables '+ Add Item' action inside the nested detail grid. |
+| `AllowDeleteChild` | `bool` | `false` | Enables remove action button on nested child records. |
+
+#### Razor Usage Example
+
+```razor
+<TwMasterDetailGrid TMaster="Order" TChild="OrderItem" Items="_orders" ChildSelector="o => o.Items" Title="Orders & Line Items" AllowAddChild="true" />
+```
+
+---
+
+### `TwMasterDetail`
+
+**Location:** [`Components/UI/TwMasterDetail.razor`](../Components/UI/TwMasterDetail.razor)
+
+Synchronized Master/Detail split-pane workspace with Column (horizontal) and Row (vertical) layout modes, live search, status chips, multi-tab detail inspector (Master Form, Child Records Grid, Audit Timeline), and two-way item selection binding.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Items` | `IEnumerable<TMaster>?` | `null` | Collection of master records for the master pane. |
+| `SelectedItem` | `TMaster?` | `null` | Active selected master record rendered in the detail inspector. |
+| `ChildSelector` | `Func<TMaster, IEnumerable<TChild>>?` | `null` | Delegate retrieving child items for the selected master record. |
+| `AllowCreate` | `bool` | `true` | Enables the 'New Entry' action button in the toolbar. |
+| `AllowDelete` | `bool` | `true` | Enables the 'Delete' action in the detail inspector. |
+| `Title` | `string` | `"Master-Detail Enterprise Workspace"` | Main workspace header title. |
+
+#### Razor Usage Example
+
+```razor
+<TwMasterDetail TMaster="Customer" TChild="Invoice" Items="_customers" ChildSelector="c => c.Invoices" @bind-SelectedItem="_selectedCustomer" />
+```
+
+---
+
+### `TwMasterDetailForm`
+
+**Location:** [`Components/UI/TwMasterDetailForm.razor`](../Components/UI/TwMasterDetailForm.razor)
+
+Turnkey transactional Master/Detail form designed for Invoices, Purchase Orders, and Service Statements with top metadata fields, dynamic line item table, '+ Add Item', real-time subtotal, tax %, discount, and grand total recalculation.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Title` | `string` | `"Invoice & Master Detail Statement"` | Document form title. |
+| `DocumentNumber` | `string` | `"INV-2026-8942"` | Unique transaction or invoice identifier. |
+| `Status` | `string` | `"Draft"` | Workflow status badge. |
+| `ClientName` | `string` | `"Acme Global Financial"` | Recipient or client name. |
+| `DocumentDate` | `DateTime` | `DateTime.Today` | Transaction date. |
+| `PaymentTerms` | `string` | `"Net 30"` | Contractual payment schedule. |
+| `CurrencyCode` | `string` | `"USD"` | Currency code (USD, EUR, GBP, CAD). |
+| `TaxRatePercent` | `decimal` | `8.5m` | Tax percentage applied to line item subtotal. |
+| `DiscountAmount` | `decimal` | `0m` | Fixed discount subtracted from grand total. |
+
+#### Razor Usage Example
+
+```razor
+<TwMasterDetailForm Title="Invoice Statement" DocumentNumber="INV-2026-001" ClientName="Acme Corp" Status="Draft" OnSubmit="HandleSubmit" />
+```
+
+---
+
 ### `TwDataTable`
 
 **Location:** [`Components/UI/TwDataTable.razor`](../Components/UI/TwDataTable.razor)
@@ -2768,6 +2847,34 @@ Enterprise OLAP cross-tabulation matrix supporting dynamic row/column field pivo
 
 ```razor
 <TwPivotGrid Title="Enterprise Financial Pivot Grid" Subtitle="Multi-dimensional cross-tabulation matrix with real-time grouping & aggregation" CustomClass="" />
+```
+
+---
+
+### `TwPivotTable`
+
+**Location:** [`Components/UI/TwPivotTable.razor`](../Components/UI/TwPivotTable.razor)
+
+Full-featured generic OLAP 4-Axis pivot matrix (Row Area, Column Area, Data Area, Filter Area) with hierarchical row expansion/collapse, multi-measure aggregators (Sum, Average, Count, DistinctCount, Min, Max, Product), dynamic heatmap color scaling, interactive field list configurator drawer, CSV export, and raw record drill-down cell inspector.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Items` | `IEnumerable<TItem>?` | `null` | Raw tabular record collection to pivot. |
+| `Fields` | `List<PivotFieldDefinition<TItem>>?` | `null` | Explicit field definitions or auto-discovered public properties. |
+| `Config` | `PivotConfig?` | `null` | Configuration of active row/col dimensions, measures, and filter slicers. |
+| `Title` | `string` | `"Cross-Tabulation Pivot Table"` | Main title in the header toolbar. |
+| `Subtitle` | `string` | `"Multi-dimensional analytical OLAP matrix..."` | Secondary descriptive text. |
+| `AllowFieldSelector` | `bool` | `true` | Enables the interactive 4-axis field list configuration panel. |
+| `AllowDrillDown` | `bool` | `true` | Clicking an aggregate cell opens the raw record drill-down dialog. |
+| `AllowExport` | `bool` | `true` | Enables direct CSV export of the computed cross-tabulation matrix. |
+| `Class` | `string` | `""` | Additional Tailwind utility classes applied to the root container. |
+
+#### Razor Usage Example
+
+```razor
+<TwPivotTable TItem="SaleRecord" Items="_sales" Title="Global Sales Analysis" AllowFieldSelector="true" AllowDrillDown="true" />
 ```
 
 ---

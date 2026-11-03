@@ -1,0 +1,308 @@
+@namespace BlazorTwUI.Components.UI
+@using System.Globalization
+@using BlazorTwUI.Models
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-6 @Class" data-testid="master-detail-form">
+    <!-- Form Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-lg">
+                🧾
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
+                        @DocumentNumber
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        @Status
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Master Actions -->
+        <div class="flex items-center gap-2">
+            @if (ShowDiscard)
+            {
+                <button type="button" @onclick="HandleDiscard" data-testid="form-discard-btn"
+                        class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 text-xs font-bold transition">
+                    Discard
+                </button>
+            }
+            <button type="button" @onclick="HandleSaveDraft" data-testid="form-save-draft-btn"
+                    class="px-3.5 py-1.5 rounded-xl border border-brand-500/30 bg-brand-50/50 dark:bg-brand-950/20 text-brand-700 dark:text-brand-300 hover:bg-brand-100 text-xs font-bold transition">
+                Save Draft
+            </button>
+            <button type="button" @onclick="HandleSubmit" data-testid="form-submit-btn"
+                    class="px-4 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition shadow-sm">
+                Submit & Finalize
+            </button>
+        </div>
+    </div>
+
+    <!-- Master Record Header Fields (Grid) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 text-xs">
+        <div class="space-y-1">
+            <label class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Recipient / Client</label>
+            <input type="text" @bind="ClientName" placeholder="Acme Global Corporation"
+                   data-testid="form-client-name"
+                   class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        </div>
+        <div class="space-y-1">
+            <label class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Document Date</label>
+            <input type="date" @bind="DocumentDate"
+                   data-testid="form-document-date"
+                   class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-500" />
+        </div>
+        <div class="space-y-1">
+            <label class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Payment Terms</label>
+            <select @bind="PaymentTerms"
+                    data-testid="form-payment-terms"
+                    class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <option value="Net 15">Net 15 Days</option>
+                <option value="Net 30">Net 30 Days</option>
+                <option value="Net 60">Net 60 Days</option>
+                <option value="Due on Receipt">Due on Receipt</option>
+            </select>
+        </div>
+        <div class="space-y-1">
+            <label class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">Currency</label>
+            <select @bind="CurrencyCode"
+                    data-testid="form-currency-code"
+                    class="w-full p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-mono focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="CAD">CAD ($)</option>
+            </select>
+        </div>
+    </div>
+
+    <!-- Child Detail Items (Dynamic Line Items Table) -->
+    <div class="space-y-3">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+                <h4 class="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                    Line Item Breakdown
+                </h4>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    @_lines.Count items
+                </span>
+            </div>
+
+            <button type="button" @onclick="AddLineItem" data-testid="form-add-line-btn"
+                    class="px-3 py-1 rounded-xl bg-brand-500 text-white text-xs font-bold hover:bg-brand-600 transition flex items-center gap-1 shadow-2xs">
+                <span>+</span>
+                <span>Add Item</span>
+            </button>
+        </div>
+
+        <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-100 dark:bg-slate-850 font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
+                    <tr>
+                        <th class="p-3 w-12 text-center font-mono text-[10px]">#</th>
+                        <th class="p-3">Item Description</th>
+                        <th class="p-3 w-32">Category</th>
+                        <th class="p-3 w-24 text-right">Quantity</th>
+                        <th class="p-3 w-32 text-right">Unit Price</th>
+                        <th class="p-3 w-32 text-right">Line Total</th>
+                        <th class="p-3 w-16 text-center"></th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    @if (_lines.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="7" class="p-8 text-center text-slate-400 italic">
+                                No line items added yet. Click "+ Add Item" above to add child records.
+                            </td>
+                        </tr>
+                    }
+                    @for (int i = 0; i < _lines.Count; i++)
+                    {
+                        var index = i;
+                        var line = _lines[index];
+
+                        <tr class="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+                            <td class="p-3 text-center font-mono text-slate-400 text-[11px]">
+                                @(index + 1)
+                            </td>
+                            <td class="p-2.5">
+                                <input type="text" @bind="line.Description" placeholder="Description of service or deliverable..."
+                                       class="w-full p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                            </td>
+                            <td class="p-2.5">
+                                <select @bind="line.Category"
+                                        class="w-full p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs focus:outline-none">
+                                    <option value="Development">Development</option>
+                                    <option value="Consulting">Consulting</option>
+                                    <option value="Architecture">Architecture</option>
+                                    <option value="Licensing">Licensing</option>
+                                    <option value="Cloud Compute">Cloud Compute</option>
+                                </select>
+                            </td>
+                            <td class="p-2.5 text-right">
+                                <input type="number" min="1" step="1" @bind="line.Quantity"
+                                       class="w-full p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs text-right font-mono focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                            </td>
+                            <td class="p-2.5 text-right">
+                                <input type="number" min="0" step="0.01" @bind="line.UnitPrice"
+                                       class="w-full p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs text-right font-mono focus:outline-none focus:ring-1 focus:ring-brand-500" />
+                            </td>
+                            <td class="p-3 text-right font-mono font-bold text-slate-900 dark:text-white">
+                                @FormatCurrency(line.Quantity * line.UnitPrice)
+                            </td>
+                            <td class="p-3 text-center">
+                                <button type="button" @onclick='() => RemoveLineItem(index)'
+                                        data-testid="form-remove-line-btn"
+                                        class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove line item">
+                                    ✕
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Financial Calculation Summary Footer -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+        <!-- Notes & Terms -->
+        <div class="space-y-2">
+            <label class="font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider text-[10px]">
+                Notes & Deliverable Scope
+            </label>
+            <textarea @bind="Notes" rows="3" placeholder="Additional execution details, SLA terms, or wire transfer instructions..."
+                      class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"></textarea>
+        </div>
+
+        <!-- Calculated Summary Box -->
+        <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/80 border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs font-mono">
+            <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <span>Subtotal:</span>
+                <span class="font-bold text-slate-900 dark:text-white">@FormatCurrency(Subtotal)</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <div class="flex items-center gap-1.5 font-sans">
+                    <span>Tax:</span>
+                    <input type="number" min="0" max="100" step="0.5" @bind="TaxRatePercent"
+                           class="w-14 px-1.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono text-right" />
+                    <span>%</span>
+                </div>
+                <span>@FormatCurrency(TaxAmount)</span>
+            </div>
+            <div class="flex items-center justify-between text-slate-600 dark:text-slate-400">
+                <div class="flex items-center gap-1.5 font-sans">
+                    <span>Discount:</span>
+                    <input type="number" min="0" step="10" @bind="DiscountAmount"
+                           class="w-20 px-1.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono text-right" />
+                </div>
+                <span class="text-rose-500">-@FormatCurrency(DiscountAmount)</span>
+            </div>
+            <div class="pt-2 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-sm sm:text-base font-black text-slate-900 dark:text-white font-sans">
+                <span>Grand Total:</span>
+                <span class="font-mono text-emerald-600 dark:text-emerald-400">@FormatCurrency(GrandTotal)</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    public class FormLineItem
+    {
+        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public string Description { get; set; } = "";
+        public string Category { get; set; } = "Development";
+        public decimal Quantity { get; set; } = 1;
+        public decimal UnitPrice { get; set; } = 150;
+    }
+
+    [Parameter] public string Title { get; set; } = "Invoice & Master Detail Statement";
+    [Parameter] public string Subtitle { get; set; } = "Transactional master-detail form with dynamic line item calculations";
+    [Parameter] public string DocumentNumber { get; set; } = "INV-2026-8942";
+    [Parameter] public string Status { get; set; } = "Draft";
+    [Parameter] public string ClientName { get; set; } = "Acme Global Financial";
+    [Parameter] public DateTime DocumentDate { get; set; } = DateTime.Today;
+    [Parameter] public string PaymentTerms { get; set; } = "Net 30";
+    [Parameter] public string CurrencyCode { get; set; } = "USD";
+    [Parameter] public string Notes { get; set; } = "Professional services rendered for WebAssembly architectural review.";
+    [Parameter] public decimal TaxRatePercent { get; set; } = 8.5m;
+    [Parameter] public decimal DiscountAmount { get; set; } = 0m;
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public bool ShowDiscard { get; set; } = true;
+
+    [Parameter] public EventCallback<MasterDetailValidationResult> OnSaveDraft { get; set; }
+    [Parameter] public EventCallback<MasterDetailValidationResult> OnSubmit { get; set; }
+    [Parameter] public EventCallback OnDiscard { get; set; }
+
+    private List<FormLineItem> _lines = new()
+    {
+        new() { Description = "WebAssembly Core UI Component Library Integration", Category = "Development", Quantity = 40, UnitPrice = 175 },
+        new() { Description = "Performance Optimization & APM Telemetry Instrumentation", Category = "Architecture", Quantity = 16, UnitPrice = 225 },
+        new() { Description = "High-DPI Retina E2E Browser Test Suite Setup", Category = "Consulting", Quantity = 12, UnitPrice = 160 }
+    };
+
+    public decimal Subtotal => _lines.Sum(l => l.Quantity * l.UnitPrice);
+    public decimal TaxAmount => Math.Round(Subtotal * (TaxRatePercent / 100m), 2);
+    public decimal GrandTotal => Math.Max(0, Subtotal + TaxAmount - DiscountAmount);
+
+    private void AddLineItem()
+    {
+        _lines.Add(new FormLineItem
+        {
+            Description = "New Consulting / Deliverable Item",
+            Category = "Development",
+            Quantity = 1,
+            UnitPrice = 150
+        });
+    }
+
+    private void RemoveLineItem(int index)
+    {
+        if (index >= 0 && index < _lines.Count)
+        {
+            _lines.RemoveAt(index);
+        }
+    }
+
+    private string FormatCurrency(decimal amount) => CurrencyCode switch
+    {
+        "EUR" => $"€{amount:N2}",
+        "GBP" => $"£{amount:N2}",
+        _ => $"${amount:N2}"
+    };
+
+    private async Task HandleSaveDraft()
+    {
+        if (OnSaveDraft.HasDelegate)
+        {
+            await OnSaveDraft.InvokeAsync(new MasterDetailValidationResult());
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        var res = new MasterDetailValidationResult();
+        if (string.IsNullOrWhiteSpace(ClientName)) res.Errors.Add("Client Name is required.");
+        if (_lines.Count == 0) res.Errors.Add("At least one line item is required.");
+
+        if (OnSubmit.HasDelegate)
+        {
+            await OnSubmit.InvokeAsync(res);
+        }
+    }
+
+    private async Task HandleDiscard()
+    {
+        if (OnDiscard.HasDelegate)
+        {
+            await OnDiscard.InvokeAsync();
+        }
+    }
+}

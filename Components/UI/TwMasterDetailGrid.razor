@@ -1,0 +1,427 @@
+@namespace BlazorTwUI.Components.UI
+@typeparam TMaster
+@typeparam TChild
+@using System.Reflection
+@using System.Globalization
+@using BlazorTwUI.Models
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-4 @Class" data-testid="master-detail-grid">
+    <!-- Grid Header Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-lg">
+                📑
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
+                        Master-Detail Hierarchy
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        @_filteredMasters.Count Records
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            <!-- Search Input -->
+            @if (ShowSearch)
+            {
+                <div class="relative min-w-[200px]">
+                    <input type="search" @bind="_searchQuery" @bind:event="oninput"
+                           placeholder="@SearchPlaceholder"
+                           data-testid="master-grid-search"
+                           class="w-full pl-8 pr-3 py-1.5 rounded-xl text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/20" />
+                    <span class="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+                </div>
+            }
+
+            <!-- Expand / Collapse All -->
+            <button type="button" @onclick="ToggleExpandCollapseAll" data-testid="master-grid-toggle-all"
+                    class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold transition">
+                @(_allExpanded ? "Collapse All ⊞" : "Expand All ⊟")
+            </button>
+        </div>
+    </div>
+
+    <!-- Master Table -->
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-100 dark:bg-slate-850 font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                    <th class="w-10 p-3 text-center"></th>
+                    @if (MasterHeaderTemplate != null)
+                    {
+                        @MasterHeaderTemplate
+                    }
+                    else
+                    {
+                        @foreach (var col in _masterColumns)
+                        {
+                            <th class="p-3 font-mono uppercase text-[11px]">@col.Title</th>
+                        }
+                    }
+                    @if (MasterActionsTemplate != null)
+                    {
+                        <th class="p-3 text-right font-mono uppercase text-[11px]">Actions</th>
+                    }
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                @if (_filteredMasters.Count == 0)
+                {
+                    <tr>
+                        <td colspan="10" class="p-8 text-center text-slate-400 italic">
+                            No master records found.
+                        </td>
+                    </tr>
+                }
+                @foreach (var master in PagedMasters)
+                {
+                    var isExpanded = _expandedMasterKeys.Contains(GetMasterKey(master));
+
+                    <!-- Master Row -->
+                    <tr class="transition-colors @(isExpanded ? "bg-brand-50/40 dark:bg-brand-950/20 font-semibold" : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40")"
+                        data-testid="master-row">
+                        <!-- Expand Toggle Button -->
+                        <td class="p-3 text-center w-10">
+                            <button type="button" @onclick='() => ToggleRowExpansion(master)'
+                                    data-testid="master-expand-toggle"
+                                    aria-expanded="@isExpanded.ToString().ToLowerInvariant()"
+                                    title="@(isExpanded ? "Collapse Details" : "Expand Details")"
+                                    class="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-brand-500 hover:text-white text-slate-600 dark:text-slate-300 flex items-center justify-center font-bold text-xs transition">
+                                @(isExpanded ? "▼" : "▶")
+                            </button>
+                        </td>
+
+                        @if (MasterRowTemplate != null)
+                        {
+                            @MasterRowTemplate(master)
+                        }
+                        else
+                        {
+                            @foreach (var col in _masterColumns)
+                            {
+                                var val = col.ValueSelector != null ? col.ValueSelector(master) : null;
+                                <td class="p-3 text-slate-700 dark:text-slate-300 font-mono">
+                                    @(val?.ToString() ?? "—")
+                                </td>
+                            }
+                        }
+
+                        @if (MasterActionsTemplate != null)
+                        {
+                            <td class="p-3 text-right">
+                                @MasterActionsTemplate(master)
+                            </td>
+                        }
+                    </tr>
+
+                    <!-- Nested Detail Child Grid Row -->
+                    @if (isExpanded)
+                    {
+                        <tr class="bg-slate-50/90 dark:bg-slate-900/90 border-y-2 border-brand-500/30" data-testid="nested-child-row">
+                            <td colspan="10" class="p-4 sm:p-5">
+                                <div class="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 p-4 space-y-3 shadow-inner">
+                                    <!-- Nested Grid Title & Action Bar -->
+                                    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                            <h4 class="font-black text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                                                @(ChildGridTitle ?? "Associated Detail Records")
+                                            </h4>
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                                @GetChildCount(master) Line Items
+                                            </span>
+                                        </div>
+
+                                        @if (AllowAddChild)
+                                        {
+                                            <button type="button" @onclick='() => HandleAddChildClicked(master)' data-testid="add-child-btn"
+                                                    class="px-2.5 py-1 rounded-xl bg-brand-500 text-white text-[11px] font-bold hover:bg-brand-600 transition flex items-center gap-1 shadow-2xs">
+                                                <span>+</span>
+                                                <span>Add Item</span>
+                                            </button>
+                                        }
+                                    </div>
+
+                                    <!-- Nested Child Table -->
+                                    @{
+                                        var children = GetChildren(master).ToList();
+                                    }
+                                    @if (children.Count == 0)
+                                    {
+                                        <div class="p-6 text-center text-slate-400 italic text-xs">
+                                            No child line items recorded for this entry.
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                                            <table class="w-full text-left text-xs border-collapse" data-testid="nested-child-table">
+                                                <thead class="bg-slate-100/80 dark:bg-slate-800 font-bold text-slate-700 dark:text-slate-300">
+                                                    <tr>
+                                                        @if (ChildHeaderTemplate != null)
+                                                        {
+                                                            @ChildHeaderTemplate
+                                                        }
+                                                        else
+                                                        {
+                                                            @foreach (var ccol in _childColumns)
+                                                            {
+                                                                <th class="p-2.5 font-mono text-[11px]">@ccol.Title</th>
+                                                            }
+                                                        }
+                                                        @if (AllowDeleteChild || ChildActionsTemplate != null)
+                                                        {
+                                                            <th class="p-2.5 text-right font-mono text-[11px] w-20">Actions</th>
+                                                        }
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-600 dark:text-slate-300">
+                                                    @foreach (var child in children)
+                                                    {
+                                                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition">
+                                                            @if (ChildRowTemplate != null)
+                                                            {
+                                                                @ChildRowTemplate(child)
+                                                            }
+                                                            else
+                                                            {
+                                                                @foreach (var ccol in _childColumns)
+                                                                {
+                                                                    var cval = ccol.ValueSelector != null ? ccol.ValueSelector(child) : null;
+                                                                    <td class="p-2.5 font-mono">
+                                                                        @(cval?.ToString() ?? "—")
+                                                                    </td>
+                                                                }
+                                                            }
+
+                                                            @if (ChildActionsTemplate != null)
+                                                            {
+                                                                <td class="p-2.5 text-right">
+                                                                    @ChildActionsTemplate(child)
+                                                                </td>
+                                                            }
+                                                            else if (AllowDeleteChild)
+                                                            {
+                                                                <td class="p-2.5 text-right">
+                                                                    <button type="button" @onclick='() => HandleDeleteChild(master, child)'
+                                                                            data-testid="delete-child-btn"
+                                                                            class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove line item">
+                                                                        ✕
+                                                                    </button>
+                                                                </td>
+                                                            }
+                                                        </tr>
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    @if (PageSize > 0 && TotalPages > 1)
+    {
+        <div class="flex items-center justify-between text-xs text-slate-500 pt-2">
+            <span>Page @_currentPage of @TotalPages (@_filteredMasters.Count total)</span>
+            <div class="flex items-center gap-1">
+                <button type="button" @onclick="PrevPage" disabled="@(_currentPage <= 1)"
+                        class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40">
+                    Previous
+                </button>
+                <button type="button" @onclick="NextPage" disabled="@(_currentPage >= TotalPages)"
+                        class="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 disabled:opacity-40">
+                    Next
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TMaster>? Items { get; set; }
+    [Parameter] public Func<TMaster, IEnumerable<TChild>>? ChildSelector { get; set; }
+    [Parameter] public Func<TMaster, string>? KeySelector { get; set; }
+
+    [Parameter] public string Title { get; set; } = "Enterprise Hierarchical Grid";
+    [Parameter] public string Subtitle { get; set; } = "Master records with expandable nested child detail grids";
+    [Parameter] public string? ChildGridTitle { get; set; }
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search master records...";
+    [Parameter] public bool ShowSearch { get; set; } = true;
+    [Parameter] public bool AllowMultipleExpanded { get; set; } = true;
+    [Parameter] public bool AutoCollapseDetailRow { get; set; } = false;
+    [Parameter] public bool AllowAddChild { get; set; } = false;
+    [Parameter] public bool AllowDeleteChild { get; set; } = false;
+    [Parameter] public int PageSize { get; set; } = 10;
+
+    [Parameter] public RenderFragment? MasterHeaderTemplate { get; set; }
+    [Parameter] public RenderFragment<TMaster>? MasterRowTemplate { get; set; }
+    [Parameter] public RenderFragment<TMaster>? MasterActionsTemplate { get; set; }
+
+    [Parameter] public RenderFragment? ChildHeaderTemplate { get; set; }
+    [Parameter] public RenderFragment<TChild>? ChildRowTemplate { get; set; }
+    [Parameter] public RenderFragment<TChild>? ChildActionsTemplate { get; set; }
+
+    [Parameter] public List<ChildRecordColumn<TMaster>>? MasterColumns { get; set; }
+    [Parameter] public List<ChildRecordColumn<TChild>>? ChildColumns { get; set; }
+
+    [Parameter] public EventCallback<TMaster> OnAddChild { get; set; }
+    [Parameter] public EventCallback<(TMaster Master, TChild Child)> OnDeleteChild { get; set; }
+
+    private List<TMaster> _masters = new();
+    private List<ChildRecordColumn<TMaster>> _masterColumns = new();
+    private List<ChildRecordColumn<TChild>> _childColumns = new();
+    private HashSet<string> _expandedMasterKeys = new();
+    private string _searchQuery = "";
+    private int _currentPage = 1;
+    private bool _allExpanded = false;
+
+    private List<TMaster> _filteredMasters
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(_searchQuery)) return _masters;
+            return _masters.Where(m =>
+            {
+                var s = m?.ToString() ?? "";
+                return s.Contains(_searchQuery, StringComparison.OrdinalIgnoreCase);
+            }).ToList();
+        }
+    }
+
+    private int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)_filteredMasters.Count / PageSize) : 1;
+
+    private IEnumerable<TMaster> PagedMasters
+    {
+        get
+        {
+            if (PageSize <= 0) return _filteredMasters;
+            return _filteredMasters.Skip((_currentPage - 1) * PageSize).Take(PageSize);
+        }
+    }
+
+    protected override void OnParametersSet()
+    {
+        _masters = Items?.ToList() ?? new();
+        InitializeColumns();
+    }
+
+    private void InitializeColumns()
+    {
+        if (MasterColumns != null && MasterColumns.Count > 0)
+        {
+            _masterColumns = MasterColumns;
+        }
+        else
+        {
+            _masterColumns = new();
+            var props = typeof(TMaster).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var p in props.Take(6))
+            {
+                _masterColumns.Add(new ChildRecordColumn<TMaster>(p.Name, m => p.GetValue(m)));
+            }
+        }
+
+        if (ChildColumns != null && ChildColumns.Count > 0)
+        {
+            _childColumns = ChildColumns;
+        }
+        else
+        {
+            _childColumns = new();
+            var cprops = typeof(TChild).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            foreach (var p in cprops.Take(6))
+            {
+                _childColumns.Add(new ChildRecordColumn<TChild>(p.Name, c => p.GetValue(c)));
+            }
+        }
+    }
+
+    private string GetMasterKey(TMaster master)
+    {
+        if (master == null) return Guid.NewGuid().ToString("N");
+        if (KeySelector != null) return KeySelector(master);
+        var idProp = typeof(TMaster).GetProperty("Id") ?? typeof(TMaster).GetProperty("ID");
+        if (idProp != null) return idProp.GetValue(master)?.ToString() ?? master.GetHashCode().ToString(CultureInfo.InvariantCulture);
+        return master.GetHashCode().ToString(CultureInfo.InvariantCulture);
+    }
+
+    private IEnumerable<TChild> GetChildren(TMaster master)
+    {
+        if (ChildSelector != null) return ChildSelector(master) ?? Enumerable.Empty<TChild>();
+        var childProp = typeof(TMaster).GetProperty("Items") ?? typeof(TMaster).GetProperty("Details") ?? typeof(TMaster).GetProperty("Orders") ?? typeof(TMaster).GetProperty("Children");
+        if (childProp != null && childProp.GetValue(master) is IEnumerable<TChild> list) return list;
+        return Enumerable.Empty<TChild>();
+    }
+
+    private int GetChildCount(TMaster master) => GetChildren(master).Count();
+
+    private void ToggleRowExpansion(TMaster master)
+    {
+        var key = GetMasterKey(master);
+        if (_expandedMasterKeys.Contains(key))
+        {
+            _expandedMasterKeys.Remove(key);
+        }
+        else
+        {
+            if (AutoCollapseDetailRow || !AllowMultipleExpanded)
+            {
+                _expandedMasterKeys.Clear();
+            }
+            _expandedMasterKeys.Add(key);
+        }
+    }
+
+    private void ToggleExpandCollapseAll()
+    {
+        _allExpanded = !_allExpanded;
+        if (_allExpanded)
+        {
+            _expandedMasterKeys = new HashSet<string>(_masters.Select(GetMasterKey));
+        }
+        else
+        {
+            _expandedMasterKeys.Clear();
+        }
+    }
+
+    private async Task HandleAddChildClicked(TMaster master)
+    {
+        if (OnAddChild.HasDelegate)
+        {
+            await OnAddChild.InvokeAsync(master);
+        }
+    }
+
+    private async Task HandleDeleteChild(TMaster master, TChild child)
+    {
+        if (OnDeleteChild.HasDelegate)
+        {
+            await OnDeleteChild.InvokeAsync((master, child));
+        }
+    }
+
+    private void PrevPage()
+    {
+        if (_currentPage > 1) _currentPage--;
+    }
+
+    private void NextPage()
+    {
+        if (_currentPage < TotalPages) _currentPage++;
+    }
+}

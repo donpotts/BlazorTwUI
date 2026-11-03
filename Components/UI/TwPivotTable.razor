@@ -1,0 +1,987 @@
+@namespace BlazorTwUI.Components.UI
+@typeparam TItem
+@using System.Reflection
+@using System.Globalization
+@using System.Text
+@using System.Text.Json
+@using BlazorTwUI.Models
+@inject IJSRuntime JS
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-5 @Class" data-testid="pivot-table">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-lg">
+                📊
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        OLAP 4-Axis Matrix
+                    </span>
+                    @if (_activeConfig.EnableHeatmap)
+                    {
+                        <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                            Heatmap Active
+                        </span>
+                    }
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Controls: Aggregator, Heatmap, Field List, Export -->
+        <div class="flex flex-wrap items-center gap-2">
+            @if (_activeMeasure != null)
+            {
+                <div class="flex items-center gap-1.5 text-xs bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <span class="text-slate-400 font-mono text-[11px]">Aggregator:</span>
+                    <select value="@_activeMeasure.Aggregator.ToString()" @onchange="HandleAggregatorChange"
+                            data-testid="pivot-aggregator-select"
+                            class="bg-transparent text-slate-900 dark:text-white text-xs font-bold focus:outline-none cursor-pointer">
+                        <option value="Sum">Sum (∑)</option>
+                        <option value="Average">Average (Avg)</option>
+                        <option value="Count">Count (#)</option>
+                        <option value="DistinctCount">Distinct Count</option>
+                        <option value="Min">Minimum (Min)</option>
+                        <option value="Max">Maximum (Max)</option>
+                        <option value="Product">Product (∏)</option>
+                    </select>
+                </div>
+            }
+
+            <!-- Expand / Collapse All Rows -->
+            @if (_activeConfig.RowFields.Count > 1)
+            {
+                <button type="button" @onclick="ToggleExpandCollapseAll"
+                        class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold transition">
+                    @(_allRowsExpanded ? "Collapse All ⊞" : "Expand All ⊟")
+                </button>
+            }
+
+            <!-- Heatmap Toggle -->
+            <button type="button" @onclick="ToggleHeatmap" data-testid="pivot-heatmap-toggle"
+                    title="Toggle Heatmap Shading"
+                    class="px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 @(_activeConfig.EnableHeatmap ? "bg-brand-50 dark:bg-brand-950/40 border-brand-500 text-brand-700 dark:text-brand-300" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50")">
+                <span>🔥</span>
+                <span>Heatmap</span>
+            </button>
+
+            @if (AllowFieldSelector)
+            {
+                <button type="button" @onclick="() => _showFieldSelector = !_showFieldSelector" data-testid="pivot-field-list-toggle"
+                        class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1.5">
+                    <span>⚙️</span>
+                    <span>@(_showFieldSelector ? "Hide Field List ▲" : "Field List ▼")</span>
+                </button>
+            }
+
+            @if (AllowExport)
+            {
+                <button type="button" @onclick="ExportToCsv" data-testid="pivot-export-btn"
+                        class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 text-slate-700 dark:text-slate-200 text-xs font-bold transition flex items-center gap-1.5">
+                    <span>📥</span>
+                    <span>CSV</span>
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Filter (Page) Area Slicers -->
+    @if (_filterFields.Count > 0)
+    {
+        <div class="flex flex-wrap items-center gap-3 p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 text-xs">
+            <span class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                <span>🏷️</span> Page Filters:
+            </span>
+            @foreach (var filterField in _filterFields)
+            {
+                var distinctVals = GetDistinctValuesForField(filterField);
+                var activeSelection = _activeFilters.TryGetValue(filterField, out var sel) ? sel : null;
+
+                <div class="flex items-center gap-1.5 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                    <span class="font-semibold text-slate-700 dark:text-slate-300">@GetFieldDisplayName(filterField):</span>
+                    <select value="@(activeSelection ?? "ALL")" @onchange='e => SetFilterValue(filterField, e.Value?.ToString())'
+                            class="bg-transparent text-brand-600 dark:text-brand-400 font-bold focus:outline-none cursor-pointer">
+                        <option value="ALL">(All Values)</option>
+                        @foreach (var v in distinctVals)
+                        {
+                            <option value="@v">@v</option>
+                        }
+                    </select>
+                    @if (!string.IsNullOrEmpty(activeSelection) && activeSelection != "ALL")
+                    {
+                        <button type="button" @onclick='() => ClearFilter(filterField)' class="text-rose-500 hover:text-rose-700 font-bold ml-1 text-xs" title="Clear filter">✕</button>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Interactive Field List (4-Axis Configurator) -->
+    @if (_showFieldSelector)
+    {
+        <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-850/90 border border-slate-200 dark:border-slate-800 space-y-4 animate-fadeIn text-xs" data-testid="pivot-field-selector-panel">
+            <div class="flex items-center justify-between">
+                <div>
+                    <span class="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs">
+                        Interactive Pivot Field List
+                    </span>
+                    <p class="text-[11px] text-slate-500 mt-0.5">
+                        Assign dimensions and measures to the 4 analytical axes (Filter, Column, Row, Data)
+                    </p>
+                </div>
+                <button type="button" @onclick="ResetDefaultFields" class="text-xs text-brand-600 dark:text-brand-400 hover:underline font-bold">
+                    Reset Defaults
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+                <!-- Zone 1: Available Field Pool -->
+                <div class="space-y-2 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs">
+                    <div class="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
+                        <span class="font-bold text-slate-900 dark:text-white text-[11px] uppercase tracking-wider">Fields</span>
+                        <span class="text-[10px] text-slate-400">@_allFields.Count</span>
+                    </div>
+                    <div class="space-y-1 max-h-56 overflow-y-auto pr-1">
+                        @foreach (var f in _allFields)
+                        {
+                            <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                                <div class="flex items-center gap-1.5 truncate">
+                                    <span class="text-[10px] text-slate-400">@(f.FieldType == PivotFieldType.Measure ? "∑" : "🏷️")</span>
+                                    <span class="font-semibold text-slate-800 dark:text-slate-200 truncate" title="@f.DisplayName">@f.DisplayName</span>
+                                </div>
+                                <div class="flex items-center gap-0.5 text-[10px]">
+                                    <button type="button" @onclick='() => AssignFieldTo(f.FieldName, "Row")' class="px-1.5 py-0.5 rounded bg-brand-500/10 text-brand-600 hover:bg-brand-500/20 font-bold" title="Assign to Row Area">↳R</button>
+                                    <button type="button" @onclick='() => AssignFieldTo(f.FieldName, "Col")' class="px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-600 hover:bg-indigo-500/20 font-bold" title="Assign to Column Area">↳C</button>
+                                    <button type="button" @onclick='() => AssignFieldTo(f.FieldName, "Filter")' class="px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 font-bold" title="Assign to Filter Area">↳F</button>
+                                    @if (f.FieldType == PivotFieldType.Measure)
+                                    {
+                                        <button type="button" @onclick='() => AssignFieldTo(f.FieldName, "Val")' class="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20 font-bold" title="Assign to Data Area">↳∑</button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Zone 2: Filter (Page) Area -->
+                <div class="space-y-2 p-3 rounded-2xl bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/20">
+                    <span class="font-bold text-amber-700 dark:text-amber-300 block text-[11px] uppercase tracking-wider">
+                        1. Filter (Page) Area
+                    </span>
+                    <div class="space-y-1.5 min-h-[50px]">
+                        @if (_filterFields.Count == 0)
+                        {
+                            <p class="text-[11px] text-slate-400 italic">None assigned.</p>
+                        }
+                        @foreach (var ff in _filterFields)
+                        {
+                            <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-500/30 flex items-center justify-between text-xs shadow-2xs">
+                                <span class="font-bold text-amber-700 dark:text-amber-300">@GetFieldDisplayName(ff)</span>
+                                <button type="button" @onclick='() => RemoveFilterField(ff)' class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove">✕</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Zone 3: Column Area -->
+                <div class="space-y-2 p-3 rounded-2xl bg-indigo-500/5 dark:bg-indigo-950/20 border border-indigo-500/20">
+                    <span class="font-bold text-indigo-700 dark:text-indigo-300 block text-[11px] uppercase tracking-wider">
+                        2. Column Area
+                    </span>
+                    <div class="space-y-1.5 min-h-[50px]">
+                        @if (_activeConfig.ColumnFields.Count == 0)
+                        {
+                            <p class="text-[11px] text-slate-400 italic">None assigned.</p>
+                        }
+                        @foreach (var cf in _activeConfig.ColumnFields)
+                        {
+                            <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-500/30 flex items-center justify-between text-xs shadow-2xs">
+                                <span class="font-bold text-indigo-700 dark:text-indigo-300">@GetFieldDisplayName(cf)</span>
+                                <button type="button" @onclick='() => RemoveColField(cf)' class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove">✕</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Zone 4: Row Area -->
+                <div class="space-y-2 p-3 rounded-2xl bg-brand-500/5 dark:bg-brand-950/20 border border-brand-500/20">
+                    <span class="font-bold text-brand-700 dark:text-brand-300 block text-[11px] uppercase tracking-wider">
+                        3. Row Area (Hierarchy)
+                    </span>
+                    <div class="space-y-1.5 min-h-[50px]">
+                        @if (_activeConfig.RowFields.Count == 0)
+                        {
+                            <p class="text-[11px] text-slate-400 italic">None assigned.</p>
+                        }
+                        @foreach (var rf in _activeConfig.RowFields)
+                        {
+                            <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-brand-500/30 flex items-center justify-between text-xs shadow-2xs">
+                                <span class="font-bold text-brand-700 dark:text-brand-300">@GetFieldDisplayName(rf)</span>
+                                <button type="button" @onclick='() => RemoveRowField(rf)' class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove">✕</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Zone 5: Data (Values) Area -->
+                <div class="space-y-2 p-3 rounded-2xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20">
+                    <span class="font-bold text-emerald-700 dark:text-emerald-300 block text-[11px] uppercase tracking-wider">
+                        4. Data (Value) Area
+                    </span>
+                    <div class="space-y-1.5 min-h-[50px]">
+                        @if (_activeConfig.Measures.Count == 0)
+                        {
+                            <p class="text-[11px] text-slate-400 italic">None assigned.</p>
+                        }
+                        @foreach (var m in _activeConfig.Measures)
+                        {
+                            <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-500/30 flex items-center justify-between text-xs shadow-2xs">
+                                <div>
+                                    <span class="font-bold text-emerald-700 dark:text-emerald-300">@m.FieldName</span>
+                                    <span class="text-[10px] text-slate-400 block font-mono">@m.Aggregator</span>
+                                </div>
+                                <button type="button" @onclick='() => RemoveMeasure(m)' class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove">✕</button>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Pivot Matrix Data Table -->
+    <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+        <table class="w-full text-left text-xs border-collapse">
+            <!-- Header Row with Column Values -->
+            <thead class="bg-slate-100 dark:bg-slate-850 font-bold text-slate-800 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700">
+                <tr>
+                    <th class="p-3.5 bg-slate-200/70 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 font-mono uppercase text-[11px] sticky left-0 z-10">
+                        <div class="flex items-center justify-between gap-2">
+                            <span>@(string.Join(" / ", _activeConfig.RowFields)) \ @(string.Join(" / ", _activeConfig.ColumnFields))</span>
+                            <button type="button" @onclick="ToggleSortRows" class="hover:text-brand-500 text-[10px]" title="Toggle row sort">
+                                @(_rowSortAsc ? "▲" : "▼")
+                            </button>
+                        </div>
+                    </th>
+                    @foreach (var colVal in _colKeys)
+                    {
+                        <th class="p-3.5 text-right font-mono uppercase text-[11px] whitespace-nowrap">
+                            @colVal
+                        </th>
+                    }
+                    @if (_activeConfig.ShowGrandTotals)
+                    {
+                        <th class="p-3.5 text-right font-mono uppercase text-[11px] bg-slate-200/60 dark:bg-slate-900 text-brand-600 dark:text-brand-400 border-l border-slate-200 dark:border-slate-700 whitespace-nowrap">
+                            Grand Total
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
+                @if (_displayedRows.Count == 0)
+                {
+                    <tr>
+                        <td colspan="@(_colKeys.Count + 2)" class="p-8 text-center text-slate-400 italic">
+                            No data records match the active filter and dimension configuration.
+                        </td>
+                    </tr>
+                }
+                @foreach (var rowItem in _displayedRows)
+                {
+                    var isGroupHeader = rowItem.IsGroup;
+                    var isCollapsed = _collapsedGroups.Contains(rowItem.Key);
+
+                    <tr class="transition @(isGroupHeader ? "bg-slate-50/80 dark:bg-slate-850/60 font-semibold" : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40")">
+                        <!-- Sticky Row Header with Hierarchical Indentation and Expand/Collapse Icon -->
+                        <td class="p-3.5 font-bold text-slate-900 dark:text-white border-r border-slate-200 dark:border-slate-800 sticky left-0 z-10 whitespace-nowrap @(isGroupHeader ? "bg-slate-100/90 dark:bg-slate-900/90" : "bg-slate-50/60 dark:bg-slate-900/60")"
+                            style="padding-left: @(rowItem.Level * 18 + 14)px;">
+                            <div class="flex items-center gap-2">
+                                @if (isGroupHeader)
+                                {
+                                    <button type="button" @onclick='() => ToggleGroupExpand(rowItem.Key)'
+                                            class="w-4 h-4 rounded-md bg-slate-200 dark:bg-slate-700 hover:bg-brand-500 hover:text-white flex items-center justify-center text-[10px] font-mono transition">
+                                        @(isCollapsed ? "+" : "−")
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span class="w-1.5 h-1.5 rounded-full bg-brand-500 ml-4"></span>
+                                }
+                                <span>@rowItem.DisplayName</span>
+                            </div>
+                        </td>
+
+                        <!-- Cell Values -->
+                        @foreach (var colKey in _colKeys)
+                        {
+                            var cell = GetCell(rowItem.Key, colKey, isGroupHeader);
+                            var bgStyle = GetHeatmapStyle(cell.NormalizedIntensity);
+
+                            <td class="p-3.5 text-right font-mono transition-colors @(AllowDrillDown ? "cursor-pointer hover:font-bold hover:underline" : "")"
+                                style="@bgStyle"
+                                @onclick='() => HandleCellClick(cell)'
+                                data-testid="pivot-cell"
+                                title="Click to drill down into underlying records">
+                                @cell.FormattedValue
+                            </td>
+                        }
+
+                        <!-- Row Total -->
+                        @if (_activeConfig.ShowGrandTotals)
+                        {
+                            var rowTotal = ComputeRowTotal(rowItem.Key, isGroupHeader);
+                            <td class="p-3.5 text-right font-mono font-bold text-slate-900 dark:text-white bg-slate-50/70 dark:bg-slate-900/70 border-l border-slate-200 dark:border-slate-800">
+                                @FormatValue(rowTotal)
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+
+            <!-- Grand Total Footer Row -->
+            @if (_activeConfig.ShowGrandTotals && _displayedRows.Count > 0)
+            {
+                <tfoot class="bg-slate-100 dark:bg-slate-850 font-bold text-slate-900 dark:text-white border-t-2 border-slate-200 dark:border-slate-700 font-mono">
+                    <tr>
+                        <td class="p-3.5 uppercase text-[11px] bg-slate-200/70 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 sticky left-0 z-10">
+                            Grand Total (∑)
+                        </td>
+                        @foreach (var colKey in _colKeys)
+                        {
+                            var colTotal = ComputeColTotal(colKey);
+                            <td class="p-3.5 text-right text-brand-600 dark:text-brand-400">
+                                @FormatValue(colTotal)
+                            </td>
+                        }
+                        <td class="p-3.5 text-right text-emerald-600 dark:text-emerald-400 text-sm bg-slate-200/70 dark:bg-slate-900 border-l border-slate-200 dark:border-slate-700">
+                            @FormatValue(ComputeGrandTotal())
+                        </td>
+                    </tr>
+                </tfoot>
+            }
+        </table>
+    </div>
+
+    <!-- Drill-Down Cell Inspector Modal -->
+    @if (_activeDrillDown != null)
+    {
+        <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-fadeIn" data-testid="pivot-drilldown-modal">
+            <div class="w-full max-w-4xl max-h-[85vh] flex flex-col rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+                <!-- Modal Header -->
+                <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-850/50">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h4 class="font-black text-slate-900 dark:text-white text-base">
+                                Drill-Down Raw Records Inspector
+                            </h4>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
+                                @_activeDrillDown.UnderlyingRecords.Count Records
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            Intersection: <strong class="text-slate-800 dark:text-slate-200">@_activeDrillDown.RowKey</strong> × <strong class="text-slate-800 dark:text-slate-200">@_activeDrillDown.ColKey</strong> • Aggregate Total: <strong class="text-emerald-600 font-mono">@FormatValue(_activeDrillDown.AggregateValue)</strong>
+                        </p>
+                    </div>
+
+                    <button type="button" @onclick="() => _activeDrillDown = null"
+                            class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 hover:text-slate-800 dark:hover:text-white flex items-center justify-center text-sm font-bold transition">
+                        ✕
+                    </button>
+                </div>
+
+                <!-- Modal Content: Table of Records -->
+                <div class="flex-1 overflow-auto p-5">
+                    @if (DrillDownRowTemplate != null)
+                    {
+                        <div class="space-y-2">
+                            @foreach (var rec in _activeDrillDown.UnderlyingRecords)
+                            {
+                                @DrillDownRowTemplate(rec)
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
+                                <tr>
+                                    @foreach (var f in _allFields)
+                                    {
+                                        <th class="p-2.5 font-mono text-[11px]">@f.DisplayName</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                @foreach (var rec in _activeDrillDown.UnderlyingRecords)
+                                {
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                        @foreach (var f in _allFields)
+                                        {
+                                            var val = GetRawFieldValue(rec, f.FieldName);
+                                            <td class="p-2.5 font-mono text-slate-700 dark:text-slate-300">
+                                                @(val?.ToString() ?? "—")
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 flex items-center justify-between text-xs">
+                    <span class="text-slate-400 font-mono text-[11px]">
+                        Aggregated via @_activeMeasure?.Aggregator on @_activeMeasure?.FieldName
+                    </span>
+                    <button type="button" @onclick="() => _activeDrillDown = null"
+                            class="px-4 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold hover:opacity-90 transition">
+                        Close Inspector
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    [Parameter] public List<PivotFieldDefinition<TItem>>? Fields { get; set; }
+    [Parameter] public PivotConfig? Config { get; set; }
+    [Parameter] public EventCallback<PivotConfig> ConfigChanged { get; set; }
+
+    [Parameter] public string Title { get; set; } = "Cross-Tabulation Pivot Table";
+    [Parameter] public string Subtitle { get; set; } = "Multi-dimensional analytical OLAP matrix with real-time grouping, filtering & aggregation";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public bool AllowFieldSelector { get; set; } = true;
+    [Parameter] public bool AllowDrillDown { get; set; } = true;
+    [Parameter] public bool AllowExport { get; set; } = true;
+    [Parameter] public RenderFragment<TItem>? DrillDownRowTemplate { get; set; }
+    [Parameter] public EventCallback<PivotCellDrillDown<TItem>> OnCellClick { get; set; }
+
+    public class PivotRowItem
+    {
+        public string Key { get; set; } = "";
+        public string DisplayName { get; set; } = "";
+        public int Level { get; set; }
+        public bool IsGroup { get; set; }
+        public string? ParentKey { get; set; }
+    }
+
+    private List<TItem> _records = new();
+    private List<PivotFieldDefinition<TItem>> _allFields = new();
+    private PivotConfig _activeConfig = new();
+    private List<string> _filterFields = new();
+    private Dictionary<string, string> _activeFilters = new();
+
+    private bool _showFieldSelector = false;
+    private bool _rowSortAsc = true;
+    private bool _allRowsExpanded = true;
+    private HashSet<string> _collapsedGroups = new();
+    private PivotCellDrillDown<TItem>? _activeDrillDown = null;
+
+    private List<PivotRowItem> _displayedRows = new();
+    private List<string> _colKeys = new();
+    private decimal _minCellValue = decimal.MaxValue;
+    private decimal _maxCellValue = decimal.MinValue;
+
+    private PivotMeasureConfig? _activeMeasure => _activeConfig.Measures.FirstOrDefault();
+
+    protected override void OnParametersSet()
+    {
+        _records = Items?.ToList() ?? new();
+        InitializeFields();
+        InitializeConfig();
+        RecalculateMatrix();
+    }
+
+    private void InitializeFields()
+    {
+        if (Fields != null && Fields.Count > 0)
+        {
+            _allFields = Fields.ToList();
+            return;
+        }
+
+        _allFields = new();
+        var props = typeof(TItem).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (var p in props)
+        {
+            var isNumeric = IsNumericType(p.PropertyType);
+            _allFields.Add(new PivotFieldDefinition<TItem>(
+                p.Name,
+                p.Name,
+                isNumeric ? PivotFieldType.Measure : PivotFieldType.Dimension,
+                item => p.GetValue(item),
+                isNumeric ? "C0" : null
+            ));
+        }
+    }
+
+    private static bool IsNumericType(Type type)
+    {
+        var under = Nullable.GetUnderlyingType(type) ?? type;
+        return under == typeof(int) || under == typeof(long) || under == typeof(decimal) ||
+               under == typeof(double) || under == typeof(float) || under == typeof(short);
+    }
+
+    private void InitializeConfig()
+    {
+        if (Config != null)
+        {
+            _activeConfig = Config;
+            return;
+        }
+
+        if (_activeConfig.RowFields.Count == 0 && _activeConfig.ColumnFields.Count == 0 && _activeConfig.Measures.Count == 0)
+        {
+            var dimensions = _allFields.Where(f => f.FieldType == PivotFieldType.Dimension).ToList();
+            var measures = _allFields.Where(f => f.FieldType == PivotFieldType.Measure).ToList();
+
+            if (dimensions.Count > 0) _activeConfig.RowFields.Add(dimensions[0].FieldName);
+            if (dimensions.Count > 1) _activeConfig.ColumnFields.Add(dimensions[1].FieldName);
+            if (dimensions.Count > 2) _filterFields.Add(dimensions[2].FieldName);
+
+            if (measures.Count > 0)
+            {
+                _activeConfig.Measures.Add(new PivotMeasureConfig
+                {
+                    FieldName = measures[0].FieldName,
+                    DisplayName = measures[0].DisplayName,
+                    Aggregator = PivotAggregator.Sum,
+                    FormatString = measures[0].FormatString ?? "C0"
+                });
+            }
+        }
+    }
+
+    private IEnumerable<TItem> GetFilteredRecords()
+    {
+        var result = (IEnumerable<TItem>)_records;
+        foreach (var kvp in _activeFilters)
+        {
+            if (!string.IsNullOrEmpty(kvp.Value) && kvp.Value != "ALL")
+            {
+                result = result.Where(r => string.Equals(GetRawFieldValue(r, kvp.Key)?.ToString(), kvp.Value, StringComparison.OrdinalIgnoreCase));
+            }
+        }
+        return result;
+    }
+
+    private void RecalculateMatrix()
+    {
+        var filtered = GetFilteredRecords().ToList();
+        if (filtered.Count == 0 || _activeConfig.RowFields.Count == 0)
+        {
+            _displayedRows = new();
+            _colKeys = new();
+            return;
+        }
+
+        // Build Row Hierarchy
+        _displayedRows = new();
+        if (_activeConfig.RowFields.Count == 1)
+        {
+            var rf = _activeConfig.RowFields[0];
+            var keys = filtered.Select(r => GetRawFieldValue(r, rf)?.ToString() ?? "N/A").Distinct();
+            keys = _rowSortAsc ? keys.OrderBy(x => x) : keys.OrderByDescending(x => x);
+            foreach (var k in keys)
+            {
+                _displayedRows.Add(new PivotRowItem { Key = k, DisplayName = k, Level = 0, IsGroup = false });
+            }
+        }
+        else
+        {
+            // Multi-level hierarchy
+            var parentField = _activeConfig.RowFields[0];
+            var childFields = _activeConfig.RowFields.Skip(1).ToList();
+
+            var parentKeys = filtered.Select(r => GetRawFieldValue(r, parentField)?.ToString() ?? "N/A").Distinct();
+            parentKeys = _rowSortAsc ? parentKeys.OrderBy(x => x) : parentKeys.OrderByDescending(x => x);
+
+            foreach (var pk in parentKeys)
+            {
+                _displayedRows.Add(new PivotRowItem { Key = pk, DisplayName = pk, Level = 0, IsGroup = true });
+
+                if (!_collapsedGroups.Contains(pk))
+                {
+                    var childRecords = filtered.Where(r => (GetRawFieldValue(r, parentField)?.ToString() ?? "N/A") == pk);
+                    var childKeys = childRecords.Select(r => GetCompositeKey(r, childFields)).Distinct().OrderBy(x => x);
+                    foreach (var ck in childKeys)
+                    {
+                        _displayedRows.Add(new PivotRowItem { Key = $"{pk} | {ck}", DisplayName = ck, Level = 1, IsGroup = false, ParentKey = pk });
+                    }
+                }
+            }
+        }
+
+        // Build Column Keys
+        if (_activeConfig.ColumnFields.Count > 0)
+        {
+            _colKeys = filtered.Select(r => GetCompositeKey(r, _activeConfig.ColumnFields)).Distinct().OrderBy(x => x).ToList();
+        }
+        else
+        {
+            _colKeys = new List<string> { "Total" };
+        }
+
+        // Calculate min/max for heatmap
+        _minCellValue = decimal.MaxValue;
+        _maxCellValue = decimal.MinValue;
+
+        foreach (var r in _displayedRows)
+        {
+            foreach (var ck in _colKeys)
+            {
+                var val = GetCell(r.Key, ck, r.IsGroup).Value;
+                if (val < _minCellValue) _minCellValue = val;
+                if (val > _maxCellValue) _maxCellValue = val;
+            }
+        }
+
+        if (_minCellValue == decimal.MaxValue) _minCellValue = 0;
+        if (_maxCellValue == decimal.MinValue) _maxCellValue = 0;
+    }
+
+    private string GetCompositeKey(TItem item, List<string> fieldNames)
+    {
+        var parts = new List<string>();
+        foreach (var f in fieldNames)
+        {
+            var v = GetRawFieldValue(item, f);
+            parts.Add(v?.ToString() ?? "N/A");
+        }
+        return string.Join(" - ", parts);
+    }
+
+    private object? GetRawFieldValue(TItem item, string fieldName)
+    {
+        var fieldDef = _allFields.FirstOrDefault(f => f.FieldName.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
+        if (fieldDef?.ValueGetter != null) return fieldDef.ValueGetter(item);
+
+        var prop = typeof(TItem).GetProperty(fieldName);
+        return prop?.GetValue(item);
+    }
+
+    private string GetFieldDisplayName(string fieldName)
+    {
+        return _allFields.FirstOrDefault(f => f.FieldName.Equals(fieldName, StringComparison.OrdinalIgnoreCase))?.DisplayName ?? fieldName;
+    }
+
+    private List<string> GetDistinctValuesForField(string fieldName)
+    {
+        return _records.Select(r => GetRawFieldValue(r, fieldName)?.ToString() ?? "").Where(s => !string.IsNullOrEmpty(s)).Distinct().OrderBy(s => s).ToList();
+    }
+
+    private PivotCell<TItem> GetCell(string rowKey, string colKey, bool isGroupHeader = false)
+    {
+        var filtered = GetFilteredRecords();
+        List<TItem> subset;
+
+        if (_activeConfig.RowFields.Count == 1)
+        {
+            subset = filtered.Where(r =>
+                (GetRawFieldValue(r, _activeConfig.RowFields[0])?.ToString() ?? "N/A") == rowKey &&
+                (_activeConfig.ColumnFields.Count == 0 || GetCompositeKey(r, _activeConfig.ColumnFields) == colKey)
+            ).ToList();
+        }
+        else if (isGroupHeader)
+        {
+            var parentField = _activeConfig.RowFields[0];
+            subset = filtered.Where(r =>
+                (GetRawFieldValue(r, parentField)?.ToString() ?? "N/A") == rowKey &&
+                (_activeConfig.ColumnFields.Count == 0 || GetCompositeKey(r, _activeConfig.ColumnFields) == colKey)
+            ).ToList();
+        }
+        else
+        {
+            var parts = rowKey.Split(" | ");
+            var parentKey = parts[0];
+            var childKey = parts.Length > 1 ? parts[1] : "";
+            var parentField = _activeConfig.RowFields[0];
+            var childFields = _activeConfig.RowFields.Skip(1).ToList();
+
+            subset = filtered.Where(r =>
+                (GetRawFieldValue(r, parentField)?.ToString() ?? "N/A") == parentKey &&
+                GetCompositeKey(r, childFields) == childKey &&
+                (_activeConfig.ColumnFields.Count == 0 || GetCompositeKey(r, _activeConfig.ColumnFields) == colKey)
+            ).ToList();
+        }
+
+        var val = AggregateRecords(subset);
+        var intensity = 0.0;
+        if (_maxCellValue > _minCellValue && val >= _minCellValue)
+        {
+            intensity = (double)((val - _minCellValue) / (_maxCellValue - _minCellValue));
+        }
+
+        return new PivotCell<TItem>
+        {
+            RowKey = rowKey,
+            ColKey = colKey,
+            MeasureField = _activeMeasure?.FieldName ?? "",
+            Value = val,
+            FormattedValue = FormatValue(val),
+            SourceRecords = subset,
+            NormalizedIntensity = intensity
+        };
+    }
+
+    private decimal AggregateRecords(List<TItem> subset)
+    {
+        if (subset.Count == 0 || _activeMeasure == null) return 0;
+
+        var values = subset.Select(s => ConvertToDecimal(GetRawFieldValue(s, _activeMeasure.FieldName))).ToList();
+        return _activeMeasure.Aggregator switch
+        {
+            PivotAggregator.Average => values.Count > 0 ? values.Average() : 0,
+            PivotAggregator.Count => subset.Count,
+            PivotAggregator.DistinctCount => subset.Select(s => GetRawFieldValue(s, _activeMeasure.FieldName)?.ToString() ?? "").Distinct().Count(),
+            PivotAggregator.Min => values.Count > 0 ? values.Min() : 0,
+            PivotAggregator.Max => values.Count > 0 ? values.Max() : 0,
+            PivotAggregator.Product => values.Count > 0 ? values.Aggregate(1m, (acc, x) => acc * x) : 0,
+            _ => values.Sum()
+        };
+    }
+
+    private static decimal ConvertToDecimal(object? obj)
+    {
+        if (obj == null) return 0m;
+        try { return Convert.ToDecimal(obj, CultureInfo.InvariantCulture); }
+        catch { return 0m; }
+    }
+
+    private decimal ComputeRowTotal(string rowKey, bool isGroupHeader)
+    {
+        var filtered = GetFilteredRecords();
+        List<TItem> subset;
+        if (_activeConfig.RowFields.Count == 1 || isGroupHeader)
+        {
+            var parentField = _activeConfig.RowFields[0];
+            subset = filtered.Where(r => (GetRawFieldValue(r, parentField)?.ToString() ?? "N/A") == rowKey).ToList();
+        }
+        else
+        {
+            var parts = rowKey.Split(" | ");
+            var parentKey = parts[0];
+            var childKey = parts.Length > 1 ? parts[1] : "";
+            var parentField = _activeConfig.RowFields[0];
+            var childFields = _activeConfig.RowFields.Skip(1).ToList();
+
+            subset = filtered.Where(r =>
+                (GetRawFieldValue(r, parentField)?.ToString() ?? "N/A") == parentKey &&
+                GetCompositeKey(r, childFields) == childKey
+            ).ToList();
+        }
+
+        return AggregateRecords(subset);
+    }
+
+    private decimal ComputeColTotal(string colKey)
+    {
+        var filtered = GetFilteredRecords();
+        var subset = filtered.Where(r => _activeConfig.ColumnFields.Count == 0 || GetCompositeKey(r, _activeConfig.ColumnFields) == colKey).ToList();
+        return AggregateRecords(subset);
+    }
+
+    private decimal ComputeGrandTotal()
+    {
+        return AggregateRecords(GetFilteredRecords().ToList());
+    }
+
+    private string FormatValue(decimal val)
+    {
+        if (_activeMeasure?.Aggregator == PivotAggregator.Count || _activeMeasure?.Aggregator == PivotAggregator.DistinctCount)
+        {
+            return val.ToString("N0");
+        }
+
+        var fmt = _activeMeasure?.FormatString ?? "C0";
+        if (fmt.StartsWith("C", StringComparison.OrdinalIgnoreCase))
+        {
+            return $"${val:N0}";
+        }
+        return val.ToString(fmt);
+    }
+
+    private string GetHeatmapStyle(double intensity)
+    {
+        if (!_activeConfig.EnableHeatmap || intensity <= 0) return "";
+        var alpha = Math.Clamp(intensity * 0.45, 0.08, 0.55);
+        return _activeConfig.HeatmapColor switch
+        {
+            "emerald" => $"background-color: rgba(16, 185, 129, {alpha:F2});",
+            "amber" => $"background-color: rgba(245, 158, 11, {alpha:F2});",
+            "rose" => $"background-color: rgba(244, 63, 94, {alpha:F2});",
+            _ => $"background-color: rgba(99, 102, 241, {alpha:F2});"
+        };
+    }
+
+    private async Task HandleCellClick(PivotCell<TItem> cell)
+    {
+        if (!AllowDrillDown) return;
+        _activeDrillDown = new PivotCellDrillDown<TItem>
+        {
+            RowKey = cell.RowKey,
+            ColKey = cell.ColKey,
+            MeasureTitle = _activeMeasure?.Title ?? "Metric",
+            AggregateValue = cell.Value,
+            UnderlyingRecords = cell.SourceRecords
+        };
+
+        if (OnCellClick.HasDelegate)
+        {
+            await OnCellClick.InvokeAsync(_activeDrillDown);
+        }
+    }
+
+    private void ToggleGroupExpand(string key)
+    {
+        if (_collapsedGroups.Contains(key)) _collapsedGroups.Remove(key);
+        else _collapsedGroups.Add(key);
+        RecalculateMatrix();
+    }
+
+    private void ToggleExpandCollapseAll()
+    {
+        _allRowsExpanded = !_allRowsExpanded;
+        if (!_allRowsExpanded)
+        {
+            var parentField = _activeConfig.RowFields[0];
+            var keys = GetFilteredRecords().Select(r => GetRawFieldValue(r, parentField)?.ToString() ?? "N/A").Distinct();
+            _collapsedGroups = new HashSet<string>(keys);
+        }
+        else
+        {
+            _collapsedGroups.Clear();
+        }
+        RecalculateMatrix();
+    }
+
+    private void ToggleHeatmap()
+    {
+        _activeConfig.EnableHeatmap = !_activeConfig.EnableHeatmap;
+    }
+
+    private void ToggleSortRows()
+    {
+        _rowSortAsc = !_rowSortAsc;
+        RecalculateMatrix();
+    }
+
+    private void HandleAggregatorChange(ChangeEventArgs e)
+    {
+        if (e.Value != null && Enum.TryParse<PivotAggregator>(e.Value.ToString(), out var agg) && _activeMeasure != null)
+        {
+            _activeMeasure.Aggregator = agg;
+            RecalculateMatrix();
+        }
+    }
+
+    private void SetFilterValue(string field, string? val)
+    {
+        if (string.IsNullOrEmpty(val) || val == "ALL") _activeFilters.Remove(field);
+        else _activeFilters[field] = val;
+        RecalculateMatrix();
+    }
+
+    private void ClearFilter(string field)
+    {
+        _activeFilters.Remove(field);
+        RecalculateMatrix();
+    }
+
+    private void AssignFieldTo(string fieldName, string zone)
+    {
+        _activeConfig.RowFields.Remove(fieldName);
+        _activeConfig.ColumnFields.Remove(fieldName);
+        _filterFields.Remove(fieldName);
+        _activeConfig.Measures.RemoveAll(m => m.FieldName == fieldName);
+
+        if (zone == "Row") _activeConfig.RowFields.Add(fieldName);
+        else if (zone == "Col") _activeConfig.ColumnFields.Add(fieldName);
+        else if (zone == "Filter") _filterFields.Add(fieldName);
+        else if (zone == "Val")
+        {
+            _activeConfig.Measures.Add(new PivotMeasureConfig
+            {
+                FieldName = fieldName,
+                DisplayName = GetFieldDisplayName(fieldName),
+                Aggregator = PivotAggregator.Sum
+            });
+        }
+
+        RecalculateMatrix();
+    }
+
+    private void RemoveRowField(string field)
+    {
+        _activeConfig.RowFields.Remove(field);
+        RecalculateMatrix();
+    }
+
+    private void RemoveColField(string field)
+    {
+        _activeConfig.ColumnFields.Remove(field);
+        RecalculateMatrix();
+    }
+
+    private void RemoveFilterField(string field)
+    {
+        _filterFields.Remove(field);
+        _activeFilters.Remove(field);
+        RecalculateMatrix();
+    }
+
+    private void RemoveMeasure(PivotMeasureConfig m)
+    {
+        _activeConfig.Measures.Remove(m);
+        RecalculateMatrix();
+    }
+
+    private void ResetDefaultFields()
+    {
+        _activeConfig.RowFields.Clear();
+        _activeConfig.ColumnFields.Clear();
+        _activeConfig.Measures.Clear();
+        _filterFields.Clear();
+        _activeFilters.Clear();
+        _collapsedGroups.Clear();
+
+        InitializeConfig();
+        RecalculateMatrix();
+    }
+
+    private async Task ExportToCsv()
+    {
+        var sb = new StringBuilder();
+        var header = new List<string> { string.Join("/", _activeConfig.RowFields) };
+        header.AddRange(_colKeys);
+        if (_activeConfig.ShowGrandTotals) header.Add("Grand Total");
+        sb.AppendLine(string.Join(",", header.Select(h => $"\"{h}\"")));
+
+        foreach (var rowItem in _displayedRows)
+        {
+            var row = new List<string> { $"\"{rowItem.DisplayName}\"" };
+            foreach (var ck in _colKeys)
+            {
+                row.Add($"\"{GetCell(rowItem.Key, ck, rowItem.IsGroup).FormattedValue}\"");
+            }
+            if (_activeConfig.ShowGrandTotals)
+            {
+                row.Add($"\"{FormatValue(ComputeRowTotal(rowItem.Key, rowItem.IsGroup))}\"");
+            }
+            sb.AppendLine(string.Join(",", row));
+        }
+
+        var csv = sb.ToString();
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", csv);
+        }
+        catch { /* loose interop */ }
+    }
+}

@@ -29,6 +29,7 @@ This document outlines the strategic architecture, component specifications, and
 | **36. Planning & Enterprise Suite** | `TwScheduler`, `TwGantt`, `TwTreeList`, `TwToolbar`, `TwWindow`, `TwHtmlEditor`, `TwFormLayout` and 8 more | Shipped (v0.7.0) ✅ | Planning & Enterprise |
 | **37. Enterprise Data Grid** | `TwDataGrid` grouping, summaries, master-detail, inline editing, export, saved layout | Shipped (v0.7.0) ✅ | Enterprise Data |
 | **38. Page Templates & UI Building Blocks** | `TwCompactStatCard`, `TwLandingHero`, `TwPricingSection`, `TwPromptComposer`, `TwActivityTimeline`, `FintechAnalyticsDashboard`, `AiOperationsTokenMonitor`, `SaaSProductLanding`, `TemplatesGallery` | Shipped (v0.8.1) ✅ | Templates & Building Blocks |
+| **39. Advanced OLAP Pivot & Master-Detail Suites** | `TwPivotTable`, `TwMasterDetailGrid`, `TwMasterDetail`, `TwMasterDetailForm` | Shipped (v0.8.2) ✅ | Analytics & Master-Detail |
 | **16. Native OpenTelemetry Component Tracing** | `TwTelemetryDashboard`, `TwActivityMeter` | Shipped (v0.5.0) ✅ | Observability & Performance HUD |
 | **17. .NET Aspire 11 Live App Host Orchestration** | `TwAspireHub`, `Aspire.Hosting.BlazorTwUI` | Shipped (v0.5.1) ✅ | Cloud-Native & Developer Velocity |
 | **18. Runtime-Native Async V2 & Hardware Acceleration** | `TwVectorMath`, `TwSimdVectorService` | Shipped (v0.5.1) ✅ | Runtime Performance & Vector SIMD |
@@ -704,6 +705,7 @@ flowchart LR
     I --> J["v0.7.0 (Release ✅)<br/>Planning & Enterprise Suite<br/>Data Grid: Grouping, Summaries, Editing, Export<br/>234 Components"]
     J --> K["v0.8.0 (Release ✅)<br/>TwMerge Conflict Engine<br/>Multi-Part TwSlots & Primitives<br/>246 Components"]
     K --> L["v0.8.1 (Release ✅)<br/>Page Templates & Building Blocks<br/>Fintech, AI Ops, SaaS Landing<br/>4K Video Showcase<br/>255 Components"]
+    L --> M["v0.8.2 (Release ✅)<br/>4-Axis OLAP TwPivotTable<br/>Master-Detail Nested Grids<br/>Split-Pane Studio<br/>259 Components"]
 ```
 
 ---
@@ -723,6 +725,22 @@ Turnkey full-page solutions and composable atomic building blocks with pure math
   - `TwPricingSection`: 3-tier interactive pricing matrix with monthly/annual billing switcher (20% discount calculation), equalized 632.5px card heights, zero layout shift, and 44px uniform action buttons.
   - `TwPromptComposer`: Auto-expanding AI prompt box with suggestion chips, file attachment trigger, voice dictation toggle, and dual-plane execution hooks.
   - `TwActivityTimeline`: Vertical audit and event stream with status dots (`Success`, `Warning`, `Danger`), timestamps, and metadata tags.
+
+---
+
+## 39. 📊 Advanced OLAP Pivot & Master-Detail Suites
+
+Full-featured generic analytical cross-tabulation and hierarchical data management:
+
+- **Generic 4-Axis OLAP Pivot Table (`TwPivotTable<TItem>`)**:
+  - 4-Axis architecture: Row Area (nested hierarchical tree groups with expand/collapse), Column Area, Data Area (multi-measure aggregations: Sum, Average, Count, DistinctCount, Min, Max, Product), and Filter/Page Area.
+  - Dynamic heatmap color scaling with normalized intensity shading.
+  - Interactive Excel-like Field List configurator panel.
+  - Cell drill-down raw records inspector dialog with tabular viewer and CSV export.
+- **Master-Detail Architecture Suite**:
+  - `TwMasterDetailGrid<TMaster, TChild>`: Hierarchical data table featuring expandable master rows with nested child grids, chevron toggles, multi-row or auto-collapse expansion modes, independent child column sorting, and add/delete child line item callbacks.
+  - `TwMasterDetail<TMaster, TChild>`: Synchronized Master/Detail split-pane workspace with Column (horizontal) and Row (vertical) layout modes, live search, status chips, multi-tab detail inspector (Master Form, Child Records Grid, Audit Timeline), and two-way item selection binding.
+  - `TwMasterDetailForm`: Turnkey transactional Master/Detail form designed for Invoices, Purchase Orders, and Service Statements with top metadata fields, dynamic line item table, '+ Add Item', real-time subtotal, tax %, discount, and grand total recalculation.
 
 
 Contributions and discussions are welcomed in the [GitHub Discussions](https://github.com/donpotts/BlazorTwUI/discussions) and [Issue Tracker](https://github.com/donpotts/BlazorTwUI/issues).
