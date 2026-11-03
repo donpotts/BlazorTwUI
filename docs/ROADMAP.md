@@ -28,6 +28,7 @@ This document outlines the strategic architecture, component specifications, and
 | **35. Agent Kit & Live AG-UI** | `SseAgentTransport`, `AgentThreadStore`, `TwThreadList`, `TwA2uiSurface`, `TwMcpAppFrame`, `TwVoiceInput`, `TwHandoffPanel`, `TwLiveScreen`, `TwGrantList` and 17 more; `TwCalendar`, `TwTimePicker`, `TwRadioGroup`, `TwTextArea` | Shipped ✅ | Agent-native UI |
 | **36. Planning & Enterprise Suite** | `TwScheduler`, `TwGantt`, `TwTreeList`, `TwToolbar`, `TwWindow`, `TwHtmlEditor`, `TwFormLayout` and 8 more | Shipped (v0.7.0) ✅ | Planning & Enterprise |
 | **37. Enterprise Data Grid** | `TwDataGrid` grouping, summaries, master-detail, inline editing, export, saved layout | Shipped (v0.7.0) ✅ | Enterprise Data |
+| **38. Page Templates & UI Building Blocks** | `TwCompactStatCard`, `TwLandingHero`, `TwPricingSection`, `TwPromptComposer`, `TwActivityTimeline`, `FintechAnalyticsDashboard`, `AiOperationsTokenMonitor`, `SaaSProductLanding`, `TemplatesGallery` | Shipped (v0.8.1) ✅ | Templates & Building Blocks |
 | **16. Native OpenTelemetry Component Tracing** | `TwTelemetryDashboard`, `TwActivityMeter` | Shipped (v0.5.0) ✅ | Observability & Performance HUD |
 | **17. .NET Aspire 11 Live App Host Orchestration** | `TwAspireHub`, `Aspire.Hosting.BlazorTwUI` | Shipped (v0.5.1) ✅ | Cloud-Native & Developer Velocity |
 | **18. Runtime-Native Async V2 & Hardware Acceleration** | `TwVectorMath`, `TwSimdVectorService` | Shipped (v0.5.1) ✅ | Runtime Performance & Vector SIMD |
@@ -701,6 +702,27 @@ flowchart LR
     G --> H["v0.5.0 (Shipped ✅)<br/>OpenTelemetry APM Cockpit<br/>W3C OTLP JSON Export<br/>WASM Heap & GC Profiler<br/>Native Desktop & Web Installers"]
     H --> I["v0.6.0 (Release ✅)<br/>Agent Ops: Approvals, Takeover & Audit<br/>Live AG-UI over SSE & Thread List<br/>A2UI, MCP Apps, Voice, Handoff<br/>Accessibility: High Contrast & Forced Colors<br/>219 Components"]
     I --> J["v0.7.0 (Release ✅)<br/>Planning & Enterprise Suite<br/>Data Grid: Grouping, Summaries, Editing, Export<br/>234 Components"]
+    J --> K["v0.8.0 (Release ✅)<br/>TwMerge Conflict Engine<br/>Multi-Part TwSlots & Primitives<br/>246 Components"]
+    K --> L["v0.8.1 (Release ✅)<br/>Page Templates & Building Blocks<br/>Fintech, AI Ops, SaaS Landing<br/>4K Video Showcase<br/>255 Components"]
 ```
+
+---
+
+## 38. 📐 Page Templates & UI Building Blocks Suite
+
+Turnkey full-page solutions and composable atomic building blocks with pure mathematical SVG charts and zero external runtime dependencies:
+
+- **Turnkey Page Templates**:
+  - `FintechAnalyticsDashboard`: Real-time treasury cockpit ($14.82M gross volume, $9.45M settled), dual-series cash flow line chart, liquidity allocation donut, and live settlement clearance ledger table.
+  - `AiOperationsTokenMonitor`: AI agent control plane with live token throughput (248k/s), p95 latency (48ms), human-in-the-loop approval gates, prompt composer, and live execution trail.
+  - `SaaSProductLanding`: Complete SaaS marketing landing page assembling kinetic hero, bento feature grid, 3-tier pricing matrix, and customer testimonials.
+  - `TemplatesGallery`: Interactive preview hub with responsive viewport frames (Desktop, Tablet, Mobile) for live testing.
+- **Composable Sectional Building Blocks**:
+  - `TwCompactStatCard`: Minimalist KPI card with delta badges and pure native mathematical SVG sparklines.
+  - `TwLandingHero`: Kinetic split marketing hero with headline slot, announcement pill, action buttons, social proof avatar stack, and elevated preview card.
+  - `TwPricingSection`: 3-tier interactive pricing matrix with monthly/annual billing switcher (20% discount calculation), equalized 632.5px card heights, zero layout shift, and 44px uniform action buttons.
+  - `TwPromptComposer`: Auto-expanding AI prompt box with suggestion chips, file attachment trigger, voice dictation toggle, and dual-plane execution hooks.
+  - `TwActivityTimeline`: Vertical audit and event stream with status dots (`Success`, `Warning`, `Danger`), timestamps, and metadata tags.
+
 
 Contributions and discussions are welcomed in the [GitHub Discussions](https://github.com/donpotts/BlazorTwUI/discussions) and [Issue Tracker](https://github.com/donpotts/BlazorTwUI/issues).

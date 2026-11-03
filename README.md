@@ -11,15 +11,15 @@
 <p align="center">
   <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-10%2B_WASM-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt=".NET 10+" /></a>
   <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v3.4+-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
-  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Release-v0.8.0-10B981?style=flat-square" alt="Release v0.8.0" /></a>
-  <a href="docs/COMPONENT_CATALOG.md"><img src="https://img.shields.io/badge/Components-246_Ready-3B82F6?style=flat-square" alt="246 Components" /></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Release-v0.8.1-10B981?style=flat-square" alt="Release v0.8.1" /></a>
+  <a href="docs/COMPONENT_CATALOG.md"><img src="https://img.shields.io/badge/Components-255_Ready-3B82F6?style=flat-square" alt="255 Components" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-F59E0B?style=flat-square" alt="MIT License" /></a>
 </p>
 
 <p align="center">
   <a href="#-quick-start">Quick Start</a> •
   <a href="#-component-examples">Examples</a> •
-  <a href="#-component-catalog-246-components">Component Catalog</a> •
+  <a href="#-component-catalog-255-components">Component Catalog</a> •
   <a href="docs/COMPONENT_CATALOG.md">Full API Docs</a> •
   <a href="wwwroot/videos/hyperframes_masterclass.html">1080p Video Tour</a> •
   <a href="wwwroot/videos/hyperframes_showoff_tour.html">4K Video Showcase</a>
@@ -30,7 +30,7 @@
 ## ⚡ Features
 
 - **Turnkey Page Templates & UI Building Blocks** — Modular, slot-composable full-page applications and 50+ section blocks, including the Fintech & Payments Cockpit, AI Agent Telemetry & Control Plane, and SaaS Marketing Suite. 100% native SVG math visualizations with zero heavy graphing dependencies.
-- **246 Components & Deterministic Styling Engine** — Built for .NET 10 Blazor WebAssembly and Tailwind CSS v3.4+, featuring `TwMerge` utility conflict resolution, `TwClassBuilder`, and multi-part `TwSlots` (`TwCardSlots`, `TwButtonSlots`, `TwUserSlots`, `TwHoverCardSlots`, `TwFloatingInputSlots`), with self-hosted local assets for GridStack, Tesseract OCR, and ZXing barcode scanning (zero external CDN dependencies).
+- **255 Components & Deterministic Styling Engine** — Built for .NET 10 Blazor WebAssembly and Tailwind CSS v3.4+, featuring `TwMerge` utility conflict resolution, `TwClassBuilder`, and multi-part `TwSlots` (`TwCardSlots`, `TwButtonSlots`, `TwUserSlots`, `TwHoverCardSlots`, `TwFloatingInputSlots`), with self-hosted local assets for GridStack, Tesseract OCR, and ZXing barcode scanning (zero external CDN dependencies).
 - **Mobile-First by Default** — 44px touch targets, bottom sheets, swipe gestures, and responsive DataGrid mobile cards.
 - **Adaptive Generative UI (AGUI)** — Runtime prompt-to-UI synthesis with dual-plane tool calling (Frontend WASM + Backend API).
 - **Agent Ops (human-in-the-loop)** — A transport-agnostic agent session with approval gates that genuinely block high-risk tool calls, takeover and hand-back, an editable shared-state inspector and an exportable audit trail. See [Agent Ops](#-agent-ops-approvals-takeover--audit).
@@ -333,12 +333,13 @@ The E2E run drives the real UI (approve with edited arguments, reject, takeover 
 
 ---
 
-## 📦 Component Catalog (246 Components)
+## 📦 Component Catalog (255 Components)
 
 All components are documented with parameters and copy-paste snippets in the [Full Component Catalog](docs/COMPONENT_CATALOG.md).
 
 | Category | Components | Description |
 | :--- | :--- | :--- |
+| **Page Templates & UI Building Blocks (v0.8.1)** | `TwCompactStatCard`, `TwLandingHero`, `TwPricingSection`, `TwPromptComposer`, `TwActivityTimeline`, `FintechAnalyticsDashboard`, `AiOperationsTokenMonitor`, `SaaSProductLanding`, `TemplatesGallery` | Turnkey full-page solutions (Fintech Treasury, AI Control Plane, SaaS Marketing) and composable building blocks with pure native SVG math analytics and zero-shift pricing matrices. |
 | **Styling Engine & Multi-Part Primitives (v0.8.0)** | `TwMerge`, `TwClassBuilder`, `TwUser`, `TwFloatingLabelInput`, `TwValidatorGroup`, `TwHoverCard`, `TwSonner`, `TwMenubar`, `TwToggleGroup`, `TwMockup`, `TwSwap`, `TwChatBubble` | Deterministic Tailwind utility conflict resolution, multi-part `Classes` slots, 3D stacked toasts, reactive floating-label validation, hover preview cards, menubars, device mockups, and animated swaps. |
 | **Actions & Buttons** | `TwButton`, `TwButtonGroup`, `TwSplitButton`, `TwDropdown`, `TwSegmentedControl` | Touch-friendly triggers with loading spinners, icons, and `Soft`, `Shadow`, `Flat`, and `Link` variants. |
 | **Forms & Inputs** | `TwInput`, `TwSelect`, `TwCheckbox`, `TwRadioGroup`, `TwToggle`, `TwTextarea`, `TwDatePicker`, `TwTimeSpanPicker`, `TwColorPicker`, `TwFloatingLabelInput`, `TwValidatorGroup` | Two-way data binding, decoupled reactive validation groups, and Outlined/Filled/Standard floating labels. |
@@ -358,9 +359,10 @@ All components are documented with parameters and copy-paste snippets in the [Fu
 
 ## 📚 Documentation & Guides
 
-- 📖 **[Component Catalog (246 Components)](docs/COMPONENT_CATALOG.md)** — Complete parameter tables, variants, and API reference.
+- 📖 **[Component Catalog (255 Components)](docs/COMPONENT_CATALOG.md)** — Complete parameter tables, variants, and API reference.
 - 🎓 **[Developer Coaching & Architecture Principles](docs/DEVELOPER_COACHING.md)** — Mobile-first design patterns, zero-FOUC theming, and performance tips.
 - 🎬 **[HyperFrames 1080p Video Masterclass](wwwroot/videos/hyperframes_masterclass.html)** — Interactive 18-chapter video walkthrough.
+- 🎥 **[HyperFrames 4K Video Showcase](wwwroot/videos/hyperframes_showoff_tour.html)** — Interactive 4K multi-chapter product tour with audio narration.
 - 🗺️ **[Release Roadmap & Changelog](docs/ROADMAP.md)** — Feature milestones and version history.
 
 ---

@@ -2,6 +2,32 @@
 
 All notable changes to BlazorTwUI are documented here. Version 1.0 has not been released: earlier internal labels of the form 1.x were renumbered to 0.x (for example 1.5.0 is now 0.5.0), so the library is in its 0.n.n line. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [0.8.1] - 2026-11-03
+
+### Added
+- **Turnkey Page Templates & UI Building Blocks Suite (`246` → `255 Components`)**:
+  - `TwCompactStatCard`: Minimalist enterprise KPI metric card with delta badges and pure mathematical SVG sparklines.
+  - `TwLandingHero`: Kinetic split marketing hero with headline slot, announcement pill, action buttons, social proof avatar stack, and elevated preview card.
+  - `TwPricingSection`: 3-tier interactive pricing matrix with monthly/annual billing switcher (20% discount calculation), equalized 632.5px card heights, zero layout shift, and 44px uniform action buttons.
+  - `TwPromptComposer`: Auto-expanding AI prompt box with suggestion chips, file attachment trigger, voice dictation toggle, and dual-plane execution hooks.
+  - `TwActivityTimeline`: Vertical audit and event stream with status dots (`Success`, `Warning`, `Danger`), timestamps, and metadata tags.
+  - `FintechAnalyticsDashboard`: Turnkey Fintech & Payments Treasury Cockpit with 4 KPI cards ($14.82M gross volume, $9.45M settled), dual-series SVG line chart, liquidity allocation donut, and live clearance ledger table.
+  - `AiOperationsTokenMonitor`: Turnkey AI Operations & Control Plane with 248k/s token throughput, 48ms p95 latency, human-in-the-loop approval gates, prompt composer, and live execution trail.
+  - `SaaSProductLanding`: Turnkey SaaS marketing landing page assembling kinetic hero, bento feature grid, pricing matrix, and customer testimonials.
+  - `TemplatesGallery`: Interactive preview gallery with live viewport frames (Desktop, Tablet, Mobile) for browsing and testing Page Templates and UI Building Blocks.
+- **Showcase & Video Tour Updates**:
+  - Added 4K Video Showcase tour and poster assets (`wwwroot/videos/hyperframes_showoff_tour.html`, `showoff-demo.mp4`, `showoff-poster.png`).
+  - Added dedicated top-nav, rail, and jump bar navigation entry points for UI Templates & Blocks.
+  - Added Playwright automated E2E test suite (`tests/e2e_screenshots.py`) validating all 11 screens at 2x Retina resolution.
+
+### Fixed
+- **SaaS Pricing Panels Formatting & Alignment (`TwPricingSection.razor` & `TwPricingTable.razor`)**:
+  - Equalized card heights across all three tiers to exactly 632.5px by balancing feature count (6 features each).
+  - Standardized action buttons to 44px min touch target (`h-11`) with aligned baselines.
+  - Encapsulated billing discount notice into fixed-height containers (`h-6 mt-1.5`) to eliminate vertical layout shift when toggling between Annual and Monthly billing.
+  - Elevated popular tier with `md:-translate-y-2`, distinct top floating badge (`★ Most Popular`), and removed redundant badges.
+  - Added configurable `Class` parameter to prevent double-padding when embedded in layouts.
+
 ## [0.8.0]
 
 ### Added

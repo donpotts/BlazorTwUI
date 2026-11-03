@@ -11,7 +11,7 @@
                         TwMerge • TwClassBuilder • TwSlots
                     </span>
                     <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-pink-500/20 text-pink-300 border border-pink-400/30">
-                        246 Production Components
+                        255 Production Components & Templates
                     </span>
                 </div>
                 <h2 class="text-2xl sm:text-3xl font-black tracking-tight">
@@ -24,7 +24,7 @@
 
             <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 shrink-0">
                 <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
-                    <div class="text-xl font-black text-amber-400">246</div>
+                    <div class="text-xl font-black text-amber-400">255</div>
                     <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Components</div>
                 </div>
                 <div class="p-3.5 rounded-2xl bg-white/5 border border-white/10 text-center">
@@ -155,7 +155,7 @@
                                          Lead architect of the <code class="font-mono text-brand-500">TwMerge</code> conflict engine and multi-slot component primitives for .NET 10 Blazor WASM.
                                     </p>
                                     <div class="flex items-center gap-4 text-[11px] text-slate-400 font-mono pt-1 border-t border-slate-100 dark:border-slate-800">
-                                        <span><strong class="text-slate-800 dark:text-white">246</strong> Components</span>
+                                        <span><strong class="text-slate-800 dark:text-white">255</strong> Components & Templates</span>
                                         <span><strong class="text-slate-800 dark:text-white">174</strong> Unit Tests</span>
                                     </div>
                                 </div>
@@ -235,7 +235,7 @@
                             + Error Toast
                         </TwButton>
                         <TwButton Size="ComponentSize.Sm" Variant="ButtonVariant.Shadow"
-                                  OnClick='async () => { if (_sonnerRef != null) await _sonnerRef.PushPromiseAsync("Compiling Razor WASM...", "WASM Bundle Ready!", "Compiled 246 components in 420ms"); }'>
+                                  OnClick='async () => { if (_sonnerRef != null) await _sonnerRef.PushPromiseAsync("Compiling Razor WASM...", "WASM Bundle Ready!", "Compiled 255 components in 420ms"); }'>
                             ⚡ Promise Toast
                         </TwButton>
                     </div>
@@ -480,8 +480,8 @@
 
     private readonly List<TwMockup.MockupCodeLine> _demoCodeLines = new()
     {
-        new() { Prefix = "$", Text = "dotnet add package BlazorTwUI --version 0.8.0" },
-        new() { Prefix = ">", Text = "Building BlazorTwUI (.NET 10 WASM • 246 components)...", HighlightClass = "text-amber-300" },
+        new() { Prefix = "$", Text = "dotnet add package BlazorTwUI --version 0.8.1" },
+        new() { Prefix = ">", Text = "Building BlazorTwUI (.NET 10 WASM • 255 components)...", HighlightClass = "text-amber-300" },
         new() { Prefix = "✓", Text = "TwMerge + TwSlots + 10 interactive primitives verified (0 warnings).", HighlightClass = "bg-emerald-500/20 text-emerald-300 font-bold" }
     };
 

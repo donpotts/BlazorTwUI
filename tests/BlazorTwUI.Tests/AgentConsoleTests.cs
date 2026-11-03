@@ -88,7 +88,7 @@ public class AgentConsoleTests : TestContext
         var session = cut.Instance.Session;
         cut.Find("[data-testid=state-row][data-key='refund.amount'] input").Change("60.00");
 
-        Assert.Equal("60.00", session.State["refund.amount"]);
+        cut.WaitForAssertion(() => Assert.Equal("60.00", session.State["refund.amount"]));
         cut.WaitForAssertion(() => Assert.Contains(cut.FindAll("[data-testid=audit-row]"), r => r.GetAttribute("data-action") == "state.edit"));
         cut.Find("[data-testid=cancel]").Click();
     }

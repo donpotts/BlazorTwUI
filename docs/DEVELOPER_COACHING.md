@@ -98,7 +98,7 @@ The included interactive training video (`wwwroot/videos/demo-video.mp4`, 5m 00s
 
 | # | Start Time | Chapter Title | Badge | Key Architectural Concepts Covered |
 |---|------------|---------------|-------|-----------------------------------|
-| 0 | `0:00` (0.0s) | Intro & Architecture | `.NET 10+ WASM` | Zero-CDN standalone architecture, 236 native controls, mobile-first design. |
+| 0 | `0:00` (0.0s) | Intro & Architecture | `.NET 10+ WASM` | Zero-CDN standalone architecture, 255 native components & templates, mobile-first design. |
 | 1 | `0:15` (15.5s) | Adaptive Generative UI (AGUI) | `AGUI Engine` | Dynamic widget synthesis, dual-plane tool dispatching, real-time latency monitoring. |
 | 2 | `0:33` (33.3s) | Smart Components Suite | `Smart Controls` | Smart Paste with entity extraction, ghost text autocomplete, semantic search & filters. |
 | 3 | `0:52` (52.1s) | 100 Web Dev Forms Library | `100 Forms` | Dynamic schema form engine, 10 functional domains, one-click C# code generation. |
@@ -284,3 +284,29 @@ Enterprise developers expect deep, observable state transitions instead of passi
 BlazorTwUI can be distributed both as a high-performance WebAssembly SPA/PWA and as standalone native Windows desktop installers:
 - **WiX Toolset v3/v4**: Compiles enterprise MSI packages with standard Windows Installer policies (`BlazorTwUI-1.3.5-x64-en-US.msi`).
 - **NSIS**: Generates standalone self-extracting executable installers with custom branding, desktop shortcuts, and silent installation options (`BlazorTwUI-1.3.5-x64-Setup.exe`).
+
+---
+
+## 12. Page Templates & UI Building Blocks (Two-Tier Composition)
+
+BlazorTwUI v0.8.1 introduces a two-tier composition system designed for rapid enterprise delivery:
+
+### 12.1 Tier 1: Turnkey Page Solutions
+When starting a new feature or domain module, prefer instantiating complete turnkey page templates:
+- **`FintechAnalyticsDashboard`**: Immediate clearance ledger, dual-series cash flow line charts, and liquidity distribution donuts with real-time settlement telemetry.
+- **`AiOperationsTokenMonitor`**: Mission-critical AI governance plane with live token throughput sparklines, p95 inference latency tracking, human-in-the-loop tool approval gates, and prompt dispatch feeds.
+- **`SaaSProductLanding`**: Complete marketing and conversion landing page combining kinetic hero, bento architectural feature cards, 3-tier pricing matrix, and verified customer testimonials.
+
+### 12.2 Tier 2: Atomic Section Building Blocks
+When composing custom layouts, combine modular building blocks:
+- **`TwCompactStatCard`**: High-density KPI cards with uppercase labels, large metric readouts, percentage deltas, and pure mathematical SVG sparklines (0KB charting dependencies).
+- **`TwLandingHero`**: Split kinetic marketing hero with announcement pill, action buttons, social proof avatar stack, and elevated preview card.
+- **`TwPricingSection`**: 3-tier pricing matrix with monthly/annual billing cycle toggle, 20% discount calculation, equalized card heights (632.5px), zero vertical layout shift, and 44px uniform action buttons.
+- **`TwPromptComposer`**: Auto-expanding prompt input with suggestion chips, file attachment triggers, voice dictation, and dual-plane dispatch hooks.
+- **`TwActivityTimeline`**: Chronological event audit trail with status indicators (`Success`, `Warning`, `Danger`) and metadata tags.
+
+### 12.3 Viewport Frame Validation
+Always preview templates across all three viewport modes using `<TemplatesGallery />`:
+- **Desktop (Full)**: Verifies multi-column grid alignment and elevation shadows.
+- **Tablet (768px)**: Verifies 2-column wrapping and sidebar collapses.
+- **Mobile (375px)**: Verifies touch target sizes (>= 44px), card stacking, and zero horizontal scroll clipping.

@@ -425,7 +425,7 @@ This scans all `.razor` and `.cs` files and compiles minified CSS to `wwwroot/cs
 
 ## 6. Page Templates & UI Building Blocks Guide
 
-BlazorTwUI v0.8.0+ introduces higher-order UX composition through **Page Templates** and **UI Building Blocks**. Instead of building complex screens from scratch, developers can instantiate complete turnkey solutions or combine individual section blocks.
+BlazorTwUI v0.8.1+ introduces higher-order UX composition through **Page Templates** and **UI Building Blocks** (255 total components). Instead of building complex screens from scratch, developers can instantiate complete turnkey solutions or combine individual section blocks.
 
 ### 1. Using Turnkey Page Templates
 
