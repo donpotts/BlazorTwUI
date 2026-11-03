@@ -261,6 +261,12 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
         </button>
+        <button type="button" @onclick='() => _activeTab = "templates"' title="Page Templates & Building Blocks"
+                class="w-12 h-12 flex items-center justify-center rounded-xl transition @(_activeTab == "templates" ? "bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400" : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800")">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+            </svg>
+        </button>
         <button type="button" @onclick='() => _activeTab = "components"' title="Core Components"
                 class="w-12 h-12 flex items-center justify-center rounded-xl transition @(_activeTab == "components" ? "bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400" : "text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800")">
             <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -360,6 +366,11 @@
                     <span>⚡</span>
                     <span>Jump to:</span>
                 </span>
+                <button type="button" @onclick='() => _activeTab = "templates"'
+                        class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 text-indigo-700 dark:text-indigo-300 hover:text-indigo-800 shrink-0 transition flex items-center gap-1.5 border border-indigo-500/30">
+                    <span>📐</span>
+                    <span>UI Templates</span>
+                </button>
                 <button type="button" @onclick='() => SwitchOrScroll("showcase", "studio-bento")'
                         class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-brand-50 dark:hover:bg-brand-950/50 text-slate-700 dark:text-slate-300 hover:text-brand-600 shrink-0 transition flex items-center gap-1.5">
                     <span>🍱</span>
@@ -430,24 +441,30 @@
                                 </p>
                                 <div class="flex flex-wrap items-center gap-3 pt-3">
                                     <button type="button"
+                                            @onclick='() => _activeTab = "templates"'
+                                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-brand-500/25 transition">
+                                        <span>📐</span>
+                                        <span>UI Templates & Blocks</span>
+                                    </button>
+                                    <button type="button"
                                             @onclick="() => _commandPaletteOpen = true"
-                                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-brand-500/25 transition">
+                                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs sm:text-sm font-bold shadow-lg shadow-black/20 border border-slate-700 transition">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                         </svg>
-                                        <span>Open Command Palette</span>
-                                        <kbd class="px-1.5 py-0.5 rounded-md bg-brand-700/80 text-[10px] font-mono">⌘K</kbd>
+                                        <span>Command Palette</span>
+                                        <kbd class="px-1.5 py-0.5 rounded-md bg-slate-900/80 text-[10px] font-mono">⌘K</kbd>
                                     </button>
                                     <button type="button"
                                             @onclick="() => _tourOpen = true"
                                             class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs sm:text-sm font-semibold transition">
-                                        <span>🎓 Launch Showcase Tour</span>
+                                        <span>🎓 Launch Tour</span>
                                     </button>
                                     <button type="button"
                                             @onclick="OpenVideoTour"
                                             class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600/90 hover:bg-purple-500 text-white text-xs sm:text-sm font-bold shadow-lg shadow-purple-500/25 transition">
                                         <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                                        <span>1080p Video Tour</span>
+                                        <span>Video Tour</span>
                                     </button>
                                 </div>
                             </div>

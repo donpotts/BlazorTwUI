@@ -1,6 +1,6 @@
 # BlazorTwUI — Component Catalog & Settings Reference
 
-Comprehensive guide to all **246 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
+Comprehensive guide to all **255 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
 
 > This file is generated from `Services/ComponentCatalogService.cs`. Do not edit it by hand; change the catalog and regenerate with `UPDATE_CATALOG_DOC=1 dotnet test --filter CatalogDocTests`. A test fails when this file is out of date.
 
@@ -42,6 +42,7 @@ Comprehensive guide to all **246 components** in **BlazorTwUI** (.NET 10+ WebAss
 - [Other Components](#other-components) (18 components)
 - [Overlays & Modals](#overlays--modals) (2 components)
 - [Overlays & Popovers](#overlays--popovers) (7 components)
+- [Page Templates & UI Building Blocks](#page-templates--ui-building-blocks) (9 components)
 - [Progress & Steppers](#progress--steppers) (1 component)
 - [Scheduling & Planning](#scheduling--planning) (2 components)
 - [Security & Compliance](#security--compliance) (1 component)
@@ -4707,6 +4708,203 @@ Individual accordion panel with smooth height transition and animated chevron.
 
 ```razor
 <TwAccordionItem Title="" />
+```
+
+---
+
+## Page Templates & UI Building Blocks
+
+### `TwCompactStatCard`
+
+**Location:** [`Components/Templates/Blocks/TwCompactStatCard.razor`](../Components/Templates/Blocks/TwCompactStatCard.razor)
+
+Minimalist enterprise KPI metric card with uppercase title, large numeric value, percentage delta badge (+18.4%), and pure native mathematical SVG sparklines.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Title` | `string` | `string.Empty` | Stat card headline label. |
+| `Value` | `string` | `string.Empty` | Stat value formatted for display. |
+| `Caption` | `string?` | `null` | Optional descriptive subtitle. |
+| `Delta` | `string?` | `null` | Percentage or numerical delta text. |
+| `IsPositive` | `bool` | `true` | Whether the delta is positive (green) or negative (red). |
+| `SparklineData` | `List<double>?` | `null` | List of data points to render as an inline SVG sparkline. |
+| `SparklineColor` | `string` | `#10b981` | Stroke color for the SVG sparkline polyline. |
+
+#### Razor Usage Example
+
+```razor
+<TwCompactStatCard Title="Gross Volume" Value="$14.8M" Delta="+18.4%" SparklineData="@_inflowTrend" />
+```
+
+---
+
+### `TwLandingHero`
+
+**Location:** [`Components/Templates/Blocks/TwLandingHero.razor`](../Components/Templates/Blocks/TwLandingHero.razor)
+
+Kinetic split marketing hero with headline, animated announcement pill, action buttons, social proof avatar stack, and floating preview card with realistic shadow.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Headline` | `string` | `string.Empty` | Main hero headline text. |
+| `BadgeText` | `string?` | `null` | Pill announcement text at top of hero. |
+| `Description` | `string?` | `null` | Hero supporting copy. |
+| `ActionSlot` | `RenderFragment?` | `null` | Slot for primary and secondary action buttons. |
+| `SocialProofSlot` | `RenderFragment?` | `null` | Slot for avatar ratings or metrics. |
+| `PreviewSlot` | `RenderFragment?` | `null` | Elevated preview card or screenshot slot. |
+
+#### Razor Usage Example
+
+```razor
+<TwLandingHero Headline="One Platform. Infinite Enterprise Velocity." BadgeText="v1.0 Live">
+    <ActionSlot><button class="btn-primary">Get Started</button></ActionSlot>
+</TwLandingHero>
+```
+
+---
+
+### `TwPricingSection`
+
+**Location:** [`Components/Templates/Blocks/TwPricingSection.razor`](../Components/Templates/Blocks/TwPricingSection.razor)
+
+3-tier interactive pricing matrix with monthly/annual billing switcher (20% discount calculation), highlighted popular plan, and feature checklists.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Title` | `string` | `Predictable Plans for Every Stage` | Pricing section main heading. |
+| `Subtitle` | `string?` | `null` | Supporting description text. |
+| `BadgeText` | `string` | `Simple Pricing` | Category eyebrow label. |
+| `Plans` | `List<PricingPlan>` | `Default 3 plans` | Collection of pricing tier plans. |
+| `OnSelectPlan` | `EventCallback<PricingPlan>` | `null` | Callback triggered when a user selects a plan. |
+
+#### Razor Usage Example
+
+```razor
+<TwPricingSection Title="Simple, Transparent Pricing" OnSelectPlan="HandlePlanSelection" />
+```
+
+---
+
+### `TwPromptComposer`
+
+**Location:** [`Components/Templates/Blocks/TwPromptComposer.razor`](../Components/Templates/Blocks/TwPromptComposer.razor)
+
+Auto-expanding AI prompt box with suggestion chips, file attachment trigger, voice dictation toggle, and dual-plane execution hooks.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Placeholder` | `string` | `Ask an enterprise agent...` | Input placeholder text. |
+| `Rows` | `int` | `3` | Initial textarea row height. |
+| `IsLoading` | `bool` | `false` | Shows spinning loading state when processing. |
+| `SuggestedPrompts` | `List<string>?` | `null` | Clickable starter prompt pills. |
+| `OnSend` | `EventCallback<string>` | `null` | Event callback invoked when prompt is submitted. |
+
+#### Razor Usage Example
+
+```razor
+<TwPromptComposer Placeholder="Ask an enterprise agent..." SuggestedPrompts="@_prompts" OnSend="HandleSend" />
+```
+
+---
+
+### `TwActivityTimeline`
+
+**Location:** [`Components/Templates/Blocks/TwActivityTimeline.razor`](../Components/Templates/Blocks/TwActivityTimeline.razor)
+
+Vertical audit activity stream with status dots (Info, Success, Warning, Danger), timestamps, descriptions, and metadata badges.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Title` | `string` | `Audit & Event Activity` | Timeline card title. |
+| `Subtitle` | `string?` | `null` | Supporting subtitle text. |
+| `Events` | `List<TimelineEvent>` | `empty` | List of timeline events to display. |
+
+#### Razor Usage Example
+
+```razor
+<TwActivityTimeline Title="Live Audit Trail" Events="@_events" />
+```
+
+---
+
+### `FintechAnalyticsDashboard`
+
+**Location:** [`Components/Templates/Pages/FintechAnalyticsDashboard.razor`](../Components/Templates/Pages/FintechAnalyticsDashboard.razor)
+
+Turnkey Fintech and Payment Treasury Cockpit featuring real-time settlement KPIs, multi-series cash flow line chart, treasury liquidity donut, and clearance ledger table.
+
+#### Parameters & Settings
+
+This component has no parameters.
+
+#### Razor Usage Example
+
+```razor
+<FintechAnalyticsDashboard />
+```
+
+---
+
+### `AiOperationsTokenMonitor`
+
+**Location:** [`Components/Templates/Pages/AiOperationsTokenMonitor.razor`](../Components/Templates/Pages/AiOperationsTokenMonitor.razor)
+
+Turnkey AI Operations & Control Plane with real-time token throughput KPIs, latency percentiles, human-in-the-loop approval gates, prompt composer, and live execution trail.
+
+#### Parameters & Settings
+
+This component has no parameters.
+
+#### Razor Usage Example
+
+```razor
+<AiOperationsTokenMonitor />
+```
+
+---
+
+### `SaaSProductLanding`
+
+**Location:** [`Components/Templates/Pages/SaaSProductLanding.razor`](../Components/Templates/Pages/SaaSProductLanding.razor)
+
+Turnkey SaaS product marketing page assembling kinetic hero, bento feature matrix, 3-tier pricing matrix, and customer testimonials.
+
+#### Parameters & Settings
+
+This component has no parameters.
+
+#### Razor Usage Example
+
+```razor
+<SaaSProductLanding />
+```
+
+---
+
+### `TemplatesGallery`
+
+**Location:** [`Components/Templates/TemplatesGallery.razor`](../Components/Templates/TemplatesGallery.razor)
+
+Interactive preview gallery with live viewport frames (Desktop, Tablet, Mobile) for browsing and testing Page Templates and UI Building Blocks.
+
+#### Parameters & Settings
+
+This component has no parameters.
+
+#### Razor Usage Example
+
+```razor
+<TemplatesGallery />
 ```
 
 ---

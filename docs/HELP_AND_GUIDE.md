@@ -420,3 +420,75 @@ This scans all `.razor` and `.cs` files and compiles minified CSS to `wwwroot/cs
 1. **Zero Prohibited Commercial Brands**: Strictly vendor-neutral.
 2. **Strict .NET 10+ WebAssembly**: No server-side rendering dependencies for components.
 3. **Pure Mobile-First**: 44px min touch targets, adaptive card fallbacks, and safe-area padding.
+
+---
+
+## 6. Page Templates & UI Building Blocks Guide
+
+BlazorTwUI v0.8.0+ introduces higher-order UX composition through **Page Templates** and **UI Building Blocks**. Instead of building complex screens from scratch, developers can instantiate complete turnkey solutions or combine individual section blocks.
+
+### 1. Using Turnkey Page Templates
+
+Turnkey templates provide full-page assemblies complete with responsive layouts, KPI metrics, and native SVG visualizations:
+
+```razor
+@using BlazorTwUI.Components.Templates.Pages
+
+<!-- 1. Fintech & Payments Treasury Cockpit -->
+<FintechAnalyticsDashboard />
+
+<!-- 2. AI Operations & Agent Control Plane -->
+<AiOperationsTokenMonitor />
+
+<!-- 3. SaaS Product Marketing Landing -->
+<SaaSProductLanding />
+```
+
+### 2. Composing Sectional Building Blocks
+
+Section blocks can be placed anywhere in your Blazor pages:
+
+#### A. Compact KPI Stat Cards with SVG Sparklines
+```razor
+@using BlazorTwUI.Components.Templates.Blocks
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+    <TwCompactStatCard Title="Gross Volume"
+                       Value="$14.8M"
+                       Caption="+18.4% vs Q3"
+                       Delta="+18.4%"
+                       IsPositive="true"
+                       SparklineColor="#4f46e5"
+                       SparklineData="@([10.2, 11.5, 12.1, 13.4, 13.8, 14.8])" />
+</div>
+```
+
+#### B. 3-Tier Interactive Pricing Matrix
+```razor
+<TwPricingSection Title="Simple, Transparent Plans"
+                  OnSelectPlan="HandlePlanSelected" />
+```
+
+#### C. AI Prompt Box with Dual-Plane Dispatch
+```razor
+<TwPromptComposer Placeholder="Describe a task for the agent..."
+                  SuggestedPrompts="@([\"Re-balance treasury\", \"Check token latency\"])"
+                  OnSend="HandlePromptSubmit" />
+```
+
+#### D. Vertical Audit & Event Stream
+```razor
+<TwActivityTimeline Title="Live Audit Trail"
+                    Events="@_systemEvents" />
+```
+
+### 3. Interactive Templates Gallery
+
+Preview and test all templates across Desktop, Tablet, and Mobile viewport frames by rendering the gallery:
+
+```razor
+@using BlazorTwUI.Components.Templates
+
+<TemplatesGallery />
+```
+Or open the **Templates** tab directly on the home page.

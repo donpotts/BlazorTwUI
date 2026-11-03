@@ -3826,6 +3826,114 @@ public class ComponentCatalogService
                 new ComponentParameterDoc("Variant", "SemanticVariant", "SemanticVariant.Default", "Bubble color variant (Default, Primary, Success, Warning, Danger, Info).")
             }
         },
+        new ComponentDocItem
+        {
+            Name = "TwCompactStatCard",
+            Category = "Page Templates & UI Building Blocks",
+            Description = "Minimalist enterprise KPI metric card with uppercase title, large numeric value, percentage delta badge (+18.4%), and pure native mathematical SVG sparklines.",
+            RazorSnippet = "<TwCompactStatCard Title=\"Gross Volume\" Value=\"$14.8M\" Delta=\"+18.4%\" SparklineData=\"@_inflowTrend\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Title", "string", "string.Empty", "Stat card headline label."),
+                new ComponentParameterDoc("Value", "string", "string.Empty", "Stat value formatted for display."),
+                new ComponentParameterDoc("Caption", "string?", "null", "Optional descriptive subtitle."),
+                new ComponentParameterDoc("Delta", "string?", "null", "Percentage or numerical delta text."),
+                new ComponentParameterDoc("IsPositive", "bool", "true", "Whether the delta is positive (green) or negative (red)."),
+                new ComponentParameterDoc("SparklineData", "List<double>?", "null", "List of data points to render as an inline SVG sparkline."),
+                new ComponentParameterDoc("SparklineColor", "string", "#10b981", "Stroke color for the SVG sparkline polyline.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwLandingHero",
+            Category = "Page Templates & UI Building Blocks",
+            Description = "Kinetic split marketing hero with headline, animated announcement pill, action buttons, social proof avatar stack, and floating preview card with realistic shadow.",
+            RazorSnippet = "<TwLandingHero Headline=\"One Platform. Infinite Enterprise Velocity.\" BadgeText=\"v1.0 Live\">\n    <ActionSlot><button class=\"btn-primary\">Get Started</button></ActionSlot>\n</TwLandingHero>",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Headline", "string", "string.Empty", "Main hero headline text."),
+                new ComponentParameterDoc("BadgeText", "string?", "null", "Pill announcement text at top of hero."),
+                new ComponentParameterDoc("Description", "string?", "null", "Hero supporting copy."),
+                new ComponentParameterDoc("ActionSlot", "RenderFragment?", "null", "Slot for primary and secondary action buttons."),
+                new ComponentParameterDoc("SocialProofSlot", "RenderFragment?", "null", "Slot for avatar ratings or metrics."),
+                new ComponentParameterDoc("PreviewSlot", "RenderFragment?", "null", "Elevated preview card or screenshot slot.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwPricingSection",
+            Category = "Page Templates & UI Building Blocks",
+            Description = "3-tier interactive pricing matrix with monthly/annual billing switcher (20% discount calculation), highlighted popular plan, and feature checklists.",
+            RazorSnippet = "<TwPricingSection Title=\"Simple, Transparent Pricing\" OnSelectPlan=\"HandlePlanSelection\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Title", "string", "Predictable Plans for Every Stage", "Pricing section main heading."),
+                new ComponentParameterDoc("Subtitle", "string?", "null", "Supporting description text."),
+                new ComponentParameterDoc("BadgeText", "string", "Simple Pricing", "Category eyebrow label."),
+                new ComponentParameterDoc("Plans", "List<PricingPlan>", "Default 3 plans", "Collection of pricing tier plans."),
+                new ComponentParameterDoc("OnSelectPlan", "EventCallback<PricingPlan>", "null", "Callback triggered when a user selects a plan.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwPromptComposer",
+            Category = "Page Templates & UI Building Blocks",
+            Description = "Auto-expanding AI prompt box with suggestion chips, file attachment trigger, voice dictation toggle, and dual-plane execution hooks.",
+            RazorSnippet = "<TwPromptComposer Placeholder=\"Ask an enterprise agent...\" SuggestedPrompts=\"@_prompts\" OnSend=\"HandleSend\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Placeholder", "string", "Ask an enterprise agent...", "Input placeholder text."),
+                new ComponentParameterDoc("Rows", "int", "3", "Initial textarea row height."),
+                new ComponentParameterDoc("IsLoading", "bool", "false", "Shows spinning loading state when processing."),
+                new ComponentParameterDoc("SuggestedPrompts", "List<string>?", "null", "Clickable starter prompt pills."),
+                new ComponentParameterDoc("OnSend", "EventCallback<string>", "null", "Event callback invoked when prompt is submitted.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwActivityTimeline",
+            Category = "Page Templates & UI Building Blocks",
+            Description = "Vertical audit activity stream with status dots (Info, Success, Warning, Danger), timestamps, descriptions, and metadata badges.",
+            RazorSnippet = "<TwActivityTimeline Title=\"Live Audit Trail\" Events=\"@_events\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Title", "string", "Audit & Event Activity", "Timeline card title."),
+                new ComponentParameterDoc("Subtitle", "string?", "null", "Supporting subtitle text."),
+                new ComponentParameterDoc("Events", "List<TimelineEvent>", "empty", "List of timeline events to display.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "FintechAnalyticsDashboard",
+            Category = "Page Templates & UI Building Blocks",
+            Description = "Turnkey Fintech and Payment Treasury Cockpit featuring real-time settlement KPIs, multi-series cash flow line chart, treasury liquidity donut, and clearance ledger table.",
+            RazorSnippet = "<FintechAnalyticsDashboard />",
+            Parameters = new List<ComponentParameterDoc>()
+        },
+        new ComponentDocItem
+        {
+            Name = "AiOperationsTokenMonitor",
+            Category = "Page Templates & UI Building Blocks",
+            Description = "Turnkey AI Operations & Control Plane with real-time token throughput KPIs, latency percentiles, human-in-the-loop approval gates, prompt composer, and live execution trail.",
+            RazorSnippet = "<AiOperationsTokenMonitor />",
+            Parameters = new List<ComponentParameterDoc>()
+        },
+        new ComponentDocItem
+        {
+            Name = "SaaSProductLanding",
+            Category = "Page Templates & UI Building Blocks",
+            Description = "Turnkey SaaS product marketing page assembling kinetic hero, bento feature matrix, 3-tier pricing matrix, and customer testimonials.",
+            RazorSnippet = "<SaaSProductLanding />",
+            Parameters = new List<ComponentParameterDoc>()
+        },
+        new ComponentDocItem
+        {
+            Name = "TemplatesGallery",
+            Category = "Page Templates & UI Building Blocks",
+            Description = "Interactive preview gallery with live viewport frames (Desktop, Tablet, Mobile) for browsing and testing Page Templates and UI Building Blocks.",
+            RazorSnippet = "<TemplatesGallery />",
+            Parameters = new List<ComponentParameterDoc>()
+        }
     };
 
     public static int TotalCount => _items.Count;
