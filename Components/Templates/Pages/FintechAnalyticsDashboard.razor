@@ -1,0 +1,210 @@
+@namespace BlazorTwUI.Components.Templates.Pages
+@using BlazorTwUI.Components.Templates.Blocks
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-200/60 dark:border-brand-500/20 mb-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>FINTECH COCKPIT</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">Payment & Settlement Treasury</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Real-time ACH, wire clearance, and multi-currency liquidity telemetry</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" class="px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition shadow-xs">
+                Export Ledger (NACHA)
+            </button>
+            <button type="button" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-brand-600 hover:bg-brand-700 text-white transition shadow-xs">
+                + Initiate Transfer
+            </button>
+        </div>
+    </div>
+
+    <!-- 4 High-Impact KPI Metric Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <TwCompactStatCard Title="Gross Volume (Q4)"
+                           Value="$14.82M"
+                           Caption="+18.4% vs prior quarter"
+                           Delta="+18.4%"
+                           IsPositive="true"
+                           SparklineColor="#4f46e5"
+                           SparklineData="@([10.2, 11.5, 12.1, 13.4, 13.8, 14.2, 14.82])" />
+
+        <TwCompactStatCard Title="Net Settled Inflow"
+                           Value="$9.45M"
+                           Caption="8,420 transactions cleared"
+                           Delta="+12.1%"
+                           IsPositive="true"
+                           SparklineColor="#10b981"
+                           SparklineData="@([6.8, 7.2, 7.9, 8.4, 8.8, 9.1, 9.45])" />
+
+        <TwCompactStatCard Title="Payout Velocity"
+                           Value="118 ms"
+                           Caption="Real-time rail latency"
+                           Delta="-8.6%"
+                           IsPositive="true"
+                           SparklineColor="#06b6d4"
+                           SparklineData="@([145, 138, 132, 126, 122, 120, 118])" />
+
+        <TwCompactStatCard Title="Clearance Rate"
+                           Value="99.98%"
+                           Caption="Zero chargeback disputes"
+                           Delta="+0.02%"
+                           IsPositive="true"
+                           SparklineColor="#8b5cf6"
+                           SparklineData="@([99.91, 99.93, 99.94, 99.95, 99.96, 99.97, 99.98])" />
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Multi-series Cash Flow Line Chart -->
+        <div class="lg:col-span-2 rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Daily Cash Flow & Settlement Volume</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Inbound card payments vs outbound ACH rails</p>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-semibold">
+                    <span class="inline-flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400">
+                        <span class="w-2.5 h-1 rounded-full bg-indigo-600"></span> Inbound ($K)
+                    </span>
+                    <span class="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                        <span class="w-2.5 h-1 rounded-full bg-emerald-600"></span> Settled ($K)
+                    </span>
+                </div>
+            </div>
+
+            <!-- Native SVG Chart -->
+            <svg viewBox="0 0 600 240" class="w-full h-64 overflow-visible">
+                <line x1="40" y1="200" x2="580" y2="200" stroke="#94a3b8" stroke-width="1" stroke-dasharray="2 2" />
+                <line x1="40" y1="130" x2="580" y2="130" stroke="#cbd5e1" stroke-width="0.5" stroke-dasharray="2 2" />
+                <line x1="40" y1="60" x2="580" y2="60" stroke="#cbd5e1" stroke-width="0.5" stroke-dasharray="2 2" />
+
+                <!-- Inbound Line -->
+                <polyline fill="none" stroke="#4f46e5" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"
+                          points="40,170 130,140 220,110 310,95 400,60 490,45 580,30" />
+
+                <!-- Settled Line -->
+                <polyline fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                          points="40,185 130,160 220,135 310,120 400,85 490,70 580,50" />
+
+                <!-- Points -->
+                @foreach (var pt in _chartPoints)
+                {
+                    <circle cx="@pt.X" cy="@pt.Y1" r="4.5" fill="#4f46e5" class="transition-all hover:r-6" />
+                    <circle cx="@pt.X" cy="@pt.Y2" r="4" fill="#10b981" />
+                    @((MarkupString)$"<text x=\"{pt.X}\" y=\"222\" font-size=\"10\" font-weight=\"600\" text-anchor=\"middle\" fill=\"#64748b\">{pt.Label}</text>")
+                }
+            </svg>
+        </div>
+
+        <!-- Currency Liquidity Donut -->
+        <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs flex flex-col justify-between">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Treasury Liquidity</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Currency diversification allocation</p>
+                <div class="flex items-center justify-center py-4">
+                    <svg viewBox="0 0 200 200" class="w-48 h-48">
+                        <circle r="65" cx="100" cy="100" fill="transparent" stroke="#4f46e5" stroke-width="26" stroke-dasharray="245 163" stroke-dashoffset="0" transform="rotate(-90 100 100)" />
+                        <circle r="65" cx="100" cy="100" fill="transparent" stroke="#10b981" stroke-width="26" stroke-dasharray="102 306" stroke-dashoffset="-245" transform="rotate(-90 100 100)" />
+                        <circle r="65" cx="100" cy="100" fill="transparent" stroke="#06b6d4" stroke-width="26" stroke-dasharray="40 368" stroke-dashoffset="-347" transform="rotate(-90 100 100)" />
+                        <circle r="65" cx="100" cy="100" fill="transparent" stroke="#f59e0b" stroke-width="26" stroke-dasharray="21 387" stroke-dashoffset="-387" transform="rotate(-90 100 100)" />
+                        <text x="100" y="96" font-size="18" font-weight="900" text-anchor="middle" fill="currentColor" class="text-slate-900 dark:text-white">$14.8M</text>
+                        <text x="100" y="114" font-size="9" font-weight="700" text-anchor="middle" fill="#94a3b8">TOTAL ASSETS</text>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span> USD (60%)</span>
+                    <span class="font-bold text-slate-900 dark:text-white">$8.89M</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> EUR (25%)</span>
+                    <span class="font-bold text-slate-900 dark:text-white">$3.70M</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-cyan-500"></span> GBP (10%)</span>
+                    <span class="font-bold text-slate-900 dark:text-white">$1.48M</span>
+                </div>
+                <div class="flex items-center justify-between text-xs">
+                    <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> SGD (5%)</span>
+                    <span class="font-bold text-slate-900 dark:text-white">$0.74M</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-time Settlements Ledger Table -->
+    <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs overflow-hidden">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Recent Clearance Records</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">Live FedNow, ACH & SEPA settlements</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60">
+                ● Live Streaming
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
+                        <th class="py-3 px-3">Transaction ID</th>
+                        <th class="py-3 px-3">Counterparty</th>
+                        <th class="py-3 px-3">Rail / Method</th>
+                        <th class="py-3 px-3">Amount</th>
+                        <th class="py-3 px-3">Settlement Status</th>
+                        <th class="py-3 px-3">Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                    @foreach (var row in _settlements)
+                    {
+                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+                            <td class="py-3.5 px-3 font-mono font-bold text-brand-600 dark:text-brand-400">@row.Id</td>
+                            <td class="py-3.5 px-3 font-semibold text-slate-900 dark:text-white">@row.Counterparty</td>
+                            <td class="py-3.5 px-3 text-slate-600 dark:text-slate-300">@row.Rail</td>
+                            <td class="py-3.5 px-3 font-bold text-slate-900 dark:text-white">@row.Amount</td>
+                            <td class="py-3.5 px-3">
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold @(row.Status == "Cleared" ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200/60" : "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60")">
+                                    @row.Status
+                                </span>
+                            </td>
+                            <td class="py-3.5 px-3 text-slate-400">@row.Timestamp</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@code {
+    private record ChartPoint(double X, double Y1, double Y2, string Label);
+    private readonly List<ChartPoint> _chartPoints =
+    [
+        new(40, 170, 185, "Mon"),
+        new(130, 140, 160, "Tue"),
+        new(220, 110, 135, "Wed"),
+        new(310, 95, 120, "Thu"),
+        new(400, 60, 85, "Fri"),
+        new(490, 45, 70, "Sat"),
+        new(580, 30, 50, "Sun")
+    ];
+
+    private record SettlementRow(string Id, string Counterparty, string Rail, string Amount, string Status, string Timestamp);
+    private readonly List<SettlementRow> _settlements =
+    [
+        new("TX-849102", "Cybernetics Global Corp", "FedNow Rail", "$420,000.00", "Cleared", "12s ago"),
+        new("TX-849101", "RoboTech Logistics Inc", "ACH Same-Day", "$185,500.00", "Cleared", "45s ago"),
+        new("TX-849100", "Vanguard Treasury Fund", "SEPA Instant", "€92,400.00", "Cleared", "2m ago"),
+        new("TX-849099", "Pacific Rim Maritime Ltd", "SWIFT Wire", "$1,240,000.00", "Processing", "5m ago"),
+        new("TX-849098", "Helix BioVentures LLC", "ACH Commercial", "$64,250.00", "Cleared", "11m ago")
+    ];
+}

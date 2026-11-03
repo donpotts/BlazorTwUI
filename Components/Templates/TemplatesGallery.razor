@@ -1,0 +1,188 @@
+@namespace BlazorTwUI.Components.Templates
+@using BlazorTwUI.Components.Templates.Blocks
+@using BlazorTwUI.Components.Templates.Pages
+
+<div class="space-y-8">
+    <!-- Gallery Navigation Header -->
+    <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 shadow-xs">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-200/80 dark:border-brand-500/20 mb-3">
+                    <span>✨</span>
+                    <span>NEW: PAGE TEMPLATES & UI BUILDING BLOCKS</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">Enterprise Templates Gallery</h1>
+                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                    Turnkey full-page solutions and modular section blocks. Built with pure utility classes, multi-part slot composition, and native SVG math charts.
+                </p>
+            </div>
+
+            <!-- View / Mode Switchers -->
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Category Switcher -->
+                <div class="inline-flex items-center gap-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80">
+                    <button type="button" @onclick='() => _activeCategory = "pages"'
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition @(_activeCategory == "pages" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+                        Page Templates (3)
+                    </button>
+                    <button type="button" @onclick='() => _activeCategory = "blocks"'
+                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition @(_activeCategory == "blocks" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+                        Building Blocks (5)
+                    </button>
+                </div>
+
+                <!-- Viewport Frame Switcher -->
+                <div class="hidden sm:inline-flex items-center gap-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80">
+                    <button type="button" @onclick='() => _viewport = "full"' title="Full Width"
+                            class="p-1.5 rounded-xl text-xs font-bold transition @(_viewport == "full" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-slate-400 hover:text-slate-700")">
+                        🖥️ Full
+                    </button>
+                    <button type="button" @onclick='() => _viewport = "tablet"' title="Tablet Preview"
+                            class="p-1.5 rounded-xl text-xs font-bold transition @(_viewport == "tablet" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-slate-400 hover:text-slate-700")">
+                        📱 Tablet
+                    </button>
+                    <button type="button" @onclick='() => _viewport = "mobile"' title="Mobile Preview"
+                            class="p-1.5 rounded-xl text-xs font-bold transition @(_viewport == "mobile" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-slate-400 hover:text-slate-700")">
+                        📱 Mobile
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Template Selector Pills -->
+        <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
+            @if (_activeCategory == "pages")
+            {
+                <button type="button" @onclick='() => _selectedTemplate = "fintech"'
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 @(_selectedTemplate == "fintech" ? "bg-brand-600 text-white shadow-sm shadow-brand-600/30" : "bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60")">
+                    <span>💳</span>
+                    <span>Fintech & Payments Cockpit</span>
+                </button>
+                <button type="button" @onclick='() => _selectedTemplate = "aiops"'
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 @(_selectedTemplate == "aiops" ? "bg-brand-600 text-white shadow-sm shadow-brand-600/30" : "bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60")">
+                    <span>🤖</span>
+                    <span>AI Agent Operations & Telemetry</span>
+                </button>
+                <button type="button" @onclick='() => _selectedTemplate = "saas"'
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 @(_selectedTemplate == "saas" ? "bg-brand-600 text-white shadow-sm shadow-brand-600/30" : "bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60")">
+                    <span>🚀</span>
+                    <span>SaaS Product Marketing Suite</span>
+                </button>
+            }
+            else
+            {
+                <button type="button" @onclick='() => _selectedBlock = "hero"'
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold transition @(_selectedBlock == "hero" ? "bg-brand-600 text-white" : "bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/60")">
+                    Kinetic Split Hero
+                </button>
+                <button type="button" @onclick='() => _selectedBlock = "pricing"'
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold transition @(_selectedBlock == "pricing" ? "bg-brand-600 text-white" : "bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/60")">
+                    Pricing Tier Matrix
+                </button>
+                <button type="button" @onclick='() => _selectedBlock = "statcards"'
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold transition @(_selectedBlock == "statcards" ? "bg-brand-600 text-white" : "bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/60")">
+                    Compact KPI Cards
+                </button>
+                <button type="button" @onclick='() => _selectedBlock = "composer"'
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold transition @(_selectedBlock == "composer" ? "bg-brand-600 text-white" : "bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/60")">
+                    AI Prompt Composer
+                </button>
+                <button type="button" @onclick='() => _selectedBlock = "timeline"'
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold transition @(_selectedBlock == "timeline" ? "bg-brand-600 text-white" : "bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200/60")">
+                    Audit Activity Timeline
+                </button>
+            }
+        </div>
+    </div>
+
+    <!-- Active Preview Canvas Container -->
+    <div class="mx-auto transition-all duration-300 @GetViewportClass()">
+        <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 p-4 sm:p-8 backdrop-blur-md shadow-inner">
+            @if (_activeCategory == "pages")
+            {
+                @switch (_selectedTemplate)
+                {
+                    case "fintech":
+                        <FintechAnalyticsDashboard />
+                        break;
+                    case "aiops":
+                        <AiOperationsTokenMonitor />
+                        break;
+                    case "saas":
+                        <SaaSProductLanding />
+                        break;
+                }
+            }
+            else
+            {
+                @switch (_selectedBlock)
+                {
+                    case "hero":
+                        <TwLandingHero BadgeText="v1.0 Live"
+                                       Headline="Accelerate Enterprise Blazor Development"
+                                       Description="Modular building blocks, 100% utility Tailwind styling, zero external heavy dependencies.">
+                            <ActionSlot>
+                                <button type="button" class="py-2.5 px-5 rounded-xl text-xs font-bold bg-brand-600 text-white shadow-xs">Get Started</button>
+                                <button type="button" class="py-2.5 px-5 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300">View Source</button>
+                            </ActionSlot>
+                        </TwLandingHero>
+                        break;
+
+                    case "pricing":
+                        <TwPricingSection />
+                        break;
+
+                    case "statcards":
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <TwCompactStatCard Title="Total Inflow" Value="$1,280,450" Caption="Q4 Settlement" Delta="+24.5%" SparklineData="@([12, 18, 25, 30, 42, 58, 64])" />
+                            <TwCompactStatCard Title="Conversion" Value="68.4%" Caption="Qualified Leads" Delta="+4.2%" SparklineColor="#6366f1" SparklineData="@([55, 59, 61, 64, 65, 67, 68.4])" />
+                            <TwCompactStatCard Title="Avg Latency" Value="24 ms" Caption="Edge WASM Response" Delta="-12%" SparklineColor="#06b6d4" SparklineData="@([35, 31, 29, 28, 26, 25, 24])" />
+                            <TwCompactStatCard Title="Error Rate" Value="0.00%" Caption="Zero SLA Breaches" Delta="0.00%" SparklineColor="#10b981" SparklineData="@([0, 0, 0, 0, 0, 0, 0])" />
+                        </div>
+                        break;
+
+                    case "composer":
+                        <div class="max-w-2xl mx-auto">
+                            <TwPromptComposer Placeholder="Ask an enterprise agent or describe an adaptive UI component..."
+                                              SuggestedPrompts="@_composerPrompts" />
+                        </div>
+                        break;
+
+                    case "timeline":
+                        <div class="max-w-xl mx-auto">
+                            <TwActivityTimeline Events="@_sampleTimelineEvents" />
+                        </div>
+                        break;
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _activeCategory = "pages";
+    private string _selectedTemplate = "fintech";
+    private string _selectedBlock = "hero";
+    private string _viewport = "full";
+
+    private readonly List<string> _composerPrompts =
+    [
+        "Summarize monthly pipeline",
+        "Draft wire settlement approval",
+        "Run telemetry benchmark"
+    ];
+
+    private readonly List<TwActivityTimeline.TimelineEvent> _sampleTimelineEvents =
+    [
+        new() { Title = "ACH Same-Day Cleared", Description = "$185,500 deposited into operating reserve", Tag = "FedNow", Timestamp = "2m ago", Status = TwActivityTimeline.TimelineStatus.Success },
+        new() { Title = "Role Claim Updated", Description = "User admin granted permission to sign contracts", Tag = "Auth Audit", Timestamp = "14m ago", Status = TwActivityTimeline.TimelineStatus.Info },
+        new() { Title = "High Latency Warning", Description = "API upstream spike in eu-west region", Tag = "Alert", Timestamp = "1h ago", Status = TwActivityTimeline.TimelineStatus.Warning }
+    ];
+
+    private string GetViewportClass() => _viewport switch
+    {
+        "tablet" => "max-w-3xl",
+        "mobile" => "max-w-sm",
+        _ => "w-full"
+    };
+}

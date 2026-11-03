@@ -1,0 +1,176 @@
+@namespace BlazorTwUI.Components.Templates.Pages
+@using BlazorTwUI.Components.Templates.Blocks
+
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200/60 dark:border-purple-800/60 mb-2">
+                <span class="w-2 h-2 rounded-full bg-purple-500 animate-ping"></span>
+                <span>AGENT OPS & CONTROL PLANE</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">Autonomous Agent Telemetry</h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Real-time token utilization, approval gates, and model inference latency</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <span class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                Active Agents: <strong>4 Online</strong>
+            </span>
+            <button type="button" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-700 text-white transition shadow-xs">
+                + Deploy Agent Job
+            </button>
+        </div>
+    </div>
+
+    <!-- 4 High-Impact KPI Metric Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <TwCompactStatCard Title="Token Throughput"
+                           Value="248k /s"
+                           Caption="Active inference generation"
+                           Delta="+34.2%"
+                           IsPositive="true"
+                           SparklineColor="#a855f7"
+                           SparklineData="@([120, 145, 175, 190, 210, 230, 248])" />
+
+        <TwCompactStatCard Title="Inference Latency (p95)"
+                           Value="48 ms"
+                           Caption="WASM client to server-sent events"
+                           Delta="-14.5%"
+                           IsPositive="true"
+                           SparklineColor="#10b981"
+                           SparklineData="@([72, 65, 59, 54, 51, 49, 48])" />
+
+        <TwCompactStatCard Title="Human Approval Gates"
+                           Value="2 Pending"
+                           Caption="High-risk tool execution review"
+                           Delta="2 Actions"
+                           IsPositive="false"
+                           SparklineColor="#f59e0b"
+                           SparklineData="@([0, 1, 0, 2, 1, 3, 2])" />
+
+        <TwCompactStatCard Title="Est. Daily Spend"
+                           Value="$34.18"
+                           Caption="Within $50.00 daily quota"
+                           Delta="-8.4%"
+                           IsPositive="true"
+                           SparklineColor="#06b6d4"
+                           SparklineData="@([42, 39, 37, 36, 35, 34.5, 34.18])" />
+    </div>
+
+    <!-- Main Grid: Approval Gates & Execution Composer -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Interactive Prompt & Execution Composer -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Direct Agent Prompt & Tool Dispatch</h3>
+                    <span class="text-xs font-semibold text-slate-400">Dual-Plane Dispatch (Client WASM + Cloud API)</span>
+                </div>
+
+                <TwPromptComposer Placeholder="Describe an operational task (e.g., 'Re-balance treasury across 4 liquidity pools and draft wire approvals')..."
+                                  SuggestedPrompts="@_suggestedPrompts"
+                                  OnSend="HandleAgentPrompt" />
+
+                @if (!string.IsNullOrEmpty(_lastResponse))
+                {
+                    <div class="mt-4 p-4 rounded-2xl border border-purple-200/60 dark:border-purple-800/60 bg-purple-50/50 dark:bg-purple-950/20 text-xs text-purple-900 dark:text-purple-200">
+                        <div class="font-bold flex items-center gap-1.5 mb-1 text-purple-700 dark:text-purple-300">
+                            <span>🤖 Agent Response</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-200/60 dark:bg-purple-900/60 font-mono">248 tokens • 18ms</span>
+                        </div>
+                        <p class="leading-relaxed">@_lastResponse</p>
+                    </div>
+                }
+            </div>
+
+            <!-- Human-in-the-Loop Approval Gates -->
+            <div class="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-xs">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-900 dark:text-white">Active Human-in-the-Loop Gates</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Autonomous tool calls intercepted for executive approval</p>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200/60">
+                        2 Blocking Gates
+                    </span>
+                </div>
+
+                <div class="space-y-3">
+                    @foreach (var gate in _gates)
+                    {
+                        <div class="rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 p-4 transition">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-bold text-xs text-slate-900 dark:text-white">@gate.ActionName</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold @(gate.Risk == "HIGH" ? "bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 border border-rose-200" : "bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200")">
+                                            @gate.Risk RISK
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-slate-600 dark:text-slate-300 mt-1">@gate.Description</p>
+                                    <div class="text-[10px] font-mono text-slate-400 mt-1">Payload: @gate.PayloadSnippet</div>
+                                </div>
+
+                                <div class="flex items-center gap-2 shrink-0">
+                                    <button type="button" @onclick="() => ResolveGate(gate, false)"
+                                            class="py-1.5 px-3 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 text-slate-700 dark:text-slate-300 transition">
+                                        Deny
+                                    </button>
+                                    <button type="button" @onclick="() => ResolveGate(gate, true)"
+                                            class="py-1.5 px-3.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition shadow-xs">
+                                        Approve Execution
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit & Real-time Execution Feed -->
+        <div>
+            <TwActivityTimeline Title="Live Agent Execution Trail"
+                                Subtitle="Streaming tool calls & decisions"
+                                Events="@_agentEvents" />
+        </div>
+    </div>
+</div>
+
+@code {
+    private string? _lastResponse;
+    private readonly List<string> _suggestedPrompts =
+    [
+        "Audit Q4 pipeline revenue",
+        "Inspect token latency percentiles",
+        "Verify SSL certificates",
+        "Sync customer addresses"
+    ];
+
+    private record ApprovalGate(string ActionName, string Risk, string Description, string PayloadSnippet);
+    private readonly List<ApprovalGate> _gates =
+    [
+        new("ExecuteWireTransferTool", "HIGH", "Initiate outbound wire transfer to verified vendor", "{\"amount\": 420000.00, \"currency\": \"USD\", \"account\": \"***4902\"}"),
+        new("RotateProductionApiKeyTool", "MEDIUM", "Revoke previous OIDC service token and generate new secret", "{\"service\": \"payment-bridge\", \"expiresIn\": \"30d\"}")
+    ];
+
+    private readonly List<TwActivityTimeline.TimelineEvent> _agentEvents =
+    [
+        new() { Title = "Tool Gate Intercepted", Description = "Wire transfer $420,000 paused at Human Gate", Tag = "Gate #104", Timestamp = "Just now", Status = TwActivityTimeline.TimelineStatus.Warning },
+        new() { Title = "Context Window Loaded", Description = "RAG retriever ingested 14 CRM contract chunks", Tag = "128k Tokens", Timestamp = "1m ago", Status = TwActivityTimeline.TimelineStatus.Info },
+        new() { Title = "Vector Memory Synced", Description = "Updated 42 customer relationship nodes", Tag = "Postgres pgvector", Timestamp = "4m ago", Status = TwActivityTimeline.TimelineStatus.Success },
+        new() { Title = "Anomaly Check Cleared", Description = "Risk score 0.04 within automated threshold", Tag = "Audit OK", Timestamp = "8m ago", Status = TwActivityTimeline.TimelineStatus.Success }
+    ];
+
+    private void HandleAgentPrompt(string prompt)
+    {
+        _lastResponse = $"Processed: '{prompt}'. Dispatching tool inspection across client WebAssembly and cloud telemetry plane. All parameters verified against security policy.";
+    }
+
+    private void ResolveGate(ApprovalGate gate, bool approved)
+    {
+        _gates.Remove(gate);
+        _lastResponse = $"Action '{gate.ActionName}' was {(approved ? "APPROVED" : "DENIED")}. Execution resumed.";
+    }
+}
