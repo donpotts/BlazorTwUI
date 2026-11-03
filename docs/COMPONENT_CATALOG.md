@@ -1,6 +1,6 @@
 # BlazorTwUI — Component Catalog & Settings Reference
 
-Comprehensive guide to all **259 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
+Comprehensive guide to all **261 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
 
 > This file is generated from `Services/ComponentCatalogService.cs`. Do not edit it by hand; change the catalog and regenerate with `UPDATE_CATALOG_DOC=1 dotnet test --filter CatalogDocTests`. A test fails when this file is out of date.
 
@@ -24,9 +24,9 @@ Comprehensive guide to all **259 components** in **BlazorTwUI** (.NET 10+ WebAss
 - [Developer Studio & Content Creation](#developer-studio--content-creation) (7 components)
 - [Documents & Forms](#documents--forms) (1 component)
 - [Enterprise & Workplace Operations](#enterprise--workplace-operations) (1 component)
-- [Enterprise Data & Tables](#enterprise-data--tables) (11 components)
+- [Enterprise Data & Tables](#enterprise-data--tables) (12 components)
 - [Feedback & Alerts](#feedback--alerts) (1 component)
-- [Financial & Analytical Intelligence](#financial--analytical-intelligence) (4 components)
+- [Financial & Analytical Intelligence](#financial--analytical-intelligence) (5 components)
 - [Financial & OCR](#financial--ocr) (2 components)
 - [Forms & Controls](#forms--controls) (2 components)
 - [Forms & Inputs](#forms--inputs) (2 components)
@@ -2652,6 +2652,31 @@ Turnkey transactional Master/Detail form designed for Invoices, Purchase Orders,
 
 ---
 
+### `TwImportExportWizard`
+
+**Location:** [`Components/UI/TwImportExportWizard.razor`](../Components/UI/TwImportExportWizard.razor)
+
+Multi-format data interchange wizard supporting CSV, JSON, Excel TSV, ANSI SQL INSERT, and XML serialization with drag-and-drop file ingestion, automatic column mapping, staged data quality review, error filtering, and direct clipboard/file download generation.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Items` | `IEnumerable<TItem>?` | `null` | Active entity dataset for export operations. |
+| `Title` | `string` | `"Data Import & Export Wizard"` | Main header title. |
+| `Subtitle` | `string` | `"Multi-format data interchange tool..."` | Descriptive header subtitle. |
+| `Class` | `string` | `""` | Custom Tailwind CSS utility classes. |
+| `OnImportCompleted` | `EventCallback<DataImportResult<TItem>>` | `default` | Fires when staged incoming records are confirmed and ingested. |
+| `OnExportGenerated` | `EventCallback<DataExportResult>` | `default` | Fires when serialized file payloads are emitted. |
+
+#### Razor Usage Example
+
+```razor
+<TwImportExportWizard TItem="Customer" Items="_customers" Title="Data Transfer Hub" OnImportCompleted="HandleImport" OnExportGenerated="HandleExport" />
+```
+
+---
+
 ### `TwDataTable`
 
 **Location:** [`Components/UI/TwDataTable.razor`](../Components/UI/TwDataTable.razor)
@@ -2875,6 +2900,32 @@ Full-featured generic OLAP 4-Axis pivot matrix (Row Area, Column Area, Data Area
 
 ```razor
 <TwPivotTable TItem="SaleRecord" Items="_sales" Title="Global Sales Analysis" AllowFieldSelector="true" AllowDrillDown="true" />
+```
+
+---
+
+### `TwPivotChart`
+
+**Location:** [`Components/UI/TwPivotChart.razor`](../Components/UI/TwPivotChart.razor)
+
+Connected OLAP pivot chart visualizer bound directly to dynamic pivot matrix dimensions with grouped SVG mathematical bars, auto-scaled Y-axis gridlines, legend series toggles, and zero external graphing dependencies.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Items` | `IEnumerable<TItem>?` | `null` | Dataset to aggregate and visualize. |
+| `RowDimension` | `string` | `"Region"` | Category dimension mapped along the X-axis. |
+| `ColumnDimension` | `string` | `"Quarter"` | Grouping dimension mapped to color series. |
+| `MeasureField` | `string` | `"Revenue"` | Numeric property to compute and aggregate. |
+| `Aggregator` | `PivotAggregator` | `PivotAggregator.Sum` | Mathematical operation applied to the measure field. |
+| `Title` | `string` | `"Dynamic OLAP Pivot Chart"` | Header title. |
+| `Subtitle` | `string` | `"Interactive multi-series visualization..."` | Descriptive subtitle. |
+
+#### Razor Usage Example
+
+```razor
+<TwPivotChart TItem="SaleRecord" Items="_sales" RowDimension="Region" ColumnDimension="Quarter" MeasureField="Revenue" Title="Revenue Breakdown" />
 ```
 
 ---

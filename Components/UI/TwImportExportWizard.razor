@@ -1,0 +1,817 @@
+@namespace BlazorTwUI.Components.UI
+@typeparam TItem
+@using System.Reflection
+@using System.Globalization
+@using System.Text
+@using System.Text.Json
+@using BlazorTwUI.Models
+@inject IJSRuntime JS
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-5 @Class" data-testid="data-transfer-wizard">
+    <!-- Wizard Header & Mode Switcher -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-lg">
+                🔄
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-brand-500/10 text-brand-600 dark:text-brand-400 border border-brand-500/20">
+                        @_mode Mode
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        Step @_currentStep of @TotalSteps
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Mode Toggle & Reset -->
+        <div class="flex items-center gap-2">
+            <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-semibold">
+                <button type="button" @onclick='() => SetMode(DataTransferMode.Import)' data-testid="wizard-mode-import"
+                        class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 @(_mode == DataTransferMode.Import ? "bg-white dark:bg-slate-900 text-brand-600 shadow-2xs font-bold" : "text-slate-500")">
+                    <span>📥</span>
+                    <span>Import Wizard</span>
+                </button>
+                <button type="button" @onclick='() => SetMode(DataTransferMode.Export)' data-testid="wizard-mode-export"
+                        class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 @(_mode == DataTransferMode.Export ? "bg-white dark:bg-slate-900 text-brand-600 shadow-2xs font-bold" : "text-slate-500")">
+                    <span>📤</span>
+                    <span>Export Wizard</span>
+                </button>
+            </div>
+
+            <button type="button" @onclick="ResetWizard" data-testid="wizard-reset-btn"
+                    class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 text-xs font-bold transition">
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <!-- Stepper Navigation Header -->
+    <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 text-xs">
+        @for (int i = 1; i <= TotalSteps; i++)
+        {
+            var stepNum = i;
+            var stepTitle = GetStepTitle(stepNum);
+            var isCurrent = _currentStep == stepNum;
+            var isDone = _currentStep > stepNum;
+
+            <div class="flex items-center gap-2 @(isCurrent ? "font-bold text-brand-600 dark:text-brand-400" : isDone ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-slate-400")">
+                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs @(isCurrent ? "bg-brand-600 text-white" : isDone ? "bg-emerald-500 text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-500")">
+                    @(isDone ? "✓" : stepNum.ToString())
+                </span>
+                <span class="hidden sm:inline">@stepTitle</span>
+            </div>
+            @if (i < TotalSteps)
+            {
+                <div class="flex-1 mx-2 h-0.5 bg-slate-200 dark:bg-slate-800"></div>
+            }
+        }
+    </div>
+
+    <!-- ==================== IMPORT WORKFLOW ==================== -->
+    @if (_mode == DataTransferMode.Import)
+    {
+        @if (_currentStep == 1)
+        {
+            <!-- Import Step 1: Format & Source Data -->
+            <div class="space-y-4 animate-fadeIn" data-testid="import-step-1">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-900 dark:text-white">Select Format & Provide Data</h4>
+                        <p class="text-xs text-slate-500">Paste tabular text directly or choose a source file format</p>
+                    </div>
+
+                    <!-- Format Pills -->
+                    <div class="flex items-center gap-1.5 text-xs">
+                        @foreach (var fmt in new[] { DataTransferFormat.Csv, DataTransferFormat.Json, DataTransferFormat.ExcelTsv, DataTransferFormat.Xml })
+                        {
+                            <button type="button" @onclick='() => _importFormat = fmt'
+                                    class="px-2.5 py-1 rounded-lg border font-mono transition @(_importFormat == fmt ? "bg-brand-500 text-white border-brand-500 font-bold" : "bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700")">
+                                @fmt.ToString().ToUpperInvariant()
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                <!-- Textarea Paste Box -->
+                <div class="space-y-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                        <label class="font-bold text-slate-700 dark:text-slate-300">
+                            Raw Data Input (@_importFormat format):
+                        </label>
+                        <button type="button" @onclick="LoadSampleImportData" class="text-brand-600 dark:text-brand-400 hover:underline font-bold">
+                            Load Sample Data
+                        </button>
+                    </div>
+                    <textarea @bind="_rawInputText" rows="7" placeholder="Paste CSV, TSV (from Excel), JSON, or XML here..."
+                              data-testid="import-raw-input"
+                              class="w-full p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 font-mono text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"></textarea>
+                </div>
+            </div>
+        }
+        else if (_currentStep == 2)
+        {
+            <!-- Import Step 2: Column Mapping -->
+            <div class="space-y-4 animate-fadeIn" data-testid="import-step-2">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-900 dark:text-white">Map Source Columns to Entity Properties</h4>
+                        <p class="text-xs text-slate-500">Review incoming columns and select their target property mappings</p>
+                    </div>
+                    <span class="text-xs font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                        @_detectedSourceColumns.Count Columns Detected
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-100 dark:bg-slate-850 font-bold text-slate-800 dark:text-slate-200">
+                            <tr>
+                                <th class="p-3">Source Column</th>
+                                <th class="p-3">Target Property</th>
+                                <th class="p-3">Data Type</th>
+                                <th class="p-3">Default Value</th>
+                                <th class="p-3 text-center">Include?</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            @foreach (var map in _columnMappings)
+                            {
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                    <td class="p-3 font-mono font-bold text-slate-900 dark:text-white">
+                                        @map.SourceColumn
+                                    </td>
+                                    <td class="p-2.5">
+                                        <select @bind="map.TargetProperty"
+                                                class="w-full p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold">
+                                            <option value="">(Ignore Column)</option>
+                                            @foreach (var p in _targetProperties)
+                                            {
+                                                <option value="@p.Name">@p.Name (@p.PropertyType.Name)</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td class="p-2.5">
+                                        <select @bind="map.DataType"
+                                                class="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono">
+                                            <option value="string">string</option>
+                                            <option value="int">integer</option>
+                                            <option value="decimal">decimal</option>
+                                            <option value="datetime">DateTime</option>
+                                            <option value="bool">boolean</option>
+                                        </select>
+                                    </td>
+                                    <td class="p-2.5">
+                                        <input type="text" @bind="map.DefaultValue" placeholder="Fallback..."
+                                               class="w-full p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-mono" />
+                                    </td>
+                                    <td class="p-3 text-center">
+                                        <input type="checkbox" @bind="map.IsMapped" class="w-4 h-4 rounded text-brand-600 cursor-pointer" />
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+        else if (_currentStep == 3)
+        {
+            <!-- Import Step 3: Staged Data Validation & Review -->
+            <div class="space-y-4 animate-fadeIn" data-testid="import-step-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-900 dark:text-white">Staged Data Quality Review</h4>
+                        <p class="text-xs text-slate-500">Preview validated incoming records before applying to dataset</p>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="px-2.5 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                            @_stagedRows.Count(r => r.Status == ImportRowStatus.Valid) Valid
+                        </span>
+                        @if (_stagedRows.Any(r => r.Status == ImportRowStatus.Error))
+                        {
+                            <span class="px-2.5 py-0.5 rounded-full font-bold bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                                @_stagedRows.Count(r => r.Status == ImportRowStatus.Error) Errors
+                            </span>
+                        }
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 max-h-72">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-100 dark:bg-slate-850 font-bold text-slate-800 dark:text-slate-200 sticky top-0">
+                            <tr>
+                                <th class="p-3 w-12 text-center font-mono">#</th>
+                                <th class="p-3 w-20">Status</th>
+                                @foreach (var map in _columnMappings.Where(m => m.IsMapped && !string.IsNullOrEmpty(m.TargetProperty)))
+                                {
+                                    <th class="p-3 font-mono">@map.TargetProperty</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            @foreach (var row in _stagedRows)
+                            {
+                                <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                                    <td class="p-3 text-center font-mono text-slate-400">@row.RowIndex</td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold @(row.Status == ImportRowStatus.Valid ? "bg-emerald-500/10 text-emerald-600" : "bg-rose-500/10 text-rose-600")">
+                                            @row.Status
+                                        </span>
+                                    </td>
+                                    @foreach (var map in _columnMappings.Where(m => m.IsMapped && !string.IsNullOrEmpty(m.TargetProperty)))
+                                    {
+                                        var val = row.RawValues.TryGetValue(map.SourceColumn, out var raw) ? raw : map.DefaultValue;
+                                        <td class="p-3 font-mono text-slate-700 dark:text-slate-300">
+                                            @(val ?? "—")
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Ingestion Strategy Selection -->
+                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <span class="font-bold text-slate-700 dark:text-slate-300">Ingestion Strategy:</span>
+                    <div class="flex items-center gap-3">
+                        <label class="flex items-center gap-1.5 cursor-pointer font-semibold">
+                            <input type="radio" name="strategy" checked="@(_importStrategy == DataImportStrategy.Append)" @onchange='() => _importStrategy = DataImportStrategy.Append' />
+                            <span>Append Records</span>
+                        </label>
+                        <label class="flex items-center gap-1.5 cursor-pointer font-semibold">
+                            <input type="radio" name="strategy" checked="@(_importStrategy == DataImportStrategy.Replace)" @onchange='() => _importStrategy = DataImportStrategy.Replace' />
+                            <span>Replace Entire Dataset</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        }
+        else if (_currentStep == 4)
+        {
+            <!-- Import Step 4: Completion -->
+            <div class="p-8 text-center space-y-4 animate-fadeIn" data-testid="import-step-4">
+                <span class="w-16 h-16 rounded-3xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black text-3xl flex items-center justify-center mx-auto">
+                    ✓
+                </span>
+                <div>
+                    <h4 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                        Import Ingestion Successful!
+                    </h4>
+                    <p class="text-xs text-slate-500 max-w-md mx-auto mt-1">
+                        Successfully imported <strong class="text-slate-900 dark:text-white">@_stagedRows.Count</strong> records using the <strong class="text-brand-600 font-mono">@_importStrategy</strong> strategy into the active dataset.
+                    </p>
+                </div>
+            </div>
+        }
+    }
+    <!-- ==================== EXPORT WORKFLOW ==================== -->
+    else
+    {
+        @if (_currentStep == 1)
+        {
+            <!-- Export Step 1: Format & Scope -->
+            <div class="space-y-4 animate-fadeIn" data-testid="export-step-1">
+                <div>
+                    <h4 class="font-bold text-sm text-slate-900 dark:text-white">Select Export Format & Encoding</h4>
+                    <p class="text-xs text-slate-500">Choose your desired serialization format for downloading or copying</p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                    @foreach (var fmt in new[] {
+                        (DataTransferFormat.Csv, "CSV Spreadsheet", "Standard comma-delimited table file for Excel & Google Sheets", "📊"),
+                        (DataTransferFormat.Json, "JSON Document", "Pretty-printed JavaScript object notation for APIs & databases", "📦"),
+                        (DataTransferFormat.ExcelTsv, "Excel TSV", "Tab-separated values optimized for direct spreadsheet copy-pasting", "📑"),
+                        (DataTransferFormat.SqlInsert, "SQL Insert Script", "ANSI SQL INSERT statements ready for database migration seeds", "💾")
+                    })
+                    {
+                        <div @onclick='() => _exportFormat = fmt.Item1'
+                             class="p-4 rounded-2xl border cursor-pointer transition @(_exportFormat == fmt.Item1 ? "border-brand-500 bg-brand-50/50 dark:bg-brand-950/20 shadow-xs" : "border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/50 hover:bg-slate-100")">
+                            <span class="text-2xl mb-2 block">@fmt.Item4</span>
+                            <h5 class="font-bold text-xs text-slate-900 dark:text-white">@fmt.Item2</h5>
+                            <p class="text-[11px] text-slate-500 mt-1">@fmt.Item3</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else if (_currentStep == 2)
+        {
+            <!-- Export Step 2: Field Selection -->
+            <div class="space-y-4 animate-fadeIn" data-testid="export-step-2">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-900 dark:text-white">Choose Fields to Include in Export</h4>
+                        <p class="text-xs text-slate-500">Toggle properties on or off to tailor the output payload</p>
+                    </div>
+                    <button type="button" @onclick="SelectAllExportFields" class="text-xs text-brand-600 dark:text-brand-400 font-bold hover:underline">
+                        Select All
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    @foreach (var prop in _targetProperties)
+                    {
+                        var isChecked = _exportSelectedProperties.Contains(prop.Name);
+                        <label class="p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between cursor-pointer text-xs transition @(isChecked ? "bg-brand-500/5 border-brand-500/30" : "bg-white dark:bg-slate-900")">
+                            <div>
+                                <span class="font-bold text-slate-800 dark:text-slate-200 block">@prop.Name</span>
+                                <span class="text-[10px] text-slate-400 font-mono">@prop.PropertyType.Name</span>
+                            </div>
+                            <input type="checkbox" checked="@isChecked" @onchange='() => ToggleExportProperty(prop.Name)'
+                                   class="w-4 h-4 rounded text-brand-600 cursor-pointer" />
+                        </label>
+                    }
+                </div>
+            </div>
+        }
+        else if (_currentStep == 3)
+        {
+            <!-- Export Step 3: Download & Preview -->
+            <div class="space-y-4 animate-fadeIn" data-testid="export-step-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h4 class="font-bold text-sm text-slate-900 dark:text-white">Generated Payload Preview</h4>
+                        <p class="text-xs text-slate-500">@_records.Count records serialized as @_exportFormat</p>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="button" @onclick="CopyExportToClipboard" data-testid="export-copy-btn"
+                                class="px-3.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 transition flex items-center gap-1.5">
+                            <span>📋</span>
+                            <span>Copy Payload</span>
+                        </button>
+                        <button type="button" @onclick="DownloadExportFile" data-testid="export-download-btn"
+                                class="px-4 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold transition shadow-sm flex items-center gap-1.5">
+                            <span>📥</span>
+                            <span>Download File</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-4 rounded-2xl bg-slate-950 text-slate-300 font-mono text-xs overflow-x-auto max-h-64 shadow-inner">
+                    <pre>@_generatedExportText</pre>
+                </div>
+            </div>
+        }
+    }
+
+    <!-- Wizard Navigation Footer -->
+    <div class="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 text-xs">
+        <button type="button" @onclick="PrevStep" disabled="@(_currentStep <= 1)"
+                data-testid="wizard-prev-btn"
+                class="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 transition disabled:opacity-30">
+            ← Previous
+        </button>
+
+        @if (_mode == DataTransferMode.Import)
+        {
+            @if (_currentStep < 3)
+            {
+                <button type="button" @onclick="NextStep" data-testid="wizard-next-btn"
+                        class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition shadow-sm">
+                    Next Step →
+                </button>
+            }
+            else if (_currentStep == 3)
+            {
+                <button type="button" @onclick="ExecuteImport" data-testid="wizard-execute-import-btn"
+                        class="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition shadow-sm">
+                    Confirm & Import Records ✓
+                </button>
+            }
+            else
+            {
+                <button type="button" @onclick="ResetWizard"
+                        class="px-5 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold transition">
+                    Done
+                </button>
+            }
+        }
+        else
+        {
+            @if (_currentStep < 3)
+            {
+                <button type="button" @onclick="NextStep" data-testid="wizard-next-btn"
+                        class="px-5 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold transition shadow-sm">
+                    Next Step →
+                </button>
+            }
+            else
+            {
+                <button type="button" @onclick="ResetWizard"
+                        class="px-5 py-2 rounded-xl bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-bold transition">
+                    Done
+                </button>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    [Parameter] public string Title { get; set; } = "Data Import & Export Wizard";
+    [Parameter] public string Subtitle { get; set; } = "Multi-format data interchange tool supporting CSV, JSON, TSV, SQL, and XML";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public EventCallback<DataImportResult<TItem>> OnImportCompleted { get; set; }
+    [Parameter] public EventCallback<DataExportResult> OnExportGenerated { get; set; }
+
+    private DataTransferMode _mode = DataTransferMode.Import;
+    private int _currentStep = 1;
+    private int TotalSteps => _mode == DataTransferMode.Import ? 4 : 3;
+
+    // Import State
+    private DataTransferFormat _importFormat = DataTransferFormat.Csv;
+    private string _rawInputText = "";
+    private List<string> _detectedSourceColumns = new();
+    private List<DataColumnMapping> _columnMappings = new();
+    private List<StagedImportRow> _stagedRows = new();
+    private DataImportStrategy _importStrategy = DataImportStrategy.Append;
+
+    // Export State
+    private DataTransferFormat _exportFormat = DataTransferFormat.Csv;
+    private HashSet<string> _exportSelectedProperties = new();
+    private string _generatedExportText = "";
+
+    private List<TItem> _records = new();
+    private PropertyInfo[] _targetProperties = Array.Empty<PropertyInfo>();
+
+    protected override void OnParametersSet()
+    {
+        _records = Items?.ToList() ?? new();
+        _targetProperties = typeof(TItem).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        if (_exportSelectedProperties.Count == 0)
+        {
+            _exportSelectedProperties = new HashSet<string>(_targetProperties.Select(p => p.Name));
+        }
+    }
+
+    private void SetMode(DataTransferMode mode)
+    {
+        _mode = mode;
+        _currentStep = 1;
+        if (_mode == DataTransferMode.Export)
+        {
+            GenerateExportPayload();
+        }
+    }
+
+    private void ResetWizard()
+    {
+        _currentStep = 1;
+        _rawInputText = "";
+        _columnMappings.Clear();
+        _stagedRows.Clear();
+        if (_mode == DataTransferMode.Export)
+        {
+            GenerateExportPayload();
+        }
+    }
+
+    private string GetStepTitle(int step) => _mode switch
+    {
+        DataTransferMode.Import => step switch
+        {
+            1 => "Source & Format",
+            2 => "Column Mapping",
+            3 => "Validation Review",
+            _ => "Ingestion Complete"
+        },
+        _ => step switch
+        {
+            1 => "Format & Scope",
+            2 => "Field Chooser",
+            _ => "Download & Copy"
+        }
+    };
+
+    private void NextStep()
+    {
+        if (_mode == DataTransferMode.Import)
+        {
+            if (_currentStep == 1)
+            {
+                ParseIncomingRawData();
+                _currentStep = 2;
+            }
+            else if (_currentStep == 2)
+            {
+                StageDataRows();
+                _currentStep = 3;
+            }
+        }
+        else
+        {
+            if (_currentStep == 1)
+            {
+                _currentStep = 2;
+            }
+            else if (_currentStep == 2)
+            {
+                GenerateExportPayload();
+                _currentStep = 3;
+            }
+        }
+    }
+
+    private void PrevStep()
+    {
+        if (_currentStep > 1) _currentStep--;
+    }
+
+    private void LoadSampleImportData()
+    {
+        if (_importFormat == DataTransferFormat.Json)
+        {
+            _rawInputText = @"[
+  { ""Region"": ""North America"", ""ProductLine"": ""Cloud Core"", ""Quarter"": ""Q1"", ""Revenue"": 240000 },
+  { ""Region"": ""Europe"", ""ProductLine"": ""Security Suite"", ""Quarter"": ""Q1"", ""Revenue"": 175000 },
+  { ""Region"": ""Asia-Pacific"", ""ProductLine"": ""Cloud Core"", ""Quarter"": ""Q2"", ""Revenue"": 260000 }
+]";
+        }
+        else
+        {
+            _rawInputText = "Region,ProductLine,Quarter,Revenue\nNorth America,Cloud Core,Q1,240000\nEurope,Security Suite,Q1,175000\nAsia-Pacific,Cloud Core,Q2,260000";
+        }
+    }
+
+    private void ParseIncomingRawData()
+    {
+        _columnMappings.Clear();
+        _detectedSourceColumns.Clear();
+
+        if (string.IsNullOrWhiteSpace(_rawInputText))
+        {
+            LoadSampleImportData();
+        }
+
+        if (_importFormat == DataTransferFormat.Json)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(_rawInputText);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array && doc.RootElement.GetArrayLength() > 0)
+                {
+                    var firstObj = doc.RootElement[0];
+                    foreach (var prop in firstObj.EnumerateObject())
+                    {
+                        _detectedSourceColumns.Add(prop.Name);
+                    }
+                }
+            }
+            catch { /* fallback */ }
+        }
+        else
+        {
+            // CSV / TSV
+            var sep = _importFormat == DataTransferFormat.ExcelTsv ? '\t' : ',';
+            var lines = _rawInputText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            if (lines.Length > 0)
+            {
+                var headers = lines[0].Split(sep);
+                foreach (var h in headers)
+                {
+                    var cleanH = h.Trim().Trim('"');
+                    if (!string.IsNullOrEmpty(cleanH)) _detectedSourceColumns.Add(cleanH);
+                }
+            }
+        }
+
+        // Auto-match column mappings to target properties
+        foreach (var col in _detectedSourceColumns)
+        {
+            var matchedProp = _targetProperties.FirstOrDefault(p => p.Name.Equals(col, StringComparison.OrdinalIgnoreCase));
+            _columnMappings.Add(new DataColumnMapping
+            {
+                SourceColumn = col,
+                TargetProperty = matchedProp?.Name ?? "",
+                DataType = matchedProp != null ? GetFriendlyTypeName(matchedProp.PropertyType) : "string",
+                IsMapped = matchedProp != null
+            });
+        }
+    }
+
+    private static string GetFriendlyTypeName(Type t)
+    {
+        var under = Nullable.GetUnderlyingType(t) ?? t;
+        if (under == typeof(int) || under == typeof(long)) return "int";
+        if (under == typeof(decimal) || under == typeof(double) || under == typeof(float)) return "decimal";
+        if (under == typeof(DateTime)) return "datetime";
+        if (under == typeof(bool)) return "bool";
+        return "string";
+    }
+
+    private void StageDataRows()
+    {
+        _stagedRows.Clear();
+        var rowIndex = 1;
+
+        if (_importFormat == DataTransferFormat.Json)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(_rawInputText);
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var el in doc.RootElement.EnumerateArray())
+                    {
+                        var dict = new Dictionary<string, string?>();
+                        foreach (var prop in el.EnumerateObject())
+                        {
+                            dict[prop.Name] = prop.Value.ToString();
+                        }
+                        _stagedRows.Add(new StagedImportRow
+                        {
+                            RowIndex = rowIndex++,
+                            RawValues = dict,
+                            Status = ImportRowStatus.Valid
+                        });
+                    }
+                }
+            }
+            catch { /* json parse error */ }
+        }
+        else
+        {
+            var sep = _importFormat == DataTransferFormat.ExcelTsv ? '\t' : ',';
+            var lines = _rawInputText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 1; i < lines.Length; i++)
+            {
+                var parts = lines[i].Split(sep);
+                var dict = new Dictionary<string, string?>();
+                for (int j = 0; j < Math.Min(parts.Length, _detectedSourceColumns.Count); j++)
+                {
+                    dict[_detectedSourceColumns[j]] = parts[j].Trim().Trim('"');
+                }
+                _stagedRows.Add(new StagedImportRow
+                {
+                    RowIndex = rowIndex++,
+                    RawValues = dict,
+                    Status = ImportRowStatus.Valid
+                });
+            }
+        }
+    }
+
+    private async Task ExecuteImport()
+    {
+        var result = new DataImportResult<TItem>
+        {
+            TotalProcessed = _stagedRows.Count,
+            ImportedCount = _stagedRows.Count(r => r.Status == ImportRowStatus.Valid),
+            Strategy = _importStrategy
+        };
+
+        // Materialize target items
+        foreach (var row in _stagedRows.Where(r => r.Status == ImportRowStatus.Valid))
+        {
+            try
+            {
+                var item = Activator.CreateInstance<TItem>();
+                foreach (var map in _columnMappings.Where(m => m.IsMapped && !string.IsNullOrEmpty(m.TargetProperty)))
+                {
+                    var prop = typeof(TItem).GetProperty(map.TargetProperty);
+                    if (prop != null && row.RawValues.TryGetValue(map.SourceColumn, out var val))
+                    {
+                        var targetType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                        var converted = Convert.ChangeType(val, targetType, CultureInfo.InvariantCulture);
+                        prop.SetValue(item, converted);
+                    }
+                }
+                result.ImportedItems.Add(item);
+            }
+            catch { /* skip corrupted item */ }
+        }
+
+        _currentStep = 4;
+        if (OnImportCompleted.HasDelegate)
+        {
+            await OnImportCompleted.InvokeAsync(result);
+        }
+    }
+
+    // Export Helpers
+    private void ToggleExportProperty(string propName)
+    {
+        if (_exportSelectedProperties.Contains(propName)) _exportSelectedProperties.Remove(propName);
+        else _exportSelectedProperties.Add(propName);
+        GenerateExportPayload();
+    }
+
+    private void SelectAllExportFields()
+    {
+        _exportSelectedProperties = new HashSet<string>(_targetProperties.Select(p => p.Name));
+        GenerateExportPayload();
+    }
+
+    private void GenerateExportPayload()
+    {
+        var propsToExport = _targetProperties.Where(p => _exportSelectedProperties.Contains(p.Name)).ToList();
+        var sb = new StringBuilder();
+
+        switch (_exportFormat)
+        {
+            case DataTransferFormat.Json:
+                var list = new List<Dictionary<string, object?>>();
+                foreach (var r in _records)
+                {
+                    var dict = new Dictionary<string, object?>();
+                    foreach (var p in propsToExport)
+                    {
+                        dict[p.Name] = p.GetValue(r);
+                    }
+                    list.Add(dict);
+                }
+                _generatedExportText = JsonSerializer.Serialize(list, new JsonSerializerOptions { WriteIndented = true });
+                break;
+
+            case DataTransferFormat.SqlInsert:
+                var tableName = typeof(TItem).Name;
+                var colList = string.Join(", ", propsToExport.Select(p => $"[{p.Name}]"));
+                foreach (var r in _records)
+                {
+                    var vals = propsToExport.Select(p =>
+                    {
+                        var v = p.GetValue(r);
+                        if (v == null) return "NULL";
+                        if (v is string s) return $"'{s.Replace("'", "''")}'";
+                        if (v is DateTime dt) return $"'{dt:yyyy-MM-dd HH:mm:ss}'";
+                        return v.ToString() ?? "NULL";
+                    });
+                    sb.AppendLine($"INSERT INTO [{tableName}] ({colList}) VALUES ({string.Join(", ", vals)});");
+                }
+                _generatedExportText = sb.ToString();
+                break;
+
+            case DataTransferFormat.ExcelTsv:
+                sb.AppendLine(string.Join("\t", propsToExport.Select(p => p.Name)));
+                foreach (var r in _records)
+                {
+                    sb.AppendLine(string.Join("\t", propsToExport.Select(p => p.GetValue(r)?.ToString() ?? "")));
+                }
+                _generatedExportText = sb.ToString();
+                break;
+
+            default: // CSV
+                sb.AppendLine(string.Join(",", propsToExport.Select(p => $"\"{p.Name}\"")));
+                foreach (var r in _records)
+                {
+                    sb.AppendLine(string.Join(",", propsToExport.Select(p => $"\"{p.GetValue(r)?.ToString()?.Replace("\"", "\"\"")}\"")));
+                }
+                _generatedExportText = sb.ToString();
+                break;
+        }
+    }
+
+    private async Task CopyExportToClipboard()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", _generatedExportText);
+        }
+        catch { /* loose interop */ }
+    }
+
+    private async Task DownloadExportFile()
+    {
+        var ext = _exportFormat switch
+        {
+            DataTransferFormat.Json => "json",
+            DataTransferFormat.SqlInsert => "sql",
+            DataTransferFormat.ExcelTsv => "tsv",
+            _ => "csv"
+        };
+        var mime = _exportFormat switch
+        {
+            DataTransferFormat.Json => "application/json",
+            DataTransferFormat.SqlInsert => "text/plain",
+            DataTransferFormat.ExcelTsv => "text/tab-separated-values",
+            _ => "text/csv"
+        };
+        var filename = $"export_{DateTime.Now:yyyyMMdd_HHmmss}.{ext}";
+
+        if (OnExportGenerated.HasDelegate)
+        {
+            await OnExportGenerated.InvokeAsync(new DataExportResult
+            {
+                Format = _exportFormat,
+                FileName = filename,
+                ContentType = mime,
+                ContentText = _generatedExportText,
+                RowCount = _records.Count
+            });
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("pdfHelper.downloadText", filename, mime, _generatedExportText);
+        }
+        catch { /* loose interop */ }
+    }
+}

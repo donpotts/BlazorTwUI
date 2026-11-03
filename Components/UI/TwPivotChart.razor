@@ -1,0 +1,217 @@
+@namespace BlazorTwUI.Components.UI
+@typeparam TItem
+@using System.Reflection
+@using System.Globalization
+@using BlazorTwUI.Models
+
+<div class="rounded-3xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl overflow-hidden p-6 space-y-5 @Class" data-testid="pivot-chart">
+    <!-- Header Toolbar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+            <span class="p-2.5 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold text-lg">
+                📈
+            </span>
+            <div>
+                <div class="flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">@Title</h3>
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                        Connected OLAP Visualizer
+                    </span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                        @_rowCategories.Count Categories
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400">@Subtitle</p>
+            </div>
+        </div>
+
+        <!-- Series Legend & Chart Type -->
+        <div class="flex flex-wrap items-center gap-3 text-xs">
+            @foreach (var series in _seriesList)
+            {
+                <div class="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-xl border border-slate-200 dark:border-slate-700 font-semibold">
+                    <span class="w-3 h-3 rounded-full" style="background-color: @series.Color;"></span>
+                    <span class="text-slate-700 dark:text-slate-300">@series.Name</span>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Pure SVG Mathematical Chart Area -->
+    <div class="w-full overflow-x-auto">
+        <div class="min-w-[640px] h-[340px] relative">
+            <svg class="w-full h-full" viewBox="0 0 800 340" preserveAspectRatio="none">
+                <defs>
+                    @foreach (var s in _seriesList)
+                    {
+                        <linearGradient id="@($"grad_{s.Index}")" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="@s.Color" stop-opacity="0.9" />
+                            <stop offset="100%" stop-color="@s.Color" stop-opacity="0.4" />
+                        </linearGradient>
+                    }
+                </defs>
+
+                <!-- Horizontal Grid Lines (Y-Axis) -->
+                @for (int i = 0; i <= 4; i++)
+                {
+                    var y = 40 + i * 55;
+                    var val = _maxVal - (i * (_maxVal / 4));
+                    <line x1="70" y1="@y" x2="780" y2="@y" stroke="currentColor" stroke-dasharray="3 3" class="text-slate-200 dark:text-slate-800" stroke-width="1" />
+                    @((MarkupString)$"<text x=\"60\" y=\"{y + 4}\" text-anchor=\"end\" class=\"text-[10px] font-mono fill-slate-400\">{FormatVal(val)}</text>")
+                }
+
+                <!-- Zero Baseline -->
+                <line x1="70" y1="260" x2="780" y2="260" stroke="currentColor" class="text-slate-300 dark:text-slate-700" stroke-width="1.5" />
+
+                <!-- Grouped Bars per Row Category -->
+                @{
+                    var categoryCount = Math.Max(1, _rowCategories.Count);
+                    var groupWidth = 710.0 / categoryCount;
+                    var seriesCount = Math.Max(1, _seriesList.Count);
+                    var barWidth = Math.Min(36.0, (groupWidth * 0.75) / seriesCount);
+                }
+
+                @for (int c = 0; c < _rowCategories.Count; c++)
+                {
+                    var cat = _rowCategories[c];
+                    var groupCenterX = 70.0 + (c * groupWidth) + (groupWidth / 2.0);
+                    var groupStartX = groupCenterX - ((seriesCount * barWidth) / 2.0);
+
+                    <!-- Category Label below baseline -->
+                    @((MarkupString)$"<text x=\"{groupCenterX}\" y=\"285\" text-anchor=\"middle\" class=\"text-[11px] font-bold fill-slate-700 dark:fill-slate-300\">{cat}</text>")
+
+                    <!-- Series Bars for this Category -->
+                    @for (int s = 0; s < _seriesList.Count; s++)
+                    {
+                        var series = _seriesList[s];
+                        var barVal = GetCategorySeriesValue(cat, series.Name);
+                        var barHeight = _maxVal > 0 ? (double)(barVal / _maxVal) * 220.0 : 0.0;
+                        var barX = groupStartX + (s * barWidth);
+                        var barY = 260.0 - barHeight;
+
+                        <rect x="@barX" y="@barY" width="@(barWidth - 4)" height="@Math.Max(2, barHeight)" rx="4"
+                              fill="url(#@($"grad_{series.Index}"))"
+                              class="transition-all duration-300 hover:brightness-110 cursor-pointer"
+                              data-testid="pivot-chart-bar" />
+
+                        @if (barHeight > 25)
+                        {
+                            @((MarkupString)$"<text x=\"{barX + (barWidth - 4) / 2.0}\" y=\"{barY - 6}\" text-anchor=\"middle\" class=\"text-[9px] font-mono font-bold fill-slate-500\">{FormatCompact(barVal)}</text>")
+                        }
+                    }
+                }
+            </svg>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public IEnumerable<TItem>? Items { get; set; }
+    [Parameter] public string RowDimension { get; set; } = "Region";
+    [Parameter] public string ColumnDimension { get; set; } = "Quarter";
+    [Parameter] public string MeasureField { get; set; } = "Revenue";
+    [Parameter] public PivotAggregator Aggregator { get; set; } = PivotAggregator.Sum;
+    [Parameter] public string Title { get; set; } = "Dynamic OLAP Pivot Chart";
+    [Parameter] public string Subtitle { get; set; } = "Interactive multi-series visualization bound directly to pivot dimensions";
+    [Parameter] public string Class { get; set; } = "";
+
+    public class ChartSeries
+    {
+        public int Index { get; set; }
+        public string Name { get; set; } = "";
+        public string Color { get; set; } = "#6366f1";
+    }
+
+    private List<TItem> _records = new();
+    private List<string> _rowCategories = new();
+    private List<ChartSeries> _seriesList = new();
+    private decimal _maxVal = 1000m;
+
+    private readonly string[] _palette = new[] { "#6366f1", "#10b981", "#f59e0b", "#ec4899", "#06b6d4", "#8b5cf6" };
+
+    protected override void OnParametersSet()
+    {
+        _records = Items?.ToList() ?? new();
+        RecalculateChart();
+    }
+
+    private void RecalculateChart()
+    {
+        if (_records.Count == 0)
+        {
+            _rowCategories = new();
+            _seriesList = new();
+            return;
+        }
+
+        _rowCategories = _records.Select(r => GetFieldValue(r, RowDimension)).Distinct().OrderBy(x => x).ToList();
+        var colValues = _records.Select(r => GetFieldValue(r, ColumnDimension)).Distinct().OrderBy(x => x).ToList();
+
+        _seriesList = new();
+        for (int i = 0; i < colValues.Count; i++)
+        {
+            _seriesList.Add(new ChartSeries
+            {
+                Index = i,
+                Name = colValues[i],
+                Color = _palette[i % _palette.Length]
+            });
+        }
+
+        _maxVal = 0m;
+        foreach (var cat in _rowCategories)
+        {
+            foreach (var s in _seriesList)
+            {
+                var v = GetCategorySeriesValue(cat, s.Name);
+                if (v > _maxVal) _maxVal = v;
+            }
+        }
+
+        if (_maxVal <= 0) _maxVal = 1000m;
+        // Round maxVal up to clean number
+        _maxVal = Math.Ceiling(_maxVal * 1.15m);
+    }
+
+    private string GetFieldValue(TItem item, string fieldName)
+    {
+        var p = typeof(TItem).GetProperty(fieldName, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+        return p?.GetValue(item)?.ToString() ?? "N/A";
+    }
+
+    private decimal GetCategorySeriesValue(string cat, string colVal)
+    {
+        var subset = _records.Where(r => GetFieldValue(r, RowDimension) == cat && GetFieldValue(r, ColumnDimension) == colVal).ToList();
+        if (subset.Count == 0) return 0m;
+
+        var values = subset.Select(r =>
+        {
+            var p = typeof(TItem).GetProperty(MeasureField, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            var raw = p?.GetValue(r);
+            try { return Convert.ToDecimal(raw, CultureInfo.InvariantCulture); } catch { return 0m; }
+        }).ToList();
+
+        return Aggregator switch
+        {
+            PivotAggregator.Average => values.Count > 0 ? values.Average() : 0,
+            PivotAggregator.Count => subset.Count,
+            PivotAggregator.Min => values.Count > 0 ? values.Min() : 0,
+            PivotAggregator.Max => values.Count > 0 ? values.Max() : 0,
+            _ => values.Sum()
+        };
+    }
+
+    private string FormatVal(decimal val)
+    {
+        if (val >= 1000000) return $"${val / 1000000:N1}M";
+        if (val >= 1000) return $"${val / 1000:N0}k";
+        return $"${val:N0}";
+    }
+
+    private string FormatCompact(decimal val)
+    {
+        if (val >= 1000000) return $"{val / 1000000:N1}M";
+        if (val >= 1000) return $"{val / 1000:N0}k";
+        return $"{val:N0}";
+    }
+}

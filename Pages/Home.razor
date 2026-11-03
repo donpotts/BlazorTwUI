@@ -3384,6 +3384,17 @@
                                               AllowFieldSelector="true"
                                               AllowDrillDown="true"
                                               AllowExport="true" />
+
+                                <!-- Connected TwPivotChart Visualizer -->
+                                <div class="pt-4">
+                                    <TwPivotChart TItem="ShowcaseSaleRecord"
+                                                  Items="_showcaseSales"
+                                                  RowDimension="Region"
+                                                  ColumnDimension="Quarter"
+                                                  MeasureField="Revenue"
+                                                  Title="Connected OLAP Pivot Chart"
+                                                  Subtitle="Synchronized grouped mathematical SVG bar chart by Region and Quarter" />
+                                </div>
                             </div>
                         </section>
 
@@ -3399,7 +3410,7 @@
                                 <TwBadge Variant="SemanticVariant.Success">Nested &amp; Split-Pane</TwBadge>
                             </div>
                             <p class="text-xs text-slate-500 dark:text-slate-400">
-                                Hierarchical data presentation and transactional editing: expandable master table rows hosting nested child grids, synchronized split-pane workspaces, and auto-calculating master-detail forms.
+                                Hierarchical data presentation and transactional editing: expandable master table rows hosting nested child grids, synchronized split-pane workspaces, auto-calculating forms, and multi-format import/export data transfer wizards.
                             </p>
 
                             <!-- 1. Expandable Nested Child Grid -->
@@ -3442,6 +3453,18 @@
                                                     DocumentNumber="INV-2026-7821"
                                                     ClientName="Enterprise Systems Group"
                                                     Status="Draft" />
+                            </div>
+
+                            <!-- 4. Multi-Format Import/Export Transfer Wizard -->
+                            <div class="space-y-2 pt-4">
+                                <h4 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    <span>4. Multi-Format Data Transfer Wizard</span>
+                                    <span class="text-xs font-mono font-normal text-slate-400">(TwImportExportWizard)</span>
+                                </h4>
+                                <TwImportExportWizard TItem="ShowcaseSaleRecord"
+                                                      Items="_showcaseSales"
+                                                      Title="Enterprise Data Import & Export Wizard"
+                                                      Subtitle="Bi-directional interchange hub supporting CSV, JSON, Excel TSV, ANSI SQL, and XML" />
                             </div>
                         </section>
 
@@ -6010,6 +6033,8 @@
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwMasterDetailGrid", Subtitle = "Expandable master rows hosting nested child grids with live line items", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwMasterDetail", Subtitle = "Split-pane master/detail workspace with column/row modes & audit log", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwMasterDetailForm", Subtitle = "Transactional master/detail form with auto-calculating tax & line items", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
+        _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwPivotChart", Subtitle = "Connected OLAP pivot chart visualizer bound directly to dynamic dimensions", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
+        _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwImportExportWizard", Subtitle = "Multi-format data interchange wizard (CSV, JSON, TSV, SQL, XML)", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwMarkdownEditor", Subtitle = "Dual Markdown & HTML editor with multi-format media drawer", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwDockManager", Subtitle = "Multi-pane IDE docking workspace with tabs & toolboxes", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });
         _commandPaletteItems.Add(new CommandPaletteItem { Title = "TwSpreadsheet", Subtitle = "Reactive formula calculation grid with live recalculation", Category = "Components", Action = () => { _activeTab = "studio"; StateHasChanged(); } });

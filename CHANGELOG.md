@@ -5,13 +5,15 @@ All notable changes to BlazorTwUI are documented here. Version 1.0 has not been 
 ## [0.8.2] - 2026-11-03
 
 ### Added
-- **Full-Featured PivotTable & Master-Detail Suite (`255` → `259 Components`)**:
+- **Full-Featured PivotTable, Master-Detail & Data Transfer Suite (`255` → `261 Components`)**:
   - `TwPivotTable<TItem>`: Generic 4-Axis OLAP cross-tabulation pivot matrix with multi-dimensional Row hierarchy (expand/collapse tree buttons), Column headers, Data measures (Sum, Average, Count, DistinctCount, Min, Max, Product), Page Filters, interactive Field List configurator panel, dynamic heatmap color scaling, cell drill-down raw records inspector dialog, and direct CSV export.
+  - `TwPivotChart<TItem>`: Connected OLAP pivot chart visualizer bound directly to dynamic pivot matrix dimensions with grouped SVG mathematical bars, auto-scaled Y-axis gridlines, legend series toggles, and zero external graphing dependencies.
   - `TwMasterDetailGrid<TMaster, TChild>`: Hierarchical data table featuring expandable master rows with nested child grids, chevron toggles, multi-row or auto-collapse expansion modes, independent child column sorting, and add/delete child line item callbacks.
   - `TwMasterDetail<TMaster, TChild>`: Synchronized Master/Detail split-pane workspace with Column (horizontal) and Row (vertical) layout modes, live search, status chips, multi-tab detail inspector (Master Form, Child Records Grid, Audit Timeline), and two-way item selection binding.
   - `TwMasterDetailForm`: Turnkey transactional Master/Detail form designed for Invoices, Purchase Orders, and Service Statements with top metadata fields, dynamic line item table, '+ Add Item', real-time subtotal, tax %, discount, and grand total recalculation.
+  - `TwImportExportWizard<TItem>`: Multi-format data interchange wizard supporting CSV, JSON, Excel TSV, ANSI SQL INSERT, and XML serialization with drag-and-drop file ingestion, automatic column mapping, staged data quality review, error filtering, and direct clipboard/file download generation.
 - **Test Suite Expansion**:
-  - Added `PivotAndMasterDetailTests.cs` covering matrix aggregation, heatmap styling, field list toggling, cell drilldown, row expansion, nested child grid rendering, workspace tab switching, and dynamic line item calculation (182 total passing tests).
+  - Added `PivotAndMasterDetailTests.cs` and `DataTransferWizardTests.cs` covering matrix aggregation, heatmap styling, field list toggling, cell drilldown, row expansion, nested child grid rendering, workspace tab switching, dynamic line item calculation, and full import/export wizard flows (186 total passing tests).
 
 ## [0.8.1] - 2026-11-03
 

@@ -862,6 +862,23 @@ public class ComponentCatalogService
         },
         new ComponentDocItem
         {
+            Name = "TwPivotChart",
+            Category = "Financial & Analytical Intelligence",
+            Description = "Connected OLAP pivot chart visualizer bound directly to dynamic pivot matrix dimensions with grouped SVG mathematical bars, auto-scaled Y-axis gridlines, legend series toggles, and zero external graphing dependencies.",
+            RazorSnippet = "<TwPivotChart TItem=\"SaleRecord\" Items=\"_sales\" RowDimension=\"Region\" ColumnDimension=\"Quarter\" MeasureField=\"Revenue\" Title=\"Revenue Breakdown\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Items", "IEnumerable<TItem>?", "null", "Dataset to aggregate and visualize."),
+                new ComponentParameterDoc("RowDimension", "string", "\"Region\"", "Category dimension mapped along the X-axis."),
+                new ComponentParameterDoc("ColumnDimension", "string", "\"Quarter\"", "Grouping dimension mapped to color series."),
+                new ComponentParameterDoc("MeasureField", "string", "\"Revenue\"", "Numeric property to compute and aggregate."),
+                new ComponentParameterDoc("Aggregator", "PivotAggregator", "PivotAggregator.Sum", "Mathematical operation applied to the measure field."),
+                new ComponentParameterDoc("Title", "string", "\"Dynamic OLAP Pivot Chart\"", "Header title."),
+                new ComponentParameterDoc("Subtitle", "string", "\"Interactive multi-series visualization...\"", "Descriptive subtitle.")
+            }
+        },
+        new ComponentDocItem
+        {
             Name = "TwIconPicker",
             Category = "Developer Studio & Content Creation",
             Description = "Interactive search-and-select icon & emoji explorer with live filtering, outline/solid toggles, size previews, and one-click Razor component snippet copying.",
@@ -2112,6 +2129,22 @@ public class ComponentCatalogService
                 new ComponentParameterDoc("CurrencyCode", "string", "\"USD\"", "Currency code (USD, EUR, GBP, CAD)."),
                 new ComponentParameterDoc("TaxRatePercent", "decimal", "8.5m", "Tax percentage applied to line item subtotal."),
                 new ComponentParameterDoc("DiscountAmount", "decimal", "0m", "Fixed discount subtracted from grand total.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwImportExportWizard",
+            Category = "Enterprise Data & Tables",
+            Description = "Multi-format data interchange wizard supporting CSV, JSON, Excel TSV, ANSI SQL INSERT, and XML serialization with drag-and-drop file ingestion, automatic column mapping, staged data quality review, error filtering, and direct clipboard/file download generation.",
+            RazorSnippet = "<TwImportExportWizard TItem=\"Customer\" Items=\"_customers\" Title=\"Data Transfer Hub\" OnImportCompleted=\"HandleImport\" OnExportGenerated=\"HandleExport\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Items", "IEnumerable<TItem>?", "null", "Active entity dataset for export operations."),
+                new ComponentParameterDoc("Title", "string", "\"Data Import & Export Wizard\"", "Main header title."),
+                new ComponentParameterDoc("Subtitle", "string", "\"Multi-format data interchange tool...\"", "Descriptive header subtitle."),
+                new ComponentParameterDoc("Class", "string", "\"\"", "Custom Tailwind CSS utility classes."),
+                new ComponentParameterDoc("OnImportCompleted", "EventCallback<DataImportResult<TItem>>", "default", "Fires when staged incoming records are confirmed and ingested."),
+                new ComponentParameterDoc("OnExportGenerated", "EventCallback<DataExportResult>", "default", "Fires when serialized file payloads are emitted.")
             }
         },
         new ComponentDocItem

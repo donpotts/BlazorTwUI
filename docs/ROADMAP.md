@@ -29,7 +29,7 @@ This document outlines the strategic architecture, component specifications, and
 | **36. Planning & Enterprise Suite** | `TwScheduler`, `TwGantt`, `TwTreeList`, `TwToolbar`, `TwWindow`, `TwHtmlEditor`, `TwFormLayout` and 8 more | Shipped (v0.7.0) ✅ | Planning & Enterprise |
 | **37. Enterprise Data Grid** | `TwDataGrid` grouping, summaries, master-detail, inline editing, export, saved layout | Shipped (v0.7.0) ✅ | Enterprise Data |
 | **38. Page Templates & UI Building Blocks** | `TwCompactStatCard`, `TwLandingHero`, `TwPricingSection`, `TwPromptComposer`, `TwActivityTimeline`, `FintechAnalyticsDashboard`, `AiOperationsTokenMonitor`, `SaaSProductLanding`, `TemplatesGallery` | Shipped (v0.8.1) ✅ | Templates & Building Blocks |
-| **39. Advanced OLAP Pivot & Master-Detail Suites** | `TwPivotTable`, `TwMasterDetailGrid`, `TwMasterDetail`, `TwMasterDetailForm` | Shipped (v0.8.2) ✅ | Analytics & Master-Detail |
+| **39. Advanced OLAP Pivot, Master-Detail & Data Transfer Suites** | `TwPivotTable`, `TwPivotChart`, `TwMasterDetailGrid`, `TwMasterDetail`, `TwMasterDetailForm`, `TwImportExportWizard` | Shipped (v0.8.2) ✅ | Analytics, Master-Detail & Data Transfer |
 | **16. Native OpenTelemetry Component Tracing** | `TwTelemetryDashboard`, `TwActivityMeter` | Shipped (v0.5.0) ✅ | Observability & Performance HUD |
 | **17. .NET Aspire 11 Live App Host Orchestration** | `TwAspireHub`, `Aspire.Hosting.BlazorTwUI` | Shipped (v0.5.1) ✅ | Cloud-Native & Developer Velocity |
 | **18. Runtime-Native Async V2 & Hardware Acceleration** | `TwVectorMath`, `TwSimdVectorService` | Shipped (v0.5.1) ✅ | Runtime Performance & Vector SIMD |
@@ -705,7 +705,7 @@ flowchart LR
     I --> J["v0.7.0 (Release ✅)<br/>Planning & Enterprise Suite<br/>Data Grid: Grouping, Summaries, Editing, Export<br/>234 Components"]
     J --> K["v0.8.0 (Release ✅)<br/>TwMerge Conflict Engine<br/>Multi-Part TwSlots & Primitives<br/>246 Components"]
     K --> L["v0.8.1 (Release ✅)<br/>Page Templates & Building Blocks<br/>Fintech, AI Ops, SaaS Landing<br/>4K Video Showcase<br/>255 Components"]
-    L --> M["v0.8.2 (Release ✅)<br/>4-Axis OLAP TwPivotTable<br/>Master-Detail Nested Grids<br/>Split-Pane Studio<br/>259 Components"]
+    L --> M["v0.8.2 (Release ✅)<br/>4-Axis OLAP TwPivotTable & Chart<br/>Master-Detail Nested Grids<br/>Data Transfer Wizard<br/>261 Components"]
 ```
 
 ---
@@ -728,19 +728,21 @@ Turnkey full-page solutions and composable atomic building blocks with pure math
 
 ---
 
-## 39. 📊 Advanced OLAP Pivot & Master-Detail Suites
+## 39. 📊 Advanced OLAP Pivot, Master-Detail & Data Transfer Suites
 
-Full-featured generic analytical cross-tabulation and hierarchical data management:
+Full-featured generic analytical cross-tabulation, hierarchical master-detail management, and multi-format data interchange:
 
-- **Generic 4-Axis OLAP Pivot Table (`TwPivotTable<TItem>`)**:
-  - 4-Axis architecture: Row Area (nested hierarchical tree groups with expand/collapse), Column Area, Data Area (multi-measure aggregations: Sum, Average, Count, DistinctCount, Min, Max, Product), and Filter/Page Area.
-  - Dynamic heatmap color scaling with normalized intensity shading.
-  - Interactive Excel-like Field List configurator panel.
-  - Cell drill-down raw records inspector dialog with tabular viewer and CSV export.
+- **Generic 4-Axis OLAP Pivot Table & Connected Chart**:
+  - `TwPivotTable<TItem>`: 4-Axis architecture (Row Area with nested hierarchical tree groups and expand/collapse, Column Area, Data Area with multi-measure aggregations, and Filter/Page Area), dynamic heatmap color scaling, interactive Excel-like Field List configurator, and cell drill-down raw records inspector dialog with CSV export.
+  - `TwPivotChart<TItem>`: Connected SVG OLAP bar/column visualizer dynamically bound to pivot dimensions with auto-scaled gridlines and legend series toggles.
 - **Master-Detail Architecture Suite**:
   - `TwMasterDetailGrid<TMaster, TChild>`: Hierarchical data table featuring expandable master rows with nested child grids, chevron toggles, multi-row or auto-collapse expansion modes, independent child column sorting, and add/delete child line item callbacks.
   - `TwMasterDetail<TMaster, TChild>`: Synchronized Master/Detail split-pane workspace with Column (horizontal) and Row (vertical) layout modes, live search, status chips, multi-tab detail inspector (Master Form, Child Records Grid, Audit Timeline), and two-way item selection binding.
   - `TwMasterDetailForm`: Turnkey transactional Master/Detail form designed for Invoices, Purchase Orders, and Service Statements with top metadata fields, dynamic line item table, '+ Add Item', real-time subtotal, tax %, discount, and grand total recalculation.
+- **Multi-Format Data Transfer Wizard (`TwImportExportWizard<TItem>`)**:
+  - Bi-directional import and export supporting CSV, JSON, Excel TSV, ANSI SQL INSERT, and XML.
+  - Import workflow: raw text/file dropzone, auto-column mapping to `TItem` properties, staged data quality review with row linting, and ingestion strategy (`Append`, `Replace`, `MergeByKey`).
+  - Export workflow: format chooser, property filter checkboxes, custom filename emission, and instant download/clipboard copy.
 
 
 Contributions and discussions are welcomed in the [GitHub Discussions](https://github.com/donpotts/BlazorTwUI/discussions) and [Issue Tracker](https://github.com/donpotts/BlazorTwUI/issues).
