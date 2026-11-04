@@ -63,7 +63,7 @@
             <!-- Heatmap Toggle -->
             <button type="button" @onclick="ToggleHeatmap" data-testid="pivot-heatmap-toggle"
                     title="Toggle Heatmap Shading"
-                    class="px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 @(_activeConfig.EnableHeatmap ? "bg-brand-50 dark:bg-brand-950/40 border-brand-500 text-brand-700 dark:text-brand-300" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50")">
+                    class="px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 @(_activeConfig.EnableHeatmap ? "bg-brand-50 dark:bg-slate-800 border-brand-500 text-brand-700 dark:text-brand-300 ring-1 ring-brand-500/30" : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50")">
                 <span>🔥</span>
                 <span>Heatmap</span>
             </button>
@@ -91,7 +91,7 @@
     <!-- Filter (Page) Area Slicers -->
     @if (_filterFields.Count > 0)
     {
-        <div class="flex flex-wrap items-center gap-3 p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-850/60 border border-slate-200 dark:border-slate-800 text-xs">
+        <div class="flex flex-wrap items-center gap-3 p-3 rounded-2xl bg-slate-50/70 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
             <span class="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-[10px] flex items-center gap-1">
                 <span>🏷️</span> Page Filters:
             </span>
@@ -122,7 +122,7 @@
     <!-- Interactive Field List (4-Axis Configurator) -->
     @if (_showFieldSelector)
     {
-        <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-850/90 border border-slate-200 dark:border-slate-800 space-y-4 animate-fadeIn text-xs" data-testid="pivot-field-selector-panel">
+        <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 animate-fadeIn text-xs" data-testid="pivot-field-selector-panel">
             <div class="flex items-center justify-between">
                 <div>
                     <span class="font-black text-slate-900 dark:text-white uppercase tracking-wider text-xs">
@@ -147,7 +147,7 @@
                     <div class="space-y-1 max-h-56 overflow-y-auto pr-1">
                         @foreach (var f in _allFields)
                         {
-                            <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
+                            <div class="p-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between text-xs">
                                 <div class="flex items-center gap-1.5 truncate">
                                     <span class="text-[10px] text-slate-400">@(f.FieldType == PivotFieldType.Measure ? "∑" : "🏷️")</span>
                                     <span class="font-semibold text-slate-800 dark:text-slate-200 truncate" title="@f.DisplayName">@f.DisplayName</span>
@@ -167,7 +167,7 @@
                 </div>
 
                 <!-- Zone 2: Filter (Page) Area -->
-                <div class="space-y-2 p-3 rounded-2xl bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/20">
+                <div class="space-y-2 p-3 rounded-2xl bg-amber-500/10 dark:bg-amber-950/40 border border-amber-500/30">
                     <span class="font-bold text-amber-700 dark:text-amber-300 block text-[11px] uppercase tracking-wider">
                         1. Filter (Page) Area
                     </span>
@@ -178,7 +178,7 @@
                         }
                         @foreach (var ff in _filterFields)
                         {
-                            <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-500/30 flex items-center justify-between text-xs shadow-2xs">
+                            <div class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-amber-500/30 flex items-center justify-between text-xs shadow-2xs">
                                 <span class="font-bold text-amber-700 dark:text-amber-300">@GetFieldDisplayName(ff)</span>
                                 <button type="button" @onclick='() => RemoveFilterField(ff)' class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove">✕</button>
                             </div>
@@ -187,7 +187,7 @@
                 </div>
 
                 <!-- Zone 3: Column Area -->
-                <div class="space-y-2 p-3 rounded-2xl bg-indigo-500/5 dark:bg-indigo-950/20 border border-indigo-500/20">
+                <div class="space-y-2 p-3 rounded-2xl bg-indigo-500/10 dark:bg-indigo-950/40 border border-indigo-500/30">
                     <span class="font-bold text-indigo-700 dark:text-indigo-300 block text-[11px] uppercase tracking-wider">
                         2. Column Area
                     </span>
@@ -198,7 +198,7 @@
                         }
                         @foreach (var cf in _activeConfig.ColumnFields)
                         {
-                            <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-indigo-500/30 flex items-center justify-between text-xs shadow-2xs">
+                            <div class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-indigo-500/30 flex items-center justify-between text-xs shadow-2xs">
                                 <span class="font-bold text-indigo-700 dark:text-indigo-300">@GetFieldDisplayName(cf)</span>
                                 <button type="button" @onclick='() => RemoveColField(cf)' class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove">✕</button>
                             </div>
@@ -207,7 +207,7 @@
                 </div>
 
                 <!-- Zone 4: Row Area -->
-                <div class="space-y-2 p-3 rounded-2xl bg-brand-500/5 dark:bg-brand-950/20 border border-brand-500/20">
+                <div class="space-y-2 p-3 rounded-2xl bg-brand-500/10 dark:bg-slate-800/80 border border-brand-500/30">
                     <span class="font-bold text-brand-700 dark:text-brand-300 block text-[11px] uppercase tracking-wider">
                         3. Row Area (Hierarchy)
                     </span>
@@ -218,7 +218,7 @@
                         }
                         @foreach (var rf in _activeConfig.RowFields)
                         {
-                            <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-brand-500/30 flex items-center justify-between text-xs shadow-2xs">
+                            <div class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-brand-500/30 flex items-center justify-between text-xs shadow-2xs">
                                 <span class="font-bold text-brand-700 dark:text-brand-300">@GetFieldDisplayName(rf)</span>
                                 <button type="button" @onclick='() => RemoveRowField(rf)' class="text-rose-500 hover:text-rose-700 font-bold text-xs" title="Remove">✕</button>
                             </div>
@@ -227,7 +227,7 @@
                 </div>
 
                 <!-- Zone 5: Data (Values) Area -->
-                <div class="space-y-2 p-3 rounded-2xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20">
+                <div class="space-y-2 p-3 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/40 border border-emerald-500/30">
                     <span class="font-bold text-emerald-700 dark:text-emerald-300 block text-[11px] uppercase tracking-wider">
                         4. Data (Value) Area
                     </span>
@@ -238,7 +238,7 @@
                         }
                         @foreach (var m in _activeConfig.Measures)
                         {
-                            <div class="p-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-500/30 flex items-center justify-between text-xs shadow-2xs">
+                            <div class="p-2 rounded-xl bg-white dark:bg-slate-800 border border-emerald-500/30 flex items-center justify-between text-xs shadow-2xs">
                                 <div>
                                     <span class="font-bold text-emerald-700 dark:text-emerald-300">@m.FieldName</span>
                                     <span class="text-[10px] text-slate-400 block font-mono">@m.Aggregator</span>

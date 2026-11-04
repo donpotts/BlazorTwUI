@@ -84,7 +84,7 @@
                     var isExpanded = _expandedMasterKeys.Contains(GetMasterKey(master));
 
                     <!-- Master Row -->
-                    <tr class="transition-colors @(isExpanded ? "bg-brand-50/40 dark:bg-brand-950/20 font-semibold" : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40")"
+                    <tr class="transition-colors @(isExpanded ? "bg-slate-100/90 dark:bg-slate-800 border-l-4 border-brand-500 font-semibold" : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40")"
                         data-testid="master-row">
                         <!-- Expand Toggle Button -->
                         <td class="p-3 text-center w-10">
@@ -107,7 +107,7 @@
                             {
                                 var val = col.ValueSelector != null ? col.ValueSelector(master) : null;
                                 <td class="p-3 text-slate-700 dark:text-slate-300 font-mono">
-                                    @(val?.ToString() ?? "—")
+                                    @FormatCellValue(val)
                                 </td>
                             }
                         }
@@ -195,7 +195,7 @@
                                                                 {
                                                                     var cval = ccol.ValueSelector != null ? ccol.ValueSelector(child) : null;
                                                                     <td class="p-2.5 font-mono">
-                                                                        @(cval?.ToString() ?? "—")
+                                                                        @FormatCellValue(cval)
                                                                     </td>
                                                                 }
                                                             }
@@ -328,7 +328,8 @@
         else
         {
             _masterColumns = new();
-            var props = typeof(TMaster).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            var props = typeof(TMaster).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType));
             foreach (var p in props.Take(6))
             {
                 _masterColumns.Add(new ChildRecordColumn<TMaster>(p.Name, m => p.GetValue(m)));
@@ -342,12 +343,23 @@
         else
         {
             _childColumns = new();
-            var cprops = typeof(TChild).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+            var cprops = typeof(TChild).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.PropertyType == typeof(string) || !typeof(System.Collections.IEnumerable).IsAssignableFrom(p.PropertyType));
             foreach (var p in cprops.Take(6))
             {
                 _childColumns.Add(new ChildRecordColumn<TChild>(p.Name, c => p.GetValue(c)));
             }
         }
+    }
+
+    private static string FormatCellValue(object? val)
+    {
+        if (val == null) return "—";
+        if (val is DateTime dt) return dt.ToString("yyyy-MM-dd");
+        if (val is decimal dec) return dec.ToString("C0", CultureInfo.CurrentCulture);
+        if (val is double dbl) return dbl.ToString("N0", CultureInfo.CurrentCulture);
+        if (val is System.Collections.ICollection coll) return $"{coll.Count} items";
+        return val.ToString() ?? "—";
     }
 
     private string GetMasterKey(TMaster master)
