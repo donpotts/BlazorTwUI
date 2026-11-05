@@ -3,6 +3,7 @@
 @using System.Globalization
 @using System.Text.Json
 @using BlazorTwUI.Services
+@using BlazorTwUI.Models
 @inject IJSRuntime JS
 
 @{
@@ -30,6 +31,14 @@
                     </span>
                     <input type="search" value="@_searchQuery" @oninput="HandleGlobalSearchInput" placeholder="@SearchPlaceholder" aria-label="Search all records" data-testid="grid-search"
                            class="w-full ps-9 pe-8 py-2 rounded-xl text-xs sm:text-sm border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500" />
+                </div>
+            }
+
+            @if (EnableLiveStreaming)
+            {
+                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 shadow-xs" title="Real-time data synchronization active">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    <span>@LiveStreamingStatus</span>
                 </div>
             }
 
@@ -494,6 +503,28 @@
     [Parameter] public bool ShowPagination { get; set; } = true;
     [Parameter] public int PageSize { get; set; } = 5;
     [Parameter] public int[] PageSizeOptions { get; set; } = new[] { 5, 10, 20, 50 };
+    [Parameter] public bool EnableLiveStreaming { get; set; } = false;
+    [Parameter] public string LiveStreamingStatus { get; set; } = "Live Stream Connected";
+    [Parameter] public EventCallback<GridDeltaUpdate<TItem>> OnDeltaUpdate { get; set; }
+
+    private readonly Dictionary<object, (string Kind, DateTime Timestamp)> _deltaHighlights = new();
+
+    public void HighlightDelta(TItem item, string kind = "updated", string? reason = null)
+    {
+        if (item is null) return;
+        _deltaHighlights[item] = (kind, DateTime.UtcNow);
+        if (OnDeltaUpdate.HasDelegate)
+        {
+            _ = OnDeltaUpdate.InvokeAsync(new GridDeltaUpdate<TItem>
+            {
+                Kind = kind,
+                Item = item,
+                Timestamp = DateTime.UtcNow,
+                Reason = reason
+            });
+        }
+        StateHasChanged();
+    }
     [Parameter] public bool ShowPageSizeSelector { get; set; } = true;
     [Parameter] public int CurrentPage { get; set; } = 1;
     [Parameter] public EventCallback<int> CurrentPageChanged { get; set; }
@@ -638,6 +669,15 @@
     // otherwise it would fight the caller's highlight in the generated CSS.
     private string RowBackground(TItem item, bool selected)
     {
+        if (item is not null && _deltaHighlights.TryGetValue(item, out var highlight) && (DateTime.UtcNow - highlight.Timestamp).TotalSeconds < 4)
+        {
+            return highlight.Kind switch
+            {
+                "inserted" => " animate-pulse bg-emerald-500/20 dark:bg-emerald-500/25 ring-1 ring-emerald-500/40",
+                "deleted" => " bg-rose-500/20 dark:bg-rose-500/25 line-through opacity-60",
+                _ => " animate-pulse bg-amber-500/20 dark:bg-amber-500/25 ring-1 ring-amber-500/40"
+            };
+        }
         var custom = RowClassSelector?.Invoke(item);
         if (selected) return "bg-brand-50 dark:bg-brand-950 " + custom;
         return string.IsNullOrWhiteSpace(custom) || !custom.Contains("bg-", StringComparison.Ordinal) ? "bg-white dark:bg-slate-900 " + custom : custom;
