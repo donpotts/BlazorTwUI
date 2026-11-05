@@ -560,6 +560,8 @@
     [Parameter] public TenantIsolationMode TenantMode { get; set; } = TenantIsolationMode.EnforceCurrentTenant;
     [Parameter] public EventCallback<DataImportResult<TItem>> OnImportCompleted { get; set; }
     [Parameter] public EventCallback<DataExportResult> OnExportGenerated { get; set; }
+    [Parameter] public bool IsOpen { get; set; } = true;
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
 
     private DataTransferMode _mode = DataTransferMode.Import;
     private InputMethod _inputMethod = InputMethod.FileUpload;
