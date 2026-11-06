@@ -13,17 +13,21 @@
             </label>
         }
     </div>
-    <ul class="max-h-60 overflow-y-auto p-1" data-testid="listbox-items">
-        @foreach (var item in Shown())
+    @{ var shown = ShownList(); }
+    <ul class="max-h-60 overflow-y-auto p-1" data-testid="listbox-items" aria-label="@Label" data-virtual="@(shown.Count > VirtualizeThreshold ? "true" : null)">
+        @if (shown.Count > VirtualizeThreshold)
         {
-            var on = IsSelected(item);
-            <li>
-                <label class="flex items-center gap-2 rounded-lg px-2 min-h-[36px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 focus-within:ring-2 focus-within:ring-brand-500">
-                    <input type="@(Multiple ? "checkbox" : "radio")" name="@_id" checked="@on" @onchange="() => ToggleAsync(item)" data-testid="listbox-item" data-text="@Text(item)"
-                           class="text-brand-600 focus:ring-brand-500" />
-                    <span class="text-sm text-slate-900 dark:text-slate-100">@Text(item)</span>
-                </label>
-            </li>
+            @* A long list renders only the rows on screen; search and Select all still cover every item. *@
+            <Virtualize TItem="TItem" Items="shown" ItemSize="36" OverscanCount="8" MaxItemCount="60" SpacerElement="li" Context="item">
+                @ItemFragment(item)
+            </Virtualize>
+        }
+        else
+        {
+            @foreach (var item in shown)
+            {
+                @ItemFragment(item)
+            }
         }
     </ul>
     @if (!Shown().Any())
@@ -47,11 +51,45 @@
 
     private string Text(TItem item) => TextSelector?.Invoke(item) ?? item?.ToString() ?? "";
 
-    private IEnumerable<TItem> Shown() => string.IsNullOrWhiteSpace(_query)
-        ? Items
-        : Items.Where(i => Text(i).Contains(_query, StringComparison.OrdinalIgnoreCase));
+    /// <summary>Item count above which only the rows on screen are rendered.</summary>
+    [Parameter] public int VirtualizeThreshold { get; set; } = 100;
 
-    private bool IsSelected(TItem item) => Selected.Contains(item);
+    private List<TItem>? _shownCache;
+    private (object? Items, string Query) _shownKey;
+
+    private List<TItem> ShownList()
+    {
+        var key = ((object?)Items, _query ?? "");
+        if (_shownCache is not null && _shownKey.Equals(key)) return _shownCache;
+        _shownKey = key;
+        _shownCache = string.IsNullOrWhiteSpace(_query)
+            ? Items.ToList()
+            : Items.Where(i => Text(i).Contains(_query, StringComparison.OrdinalIgnoreCase)).ToList();
+        return _shownCache;
+    }
+
+    private IEnumerable<TItem> Shown() => ShownList();
+
+    private RenderFragment ItemFragment(TItem item) => __builder =>
+    {
+        var on = IsSelected(item);
+        <li class="h-9">
+            <label class="flex items-center gap-2 rounded-lg px-2 min-h-[36px] cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 focus-within:ring-2 focus-within:ring-brand-500">
+                <input type="@(Multiple ? "checkbox" : "radio")" name="@_id" checked="@on" @onchange="() => ToggleAsync(item)" data-testid="listbox-item" data-text="@Text(item)"
+                       class="text-brand-600 focus:ring-brand-500" />
+                <span class="text-sm text-slate-900 dark:text-slate-100 truncate">@Text(item)</span>
+            </label>
+        </li>
+    };
+
+    private HashSet<TItem>? _selectedSet;
+    private IReadOnlyList<TItem>? _selectedFor;
+    protected override void OnParametersSet() { _selectedSet = null; _shownCache = null; }
+    private bool IsSelected(TItem item)
+    {
+        if (!ReferenceEquals(_selectedFor, Selected) || _selectedSet is null) { _selectedFor = Selected; _selectedSet = new HashSet<TItem>(Selected); }
+        return _selectedSet.Contains(item);
+    }
 
     private bool AllShownSelected => Shown().Any() && Shown().All(IsSelected);
 
@@ -72,7 +110,8 @@
     private async Task ToggleAllAsync(bool on)
     {
         var shown = Shown().ToList();
-        var list = Selected.Where(s => !shown.Contains(s)).ToList();
+        var shownSet = new HashSet<TItem>(shown);
+        var list = Selected.Where(s => !shownSet.Contains(s)).ToList();
         if (on) list.AddRange(shown);
         await SetAsync(list);
     }

@@ -12,6 +12,11 @@
     var lead = (DetailTemplate is not null ? 1 : 0) + (Selectable ? 1 : 0);
     var colCount = lead + visible.Count + (ActionsTemplate is not null ? 1 : 0) + (HasEditable ? 1 : 0);
     var multiSort = _sorts.Count > 1;
+    var virtualMode = view.Virtual;
+    var headerRows = 1 + (ColumnFilteringOn && _showColumnFilters ? 1 : 0);
+    var entries = BuildEntries(view);
+    var hasFooter = visible.Any(c => c.Summary != GridSummary.None) && view.Total > 0;
+    _render = new RowContext(visible, colCount, headerRows, virtualMode);
 }
 
 <div class="w-full space-y-3.5 @Class" data-testid="grid">
@@ -49,7 +54,7 @@
                     <span>Filters</span>
                     @if (ActiveFilterCount > 0)
                     {
-                        <span class="w-4 h-4 rounded-full bg-brand-700 text-white text-[10px] flex items-center justify-center font-bold">@ActiveFilterCount</span>
+                        <span class="min-w-5 h-5 px-1 rounded-full bg-brand-700 text-white text-xs flex items-center justify-center font-bold">@ActiveFilterCount</span>
                     }
                 </button>
             }
@@ -114,15 +119,22 @@
                 {
                     @BatchActionsTemplate(_selectedItems.ToList())
                 }
-                <button type="button" @onclick="DeselectAll" class="text-[11px] underline hover:text-brand-900 dark:hover:text-white ms-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Clear</button>
+                <button type="button" @onclick="DeselectAll" class="text-xs underline hover:text-brand-900 dark:hover:text-white ms-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Clear</button>
             </div>
         }
 
         <!-- Results Counter & Page Size Selector -->
         <div class="flex items-center gap-3 text-xs text-slate-700 dark:text-slate-300 self-end lg:self-auto shrink-0">
-            <span data-testid="grid-range" role="status">Showing @(view.Total == 0 ? 0 : Math.Min((view.PageNumber - 1) * PageSize + 1, view.Total)) - @Math.Min(view.PageNumber * PageSize, view.Total) of @view.Total</span>
+            @if (virtualMode)
+            {
+                <span data-testid="grid-range" role="status">@view.Total @(view.Total == 1 ? "record" : "records")</span>
+            }
+            else
+            {
+                <span data-testid="grid-range" role="status">Showing @(view.Total == 0 ? 0 : Math.Min((view.PageNumber - 1) * PageSize + 1, view.Total)) - @Math.Min(view.PageNumber * PageSize, view.Total) of @view.Total</span>
+            }
 
-            @if (ShowPageSizeSelector)
+            @if (ShowPageSizeSelector && !virtualMode)
             {
                 <label class="flex items-center gap-1.5">
                     <span class="hidden sm:inline">Rows:</span>
@@ -140,11 +152,12 @@
 
     <!-- Desktop / Tablet Table View (hidden on mobile, visible on md+) -->
     <div class="hidden md:block overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
-        <div class="overflow-auto" style="@(MaxHeight is null ? null : $"max-height:{MaxHeight}")">
-            <table class="w-full text-left text-sm text-slate-700 dark:text-slate-300" data-testid="grid-table">
+        <div class="overflow-auto" style="@(EffectiveMaxHeight(virtualMode) is { } mh ? $"max-height:{mh}" : null)" data-testid="grid-scroller">
+            <table class="w-full text-left text-sm text-slate-700 dark:text-slate-300" data-testid="grid-table"
+                   data-virtual="@(virtualMode ? "true" : null)" aria-rowcount="@(virtualMode ? headerRows + entries.Count + (hasFooter ? 1 : 0) : null)">
                 <caption class="sr-only">@(Title ?? Label)</caption>
-                <thead class="bg-slate-50 dark:bg-slate-950 text-xs uppercase font-bold text-slate-800 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 select-none @(StickyHeader || MaxHeight is not null ? "sticky top-0 z-10" : "")">
-                    <tr class="bg-inherit">
+                <thead class="bg-slate-50 dark:bg-slate-950 text-xs uppercase font-bold text-slate-800 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 select-none @(StickyHeader || EffectiveMaxHeight(virtualMode) is not null ? "sticky top-0 z-10" : "")">
+                    <tr class="bg-inherit" aria-rowindex="@(virtualMode ? 1 : null)">
                         @if (DetailTemplate is not null)
                         {
                             <th scope="col" class="w-10 px-2 py-3.5"><span class="sr-only">Expand row</span></th>
@@ -195,7 +208,7 @@
                     <!-- Optional Per-Column Filter Row -->
                     @if (ColumnFilteringOn && _showColumnFilters)
                     {
-                        <tr class="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 font-normal normal-case" data-testid="grid-filter-row">
+                        <tr class="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 font-normal normal-case" data-testid="grid-filter-row" aria-rowindex="@(virtualMode ? 2 : null)">
                             @if (DetailTemplate is not null) { <th class="w-10"></th> }
                             @if (Selectable) { <th class="w-10 px-4 py-2"></th> }
 
@@ -225,7 +238,7 @@
                                 <th class="px-5 py-2 text-end @ActionsStickyClass">
                                     @if (ActiveFilterCount > 0)
                                     {
-                                        <button type="button" @onclick="ResetColumnFilters" class="text-[11px] text-slate-700 dark:text-slate-300 hover:text-rose-700 font-medium underline">Clear Filters</button>
+                                        <button type="button" @onclick="ResetColumnFilters" class="text-xs text-slate-700 dark:text-slate-300 hover:text-rose-700 font-medium underline">Clear Filters</button>
                                     }
                                 </th>
                             }
@@ -249,122 +262,17 @@
                             </td>
                         </tr>
                     }
+                    else if (virtualMode)
+                    {
+                        <Virtualize TItem="GridEntry" Items="entries" ItemSize="EffectiveRowHeight" OverscanCount="OverscanCount" MaxItemCount="MaxRenderedRows" SpacerElement="tr" Context="entry">
+                            @EntryFragment(entry)
+                        </Virtualize>
+                    }
                     else
                     {
-                        string? lastGroup = null;
-                        var hasLast = false;
-                        var rowNo = (view.PageNumber - 1) * PageSize;
-
-                        @foreach (var item in view.Page)
+                        @foreach (var entry in entries)
                         {
-                            rowNo++;
-                            string? groupKey = null;
-                            if (_groupBy is not null)
-                            {
-                                groupKey = GroupKeyOf(item);
-                                if (!hasLast || groupKey != lastGroup)
-                                {
-                                    hasLast = true;
-                                    lastGroup = groupKey;
-                                    var g = groupKey;
-                                    var members = view.Groups![g];
-                                    var collapsed = _collapsed.Contains(g);
-                                    <tr class="bg-slate-100 dark:bg-slate-800/70" data-testid="grid-group" data-group="@g" data-collapsed="@collapsed.ToString().ToLowerInvariant()">
-                                        <td colspan="@colCount" class="px-4 py-2">
-                                            <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-                                                <button type="button" @onclick="() => ToggleGroup(g)" aria-expanded="@((!collapsed).ToString().ToLowerInvariant())" data-testid="grid-group-toggle"
-                                                        class="inline-flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-                                                    <span aria-hidden="true" class="inline-block transition-transform motion-reduce:transition-none @(collapsed ? "rtl:rotate-180" : "rotate-90 rtl:-rotate-90")">›</span>
-                                                    @_groupBy.Title: @g <span class="font-normal text-slate-700 dark:text-slate-300">(@members.Count)</span>
-                                                </button>
-                                                @foreach (var sc in visible.Where(c => c.Summary != GridSummary.None && c != _groupBy))
-                                                {
-                                                    <span class="text-xs text-slate-800 dark:text-slate-200" data-testid="grid-group-summary">@sc.Title @SummaryText(sc, members)</span>
-                                                }
-                                            </div>
-                                        </td>
-                                    </tr>
-                                }
-                                if (_collapsed.Contains(groupKey)) { continue; }
-                            }
-
-                            var isSelected = _selectedItems.Contains(item);
-                            var isEditing = IsEditing(item);
-                            var expanded = _expanded.Contains(item);
-                            var detailId = $"{_id}-detail-{rowNo}";
-                            <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 @RowBackground(item, isSelected)"
-                                aria-selected="@(Selectable ? isSelected.ToString().ToLowerInvariant() : null)" data-testid="grid-row" data-row="@rowNo">
-                                @if (DetailTemplate is not null)
-                                {
-                                    <td class="w-10 px-2 py-3.5 text-center">
-                                        <button type="button" @onclick="() => ToggleDetail(item)" aria-expanded="@expanded.ToString().ToLowerInvariant()" aria-controls="@detailId" aria-label="@(expanded ? "Collapse" : "Expand") row @rowNo" data-testid="grid-detail-toggle"
-                                                class="w-7 h-7 rounded text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
-                                            <span aria-hidden="true" class="inline-block transition-transform motion-reduce:transition-none @(expanded ? "rotate-90 rtl:-rotate-90" : "rtl:rotate-180")">›</span>
-                                        </button>
-                                    </td>
-                                }
-                                @if (Selectable)
-                                {
-                                    <td class="w-10 px-4 py-3.5 text-center">
-                                        <input type="checkbox" checked="@isSelected" @onchange="() => ToggleItemSelection(item)" aria-label="Select row @rowNo" data-testid="grid-select-row"
-                                               class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer" />
-                                    </td>
-                                }
-
-                                @foreach (var col in visible)
-                                {
-                                    <td class="@CellPadding @GetAlignClass(col.Align) @(col.Frozen ? "sticky start-0 z-[1] bg-inherit" : "") @col.CellClass @col.CellClassSelector?.Invoke(item)" style="@col.BuildWidthStyle()" data-col="@col.Title">
-                                        @if (isEditing && col.Editable)
-                                        {
-                                            var eid = $"{_id}-e{_columns.IndexOf(col)}";
-                                            <label class="sr-only" for="@eid">@col.Title</label>
-                                            <input id="@eid" type="@col.InputType" value="@_draft.GetValueOrDefault(col)" @oninput="e => _draft[col] = e.Value?.ToString() ?? string.Empty" @onkeydown="e => OnEditKeyAsync(e, item)"
-                                                   aria-invalid="@(_errors.ContainsKey(col) ? "true" : null)" aria-describedby="@(_errors.ContainsKey(col) ? eid + "-err" : null)" data-testid="grid-edit-input" data-col="@col.Title"
-                                                   class="w-full px-2 py-1 rounded-lg border text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 @(_errors.ContainsKey(col) ? "border-red-600 focus-visible:ring-red-500" : "border-slate-300 dark:border-slate-600 focus-visible:ring-brand-500")" />
-                                            @if (_errors.TryGetValue(col, out var err))
-                                            {
-                                                <p id="@(eid + "-err")" role="alert" class="mt-1 text-xs font-semibold text-red-700 dark:text-red-300" data-testid="grid-edit-error">@err</p>
-                                            }
-                                        }
-                                        else if (col.CellTemplate is not null)
-                                        {
-                                            @col.CellTemplate(item)
-                                        }
-                                        else if (col.Property is not null)
-                                        {
-                                            @col.Property(item)
-                                        }
-                                    </td>
-                                }
-
-                                @if (ActionsTemplate is not null)
-                                {
-                                    <td class="@CellPadding text-end whitespace-nowrap @ActionsStickyClass" data-testid="grid-actions-cell">
-                                        <div class="inline-flex items-center gap-1.5 justify-end min-h-[44px]">@ActionsTemplate(item)</div>
-                                    </td>
-                                }
-                                @if (HasEditable)
-                                {
-                                    <td class="px-3 py-3.5 text-end whitespace-nowrap">
-                                        @if (isEditing)
-                                        {
-                                            <button type="button" @onclick="() => SaveEditAsync(item)" data-testid="grid-save" class="@EditBtn bg-brand-700 text-white hover:bg-brand-600">Save</button>
-                                            <button type="button" @onclick="CancelEdit" data-testid="grid-cancel" class="@EditBtn border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
-                                        }
-                                        else
-                                        {
-                                            <button type="button" @onclick="() => StartEdit(item)" disabled="@(_isEditing)" aria-label="Edit row @rowNo" data-testid="grid-edit"
-                                                    class="@EditBtn border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50">Edit</button>
-                                        }
-                                    </td>
-                                }
-                            </tr>
-                            @if (DetailTemplate is not null && expanded)
-                            {
-                                <tr id="@detailId" class="bg-slate-50 dark:bg-slate-950/50" data-testid="grid-detail">
-                                    <td colspan="@colCount" class="px-6 py-4">@DetailTemplate(item)</td>
-                                </tr>
-                            }
+                            @EntryFragment(entry)
                         }
                     }
                 </tbody>
@@ -393,72 +301,36 @@
     </div>
 
     <!-- Mobile Stacked Card View (visible on mobile, hidden on md+) -->
-    <div class="grid grid-cols-1 gap-3 md:hidden">
-        @if (view.Page.Count == 0)
-        {
-            <div class="p-8 text-center text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-                <p>@EmptyMessage</p>
-                @if (HasAnyActiveFilter)
-                {
-                    <button type="button" @onclick="ResetAllFilters" class="text-xs text-brand-800 font-semibold underline mt-2">Reset filters</button>
-                }
-            </div>
-        }
-        else
-        {
+    @if (view.Page.Count == 0)
+    {
+        <div class="md:hidden p-8 text-center text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            <p>@EmptyMessage</p>
+            @if (HasAnyActiveFilter)
+            {
+                <button type="button" @onclick="ResetAllFilters" class="text-xs text-brand-800 font-semibold underline mt-2">Reset filters</button>
+            }
+        </div>
+    }
+    else if (virtualMode)
+    {
+        <div class="md:hidden overflow-y-auto" style="max-height:@EffectiveMaxHeight(true)" data-testid="grid-cards">
+            <Virtualize TItem="TItem" Items="view.Page" ItemSize="180" OverscanCount="3" MaxItemCount="MaxRenderedRows" Context="card">
+                <div class="pb-3">@CardFragment(card)</div>
+            </Virtualize>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 gap-3 md:hidden" data-testid="grid-cards">
             @foreach (var item in view.Page)
             {
-                var isSelected = _selectedItems.Contains(item);
-                <div class="p-4 rounded-2xl border transition-all bg-white dark:bg-slate-900 shadow-sm @(isSelected ? "border-brand-500 ring-2 ring-brand-500/20" : "border-slate-200 dark:border-slate-800") @RowClassSelector?.Invoke(item)">
-                    @if (MobileCardTemplate is not null)
-                    {
-                        @MobileCardTemplate(item)
-                    }
-                    else
-                    {
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
-                                @if (Selectable)
-                                {
-                                    <label class="flex items-center gap-2">
-                                        <input type="checkbox" checked="@isSelected" @onchange="() => ToggleItemSelection(item)" class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer" />
-                                        <span class="text-xs font-bold text-slate-900 dark:text-slate-200">Select</span>
-                                    </label>
-                                }
-                                @if (visible.Count > 0)
-                                {
-                                    var firstCol = visible[0];
-                                    <div class="font-bold text-sm text-slate-900 dark:text-white truncate">
-                                        @if (firstCol.CellTemplate is not null) { @firstCol.CellTemplate(item) }
-                                        else if (firstCol.Property is not null) { @firstCol.Property(item) }
-                                    </div>
-                                }
-                            </div>
-                            <div class="grid grid-cols-2 gap-2 text-xs">
-                                @foreach (var col in visible.Skip(1))
-                                {
-                                    <div class="min-w-0">
-                                        <span class="text-slate-700 dark:text-slate-400 uppercase font-semibold text-[10px] block">@col.Title</span>
-                                        <div class="text-slate-900 dark:text-slate-200 font-medium mt-0.5 break-words">
-                                            @if (col.CellTemplate is not null) { @col.CellTemplate(item) }
-                                            else if (col.Property is not null) { @col.Property(item) }
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                        </div>
-                    }
-                    @if (ActionsTemplate is not null)
-                    {
-                        <div data-testid="grid-card-actions" class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">@ActionsTemplate(item)</div>
-                    }
-                </div>
+                @CardFragment(item)
             }
-        }
-    </div>
+        </div>
+    }
 
     <!-- Pagination Controls -->
-    @if (ShowPagination && view.Pages > 1)
+    @if (ShowPagination && !virtualMode && view.Pages > 1)
     {
         <nav aria-label="Pagination" class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
             <span class="text-xs text-slate-700 dark:text-slate-300" data-testid="grid-page-label">Page @view.PageNumber of @view.Pages</span>
@@ -486,6 +358,226 @@
 </div>
 
 @code {
+    // ---- body rows: one list of entries (group header, row, detail), rendered either all (paged) or virtualized ----
+
+    private sealed record GridEntry(int Kind, TItem? Item, string? Group, List<TItem>? Members, int RowNo, int Index);
+    private sealed record RowContext(List<TwDataGridColumn<TItem>> Visible, int ColCount, int HeaderRows, bool Virtual);
+    private RowContext _render = new(new(), 0, 1, false);
+
+    private List<GridEntry> BuildEntries(View view)
+    {
+        var list = new List<GridEntry>(view.Page.Count);
+        string? lastGroup = null;
+        var hasLast = false;
+        var rowNo = (view.PageNumber - 1) * (view.Virtual ? 0 : PageSize);
+        foreach (var item in view.Page)
+        {
+            rowNo++;
+            if (_groupBy is not null)
+            {
+                var key = GroupKeyOf(item);
+                if (!hasLast || key != lastGroup)
+                {
+                    hasLast = true;
+                    lastGroup = key;
+                    list.Add(new GridEntry(0, default, key, view.Groups![key], rowNo, list.Count));
+                }
+                if (_collapsed.Contains(key)) continue;
+            }
+            list.Add(new GridEntry(1, item, null, null, rowNo, list.Count));
+            if (DetailTemplate is not null && _expanded.Contains(item)) list.Add(new GridEntry(2, item, null, null, rowNo, list.Count));
+        }
+        return list;
+    }
+
+    private RenderFragment EntryFragment(GridEntry e) => e.Kind switch
+    {
+        0 => GroupFragment(e),
+        2 => DetailFragment(e),
+        _ => RowFragment(e)
+    };
+
+    private int? AriaRow(GridEntry e) => _render.Virtual ? _render.HeaderRows + e.Index + 1 : null;
+
+    private RenderFragment GroupFragment(GridEntry e) => __builder =>
+    {
+        var g = e.Group!;
+        var members = e.Members!;
+        var collapsed = _collapsed.Contains(g);
+        <tr class="bg-slate-100 dark:bg-slate-800/70" data-testid="grid-group" data-group="@g" data-collapsed="@collapsed.ToString().ToLowerInvariant()" aria-rowindex="@AriaRow(e)">
+            <td colspan="@_render.ColCount" class="px-4 py-2">
+                <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    <button type="button" @onclick="() => ToggleGroup(g)" aria-expanded="@((!collapsed).ToString().ToLowerInvariant())" data-testid="grid-group-toggle"
+                            class="inline-flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                        <span aria-hidden="true" class="inline-block transition-transform motion-reduce:transition-none @(collapsed ? "rtl:rotate-180" : "rotate-90 rtl:-rotate-90")">›</span>
+                        @_groupBy!.Title: @g <span class="font-normal text-slate-700 dark:text-slate-300">(@members.Count)</span>
+                    </button>
+                    @foreach (var sc in _render.Visible.Where(c => c.Summary != GridSummary.None && c != _groupBy))
+                    {
+                        <span class="text-xs text-slate-800 dark:text-slate-200" data-testid="grid-group-summary">@sc.Title @SummaryText(sc, members)</span>
+                    }
+                </div>
+            </td>
+        </tr>
+    };
+
+    private RenderFragment DetailFragment(GridEntry e) => __builder =>
+    {
+        var item = e.Item!;
+        <tr id="@($"{_id}-detail-{e.RowNo}")" class="bg-slate-50 dark:bg-slate-950/50" data-testid="grid-detail" aria-rowindex="@AriaRow(e)">
+            <td colspan="@_render.ColCount" class="px-6 py-4">@DetailTemplate!(item)</td>
+        </tr>
+    };
+
+    private RenderFragment RowFragment(GridEntry e) => __builder =>
+    {
+        var item = e.Item!;
+        var rowNo = e.RowNo;
+        var isSelected = _selectedItems.Contains(item);
+        var isEditing = IsEditing(item);
+        var expanded = _expanded.Contains(item);
+        var detailId = $"{_id}-detail-{rowNo}";
+        <tr class="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800 @RowBackground(item, isSelected)" style="@(_render.Virtual ? $"height:{EffectiveRowHeight.ToString(CultureInfo.InvariantCulture)}px" : null)"
+            aria-selected="@(Selectable ? isSelected.ToString().ToLowerInvariant() : null)" aria-rowindex="@AriaRow(e)" data-testid="grid-row" data-row="@rowNo">
+            @if (DetailTemplate is not null)
+            {
+                <td class="w-10 px-2 py-3.5 text-center">
+                    <button type="button" @onclick="() => ToggleDetail(item)" aria-expanded="@expanded.ToString().ToLowerInvariant()" aria-controls="@detailId" aria-label="@(expanded ? "Collapse" : "Expand") row @rowNo" data-testid="grid-detail-toggle"
+                            class="w-7 h-7 rounded text-slate-800 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                        <span aria-hidden="true" class="inline-block transition-transform motion-reduce:transition-none @(expanded ? "rotate-90 rtl:-rotate-90" : "rtl:rotate-180")">›</span>
+                    </button>
+                </td>
+            }
+            @if (Selectable)
+            {
+                <td class="w-10 px-4 py-3.5 text-center">
+                    <input type="checkbox" checked="@isSelected" @onchange="() => ToggleItemSelection(item)" aria-label="Select row @rowNo" data-testid="grid-select-row"
+                           class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer" />
+                </td>
+            }
+
+            @foreach (var col in _render.Visible)
+            {
+                <td class="@CellPadding @GetAlignClass(col.Align) @(col.Frozen ? "sticky start-0 z-[1] bg-inherit" : "") @col.CellClass @col.CellClassSelector?.Invoke(item)" style="@col.BuildWidthStyle()" data-col="@col.Title">
+                    @if (isEditing && col.Editable)
+                    {
+                        var eid = $"{_id}-e{_columns.IndexOf(col)}";
+                        <label class="sr-only" for="@eid">@col.Title</label>
+                        <input id="@eid" type="@col.InputType" value="@_draft.GetValueOrDefault(col)" @oninput="ev => _draft[col] = ev.Value?.ToString() ?? string.Empty" @onkeydown="ev => OnEditKeyAsync(ev, item)"
+                               aria-invalid="@(_errors.ContainsKey(col) ? "true" : null)" aria-describedby="@(_errors.ContainsKey(col) ? eid + "-err" : null)" data-testid="grid-edit-input" data-col="@col.Title"
+                               class="w-full px-2 py-1 rounded-lg border text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus-visible:outline-none focus-visible:ring-2 @(_errors.ContainsKey(col) ? "border-red-600 focus-visible:ring-red-500" : "border-slate-300 dark:border-slate-600 focus-visible:ring-brand-500")" />
+                        @if (_errors.TryGetValue(col, out var err))
+                        {
+                            <p id="@(eid + "-err")" role="alert" class="mt-1 text-xs font-semibold text-red-700 dark:text-red-300" data-testid="grid-edit-error">@err</p>
+                        }
+                    }
+                    else if (col.CellTemplate is not null)
+                    {
+                        @col.CellTemplate(item)
+                    }
+                    else if (col.Property is not null)
+                    {
+                        @col.Property(item)
+                    }
+                </td>
+            }
+
+            @if (ActionsTemplate is not null)
+            {
+                <td class="@CellPadding text-end whitespace-nowrap @ActionsStickyClass" data-testid="grid-actions-cell">
+                    <div class="inline-flex items-center gap-1.5 justify-end min-h-[44px]">@ActionsTemplate(item)</div>
+                </td>
+            }
+            @if (HasEditable)
+            {
+                <td class="px-3 py-3.5 text-end whitespace-nowrap">
+                    @if (isEditing)
+                    {
+                        <button type="button" @onclick="() => SaveEditAsync(item)" data-testid="grid-save" class="@EditBtn bg-brand-700 text-white hover:bg-brand-600">Save</button>
+                        <button type="button" @onclick="CancelEdit" data-testid="grid-cancel" class="@EditBtn border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800">Cancel</button>
+                    }
+                    else
+                    {
+                        <button type="button" @onclick="() => StartEdit(item)" disabled="@(_isEditing)" aria-label="Edit row @rowNo" data-testid="grid-edit"
+                                class="@EditBtn border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-50">Edit</button>
+                    }
+                </td>
+            }
+        </tr>
+    };
+
+    private RenderFragment CardFragment(TItem item) => __builder =>
+    {
+        var visible = _render.Visible;
+        var isSelected = _selectedItems.Contains(item);
+        <div class="p-4 rounded-2xl border transition-all bg-white dark:bg-slate-900 shadow-sm @(isSelected ? "border-brand-500 ring-2 ring-brand-500/20" : "border-slate-200 dark:border-slate-800") @RowClassSelector?.Invoke(item)" data-testid="grid-card">
+            @if (MobileCardTemplate is not null)
+            {
+                @MobileCardTemplate(item)
+            }
+            else
+            {
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                        @if (Selectable)
+                        {
+                            <label class="flex items-center gap-2">
+                                <input type="checkbox" checked="@isSelected" @onchange="() => ToggleItemSelection(item)" class="rounded text-brand-600 focus:ring-brand-500 cursor-pointer" />
+                                <span class="text-xs font-bold text-slate-900 dark:text-slate-200">Select</span>
+                            </label>
+                        }
+                        @if (visible.Count > 0)
+                        {
+                            var firstCol = visible[0];
+                            <div class="font-bold text-sm text-slate-900 dark:text-white truncate">
+                                @if (firstCol.CellTemplate is not null) { @firstCol.CellTemplate(item) }
+                                else if (firstCol.Property is not null) { @firstCol.Property(item) }
+                            </div>
+                        }
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        @foreach (var col in visible.Skip(1))
+                        {
+                            <div class="min-w-0">
+                                <span class="text-slate-700 dark:text-slate-400 uppercase font-semibold text-xs block">@col.Title</span>
+                                <div class="text-slate-900 dark:text-slate-200 font-medium mt-0.5 break-words">
+                                    @if (col.CellTemplate is not null) { @col.CellTemplate(item) }
+                                    else if (col.Property is not null) { @col.Property(item) }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            @if (ActionsTemplate is not null)
+            {
+                <div data-testid="grid-card-actions" class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">@ActionsTemplate(item)</div>
+            }
+        </div>
+    };
+
+    /// <summary>
+    /// Render only the rows on screen. <c>null</c> (default) turns it on for in-memory <see cref="Items"/> with more than
+    /// <see cref="VirtualizeThreshold"/> records; it is always off for <see cref="ServerData"/>, which already pages.
+    /// A virtualized grid shows every filtered row in one scrolling body (no pages); search, sort, filters, grouping and
+    /// select-all still see every record. Rows should keep to one line so they share <see cref="RowHeight"/>.
+    /// </summary>
+    [Parameter] public bool? Virtualize { get; set; }
+    /// <summary>Record count above which <see cref="Virtualize"/> = null switches virtualization on.</summary>
+    [Parameter] public int VirtualizeThreshold { get; set; } = 200;
+    /// <summary>Row height in pixels when virtualized (the height every body row keeps). Default: 72 with an actions column, 52 without.</summary>
+    [Parameter] public float? RowHeight { get; set; }
+    /// <summary>Rows rendered above and below the visible ones when virtualized.</summary>
+    [Parameter] public int OverscanCount { get; set; } = 6;
+    /// <summary>Upper bound of body rows in the DOM at once when virtualized (enough for a 4K-tall window).</summary>
+    [Parameter] public int MaxRenderedRows { get; set; } = 60;
+
+    private float EffectiveRowHeight => RowHeight ?? (ActionsTemplate is not null ? 72f : 52f);
+
+    private string? EffectiveMaxHeight(bool virtualMode) => MaxHeight ?? (virtualMode ? "36rem" : null);
+
+    private bool IsVirtual(int count) => ServerData is null && (Virtualize ?? count > VirtualizeThreshold);
+
     private const string EditBtn = "px-3 min-h-[32px] rounded-lg text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ms-1";
 
     [Parameter] public IEnumerable<TItem> Items { get; set; } = Enumerable.Empty<TItem>();
@@ -562,7 +654,7 @@
     /// <summary>Fired after an edited row passed validation and its values were applied to the item.</summary>
     [Parameter] public EventCallback<TItem> RowSaved { get; set; }
 
-    private sealed record View(List<TItem> Filtered, List<TItem> Page, int Total, int Pages, int PageNumber, Dictionary<string, List<TItem>>? Groups);
+    private sealed record View(List<TItem> Filtered, List<TItem> Page, int Total, int Pages, int PageNumber, Dictionary<string, List<TItem>>? Groups, bool Virtual = false);
     private sealed class SavedState
     {
         public string? Search { get; set; }
@@ -717,6 +809,11 @@
         var total = filtered.Count;
         var pages = Math.Max(1, (int)Math.Ceiling((double)total / PageSize));
         var pageNo = Math.Clamp(CurrentPage, 1, pages);
+        if (IsVirtual(Items is ICollection<TItem> all ? all.Count : total))
+        {
+            var allGroups = _groupBy is null ? null : filtered.GroupBy(GroupKeyOf).ToDictionary(g => g.Key, g => g.ToList());
+            return new View(filtered, filtered, total, 1, 1, allGroups, true);
+        }
         var page = filtered.Skip((pageNo - 1) * PageSize).Take(PageSize).ToList();
         var groups = _groupBy is null ? null : filtered.GroupBy(GroupKeyOf).ToDictionary(g => g.Key, g => g.ToList());
         return new View(filtered, page, total, pages, pageNo, groups);
