@@ -1,6 +1,7 @@
 @namespace BlazorTwUI.Components.UI
 @typeparam TItem
 
+@{ var fsCount = FilteredSource.Count; var ftCount = FilteredTarget.Count; }
 <div class="flex flex-col md:flex-row items-center gap-4 w-full @Class" @attributes="AdditionalAttributes">
     @* Source / Available List Panel *@
     <div class="flex-1 flex flex-col w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm overflow-hidden">
@@ -9,7 +10,7 @@
             <div class="flex items-center gap-2">
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">@SourceTitle</span>
                 <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                    @FilteredSource.Count
+                    @fsCount
                 </span>
             </div>
             @if (_selectedSource.Count > 0)
@@ -28,7 +29,7 @@
                     <input type="text"
                            @bind="_sourceFilter"
                            @bind:event="oninput"
-                           placeholder="Filter available..."
+                           placeholder="Filter available..." aria-label="Filter @SourceTitle" data-testid="picklist-source-filter"
                            class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500" />
                     <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -45,55 +46,26 @@
             </div>
         }
 
-        @* List Items *@
-        <div class="overflow-y-auto p-2 space-y-1 @Height select-none">
-            @if (FilteredSource.Count == 0)
+        @* List Items: a long list renders only the rows on screen (Virtualize); filter and Move all still cover every item. *@
+        @{ var fs = FilteredSource; }
+        <div class="overflow-y-auto p-2 @Height select-none" role="listbox" aria-multiselectable="true" aria-label="@SourceTitle" data-testid="picklist-source" data-virtual="@(fs.Count > VirtualizeThreshold ? "true" : null)">
+            @if (fs.Count == 0)
             {
-                <div class="h-full flex items-center justify-center p-4 text-xs text-slate-400 text-center">
+                <div class="h-full flex items-center justify-center p-4 text-xs text-slate-600 dark:text-slate-400 text-center">
                     No items available
                 </div>
             }
+            else if (fs.Count > VirtualizeThreshold)
+            {
+                <Virtualize TItem="Row" Items="Rows(fs)" ItemSize="RowSize" OverscanCount="8" MaxItemCount="60" Context="row">
+                    @ItemFragment(row.Item, row.Index, fs.Count, false)
+                </Virtualize>
+            }
             else
             {
-                @foreach (var item in FilteredSource)
+                @for (var i = 0; i < fs.Count; i++)
                 {
-                    var isSelected = _selectedSource.Contains(item);
-                    <div @onclick="() => ToggleSourceSelect(item)"
-                         @ondblclick="() => TransferSingleItemToTarget(item)"
-                         class="group px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer transition-all @(isSelected
-                             ? "bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-medium border border-brand-200 dark:border-brand-800"
-                             : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent")">
-
-                        <div class="flex items-center gap-2.5 truncate">
-                            @if (ItemIcon != null)
-                            {
-                                <span class="text-sm">@ItemIcon(item)</span>
-                            }
-                            <div class="truncate">
-                                @if (ItemTemplate != null)
-                                {
-                                    @ItemTemplate(item)
-                                }
-                                else
-                                {
-                                    <div class="truncate font-medium">@GetItemText(item)</div>
-                                    @if (ItemSubtext != null)
-                                    {
-                                        <div class="text-xs text-slate-400 truncate">@ItemSubtext(item)</div>
-                                    }
-                                }
-                            </div>
-                        </div>
-
-                        <div class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 @(isSelected ? "border-brand-500 bg-brand-500 text-white" : "border-slate-300 dark:border-slate-600")">
-                            @if (isSelected)
-                            {
-                                <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                                </svg>
-                            }
-                        </div>
-                    </div>
+                    @ItemFragment(fs[i], i, fs.Count, false)
                 }
             }
         </div>
@@ -160,7 +132,7 @@
             <div class="flex items-center gap-2">
                 <span class="text-xs font-bold uppercase tracking-wider text-slate-800 dark:text-slate-200">@TargetTitle</span>
                 <span class="text-xs font-mono px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold">
-                    @FilteredTarget.Count
+                    @ftCount
                 </span>
             </div>
             @if (_selectedTarget.Count > 0)
@@ -179,7 +151,7 @@
                     <input type="text"
                            @bind="_targetFilter"
                            @bind:event="oninput"
-                           placeholder="Filter selected..."
+                           placeholder="Filter selected..." aria-label="Filter @TargetTitle" data-testid="picklist-target-filter"
                            class="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-500" />
                     <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -197,83 +169,25 @@
         }
 
         @* List Items *@
-        <div class="overflow-y-auto p-2 space-y-1 @Height select-none">
-            @if (FilteredTarget.Count == 0)
+        @{ var ft = FilteredTarget; }
+        <div class="overflow-y-auto p-2 @Height select-none" role="listbox" aria-multiselectable="true" aria-label="@TargetTitle" data-testid="picklist-target" data-virtual="@(ft.Count > VirtualizeThreshold ? "true" : null)">
+            @if (ft.Count == 0)
             {
-                <div class="h-full flex items-center justify-center p-4 text-xs text-slate-400 text-center">
+                <div class="h-full flex items-center justify-center p-4 text-xs text-slate-600 dark:text-slate-400 text-center">
                     No items selected yet
                 </div>
             }
+            else if (ft.Count > VirtualizeThreshold)
+            {
+                <Virtualize TItem="Row" Items="Rows(ft)" ItemSize="RowSize" OverscanCount="8" MaxItemCount="60" Context="row">
+                    @ItemFragment(row.Item, row.Index, ft.Count, true)
+                </Virtualize>
+            }
             else
             {
-                @for (int i = 0; i < FilteredTarget.Count; i++)
+                @for (var i = 0; i < ft.Count; i++)
                 {
-                    var item = FilteredTarget[i];
-                    var isSelected = _selectedTarget.Contains(item);
-                    var index = i;
-
-                    <div @onclick="() => ToggleTargetSelect(item)"
-                         @ondblclick="() => TransferSingleItemToSource(item)"
-                         class="group px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer transition-all @(isSelected
-                             ? "bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-medium border border-brand-200 dark:border-brand-800"
-                             : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent")">
-
-                        <div class="flex items-center gap-2.5 truncate">
-                            @if (ItemIcon != null)
-                            {
-                                <span class="text-sm">@ItemIcon(item)</span>
-                            }
-                            <div class="truncate">
-                                @if (ItemTemplate != null)
-                                {
-                                    @ItemTemplate(item)
-                                }
-                                else
-                                {
-                                    <div class="truncate font-medium">@GetItemText(item)</div>
-                                    @if (ItemSubtext != null)
-                                    {
-                                        <div class="text-xs text-slate-400 truncate">@ItemSubtext(item)</div>
-                                    }
-                                }
-                            </div>
-                        </div>
-
-                        <div class="flex items-center gap-1">
-                            @if (ShowReorder)
-                            {
-                                <button type="button"
-                                        @onclick:stopPropagation="true"
-                                        @onclick="() => MoveUp(item)"
-                                        disabled="@(index == 0)"
-                                        class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-20 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                                        title="Move up">
-                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                    </svg>
-                                </button>
-                                <button type="button"
-                                        @onclick:stopPropagation="true"
-                                        @onclick="() => MoveDown(item)"
-                                        disabled="@(index == Target.Count - 1)"
-                                        class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-20 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                                        title="Move down">
-                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
-                            }
-
-                            <div class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ml-1 @(isSelected ? "border-brand-500 bg-brand-500 text-white" : "border-slate-300 dark:border-slate-600")">
-                                @if (isSelected)
-                                {
-                                    <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                                    </svg>
-                                }
-                            </div>
-                        </div>
-                    </div>
+                    @ItemFragment(ft[i], i, ft.Count, true)
                 }
             }
         </div>
@@ -281,6 +195,85 @@
 </div>
 
 @code {
+    private sealed record Row(TItem Item, int Index);
+
+    /// <summary>Item count above which a panel renders only the rows on screen.</summary>
+    [Parameter] public int VirtualizeThreshold { get; set; } = 100;
+
+    private float RowSize => ItemSubtext is null ? 48f : 64f;
+    private List<Row>? _rowsCache;
+    private List<TItem>? _rowsFor;
+
+    private List<Row> Rows(List<TItem> list)
+    {
+        if (!ReferenceEquals(_rowsFor, list) || _rowsCache is null)
+        {
+            _rowsFor = list;
+            _rowsCache = list.Select((x, i) => new Row(x, i)).ToList();
+        }
+        return _rowsCache;
+    }
+
+    private async Task OnItemKey(KeyboardEventArgs e, TItem item, bool inTarget)
+    {
+        if (e.Key is " " or "Spacebar") { if (inTarget) ToggleTargetSelect(item); else ToggleSourceSelect(item); }
+        else if (e.Key == "Enter") { if (inTarget) await TransferSingleItemToSource(item); else await TransferSingleItemToTarget(item); }
+    }
+
+    private RenderFragment ItemFragment(TItem item, int index, int count, bool inTarget) => __builder =>
+    {
+        var isSelected = inTarget ? _selectedTarget.Contains(item) : _selectedSource.Contains(item);
+        <div class="pb-1">
+        <div role="option" tabindex="0" aria-selected="@isSelected.ToString().ToLowerInvariant()" aria-setsize="@count" aria-posinset="@(index + 1)"
+             @onclick="() => { if (inTarget) ToggleTargetSelect(item); else ToggleSourceSelect(item); }"
+             @ondblclick="() => inTarget ? TransferSingleItemToSource(item) : TransferSingleItemToTarget(item)"
+             @onkeydown="e => OnItemKey(e, item, inTarget)" @onkeydown:preventDefault="false"
+             title="Space selects, Enter moves it across"
+             class="group px-3 py-2 rounded-xl text-xs flex items-center justify-between cursor-pointer transition-all motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 @(isSelected
+                 ? "bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 font-medium border border-brand-200 dark:border-brand-800"
+                 : "text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 border border-transparent")">
+            <div class="flex items-center gap-2.5 truncate">
+                @if (ItemIcon != null)
+                {
+                    <span class="text-sm" aria-hidden="true">@ItemIcon(item)</span>
+                }
+                <div class="truncate">
+                    @if (ItemTemplate != null)
+                    {
+                        @ItemTemplate(item)
+                    }
+                    else
+                    {
+                        <div class="truncate font-medium">@GetItemText(item)</div>
+                        @if (ItemSubtext != null)
+                        {
+                            <div class="text-xs text-slate-600 dark:text-slate-400 truncate">@ItemSubtext(item)</div>
+                        }
+                    }
+                </div>
+            </div>
+            <div class="flex items-center gap-1">
+                @if (inTarget && ShowReorder)
+                {
+                    <button type="button" @onclick:stopPropagation="true" @onclick="() => MoveUp(item)" disabled="@(index == 0)" aria-label="Move up"
+                            class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-20 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200" title="Move up">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" /></svg>
+                    </button>
+                    <button type="button" @onclick:stopPropagation="true" @onclick="() => MoveDown(item)" disabled="@(index == Target.Count - 1)" aria-label="Move down"
+                            class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-20 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200" title="Move down">
+                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                    </button>
+                }
+                <div aria-hidden="true" class="w-4 h-4 rounded-full border flex items-center justify-center flex-shrink-0 ml-1 @(isSelected ? "border-brand-500 bg-brand-500 text-white" : "border-slate-300 dark:border-slate-600")">
+                    @if (isSelected)
+                    {
+                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>
+                    }
+                </div>
+            </div>
+        </div>
+        </div>
+    };
     [Parameter] public IEnumerable<TItem>? Source { get; set; }
     [Parameter] public IList<TItem> Target { get; set; } = new List<TItem>();
     [Parameter] public EventCallback<IList<TItem>> TargetChanged { get; set; }
@@ -310,16 +303,28 @@
 
     private string GetItemText(TItem item) => ItemText != null ? ItemText(item) : item?.ToString() ?? "";
 
+    private List<TItem>? _fsCache;
+    private (object? Source, int TargetCount, string Filter, int Version) _fsKey;
+    private int _version;
+
     private List<TItem> FilteredSource
     {
         get
         {
             if (Source == null) return new List<TItem>();
-            var available = Source.Where(s => !Target.Contains(s));
-            if (string.IsNullOrWhiteSpace(_sourceFilter)) return available.ToList();
-            return available.Where(s => GetItemText(s).Contains(_sourceFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+            var key = ((object?)Source, Target.Count, _sourceFilter ?? "", _version);
+            if (_fsCache is not null && _fsKey.Equals(key)) return _fsCache;
+            var chosen = new HashSet<TItem>(Target);
+            var available = Source.Where(s => !chosen.Contains(s));
+            _fsCache = string.IsNullOrWhiteSpace(_sourceFilter)
+                ? available.ToList()
+                : available.Where(s => GetItemText(s).Contains(_sourceFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+            _fsKey = key;
+            return _fsCache;
         }
     }
+
+    protected override void OnParametersSet() => _version++;
 
     private List<TItem> FilteredTarget
     {

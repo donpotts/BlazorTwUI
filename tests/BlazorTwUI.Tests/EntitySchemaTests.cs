@@ -139,11 +139,15 @@ public class EntitySchemaTests : TestContext
             .Add(r => r.LoadOptions, t => { asked.Add(t); return Task.FromResult(TagOptions(250)); }));
 
         Assert.Equal(new[] { "Tag" }, asked);
-        var shown = cut.FindAll("[data-testid=relation-option]").Select(e => e.GetAttribute("data-id")).ToList();
-        // 249 available + the one already chosen: every option, not a first page of 10 or 50.
-        Assert.Equal(250, shown.Count);
-        Assert.Contains("1", shown);
-        Assert.Contains("250", shown);
+        // Every option is available (not a first page of 10 or 50): 249 offered + the one already chosen.
+        // Long lists are virtualized, so the DOM holds only the rows on screen; aria-setsize and the filter prove the rest is there.
+        var offered = cut.Find("[data-testid=picklist-source] [role=option]");
+        Assert.Equal("249", offered.GetAttribute("aria-setsize"));
+        Assert.True(cut.FindAll("[data-testid=relation-option]").Count < 80);
+        Assert.Contains("250", cut.Find("[data-testid=picklist-target]").InnerHtml);
+        cut.Find("[data-testid=picklist-source-filter]").Input("Tag 1");
+        var ids = cut.FindAll("[data-testid=picklist-source] [data-testid=relation-option]").Select(e => e.GetAttribute("data-id")).ToList();
+        Assert.Contains("1", ids);
     }
 
     [Fact]

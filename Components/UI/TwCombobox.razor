@@ -4,20 +4,22 @@
 <div class="relative space-y-1.5 @Class">
     @if (!string.IsNullOrWhiteSpace(Label))
     {
-        <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+        <label for="@InputId" class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
             @Label
         </label>
     }
 
     <!-- Trigger Input -->
     <div class="relative">
-        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+        <div class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" aria-hidden="true">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
         </div>
 
-        <input type="text"
+        <input id="@InputId" type="text" role="combobox" aria-autocomplete="list" aria-expanded="@IsOpen.ToString().ToLowerInvariant()" aria-controls="@(IsOpen ? _listId : null)"
+               aria-activedescendant="@(IsOpen && _highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count ? OptionId(_highlightedIndex) : null)"
+               aria-label="@(string.IsNullOrWhiteSpace(Label) ? Placeholder : null)"
                value="@(IsOpen ? _searchText : SelectedItem?.Label ?? "")"
                @oninput="HandleSearchInput"
                @onfocus="OpenDropdown"
@@ -43,49 +45,38 @@
                     @onclick="ToggleDropdown"
                     class="p-1 hover:text-slate-600 dark:hover:text-slate-200 transition focus:outline-none"
                     aria-label="Toggle options list">
-                <svg class="w-4 h-4 transition-transform duration-200 @(IsOpen ? "rotate-180" : "")" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg class="w-4 h-4 transition-transform duration-200 motion-reduce:transition-none @(IsOpen ? "rotate-180" : "")" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                 </svg>
             </button>
         </div>
     </div>
 
-    <!-- Dropdown Popover -->
+    <!-- Dropdown Popover. A long list renders only the options on screen (Virtualize); search and the keyboard still reach every option. -->
     @if (IsOpen)
     {
-        <div class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl divide-y divide-slate-100 dark:divide-slate-800/80 p-1.5 animate-zoom-in">
-            @if (FilteredItems.Any())
+        var filtered = FilteredItems;
+        var isVirtual = filtered.Count > VirtualizeThreshold;
+        <div id="@_listId" @ref="_listRef" role="listbox" aria-label="@(string.IsNullOrWhiteSpace(Label) ? "Options" : Label)" data-testid="combobox-list" data-virtual="@(isVirtual ? "true" : null)"
+             class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl p-1.5 animate-zoom-in motion-reduce:animate-none">
+            @if (filtered.Count == 0)
             {
-                @for (int i = 0; i < FilteredItems.Count; i++)
-                {
-                    var item = FilteredItems[i];
-                    var isSelected = item.Value == Value;
-                    var isHighlighted = i == _highlightedIndex;
-
-                    <button type="button"
-                            @onclick="() => SelectItem(item)"
-                            class="w-full flex items-center justify-between px-3 py-2 rounded-xl text-left text-xs sm:text-sm transition focus:outline-none @(isSelected ? "bg-brand-50 dark:bg-brand-500/15 text-brand-600 dark:text-brand-400 font-semibold" : isHighlighted ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800/60")">
-                        <div class="flex items-center gap-2 truncate">
-                            @if (!string.IsNullOrEmpty(item.Icon))
-                            {
-                                <span>@item.Icon</span>
-                            }
-                            <span>@item.Label</span>
-                        </div>
-                        @if (isSelected)
-                        {
-                            <svg class="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                        }
-                    </button>
-                }
+                <div class="p-3 text-center text-xs text-slate-600 dark:text-slate-400" role="status">
+                    No results found for "@_searchText"
+                </div>
+            }
+            else if (isVirtual)
+            {
+                <Virtualize TItem="IndexedItem" Items="Indexed(filtered)" ItemSize="OptionHeight" OverscanCount="8" MaxItemCount="60" Context="row">
+                    @OptionFragment(row.Item, row.Index, filtered.Count)
+                </Virtualize>
             }
             else
             {
-                <div class="p-3 text-center text-xs text-slate-400 dark:text-slate-500">
-                    No results found for "@_searchText"
-                </div>
+                @for (int i = 0; i < filtered.Count; i++)
+                {
+                    @OptionFragment(filtered[i], i, filtered.Count)
+                }
             }
         </div>
     }
@@ -93,6 +84,7 @@
 
 @code {
     public sealed record ComboboxItem(string Value, string Label, string? Group = null, string? Icon = null);
+    private sealed record IndexedItem(ComboboxItem Item, int Index);
 
     [Parameter] public string Value { get; set; } = "";
     [Parameter] public EventCallback<string> ValueChanged { get; set; }
@@ -101,17 +93,74 @@
     [Parameter] public string Placeholder { get; set; } = "Select or search option...";
     [Parameter] public bool Disabled { get; set; }
     [Parameter] public string? Class { get; set; }
+    /// <summary>Option count above which only the visible options are rendered (every option is 36px tall).</summary>
+    [Parameter] public int VirtualizeThreshold { get; set; } = 100;
 
     public bool IsOpen { get; private set; }
     private string _searchText = "";
     private int _highlightedIndex = 0;
 
+    private const float OptionHeight = 36f;
+    private readonly string _listId = "cb-" + Guid.NewGuid().ToString("N")[..6];
+    private string InputId => _listId + "-in";
+    private ElementReference _listRef;
+    private IReadOnlyList<ComboboxItem>? _filterCache;
+    private IReadOnlyList<ComboboxItem>? _filterCacheItems;
+    private string? _filterCacheText;
+    private List<IndexedItem>? _indexedCache;
+    private IReadOnlyList<ComboboxItem>? _indexedFor;
+
     private ComboboxItem? SelectedItem => Items.FirstOrDefault(i => i.Value == Value);
 
-    private IReadOnlyList<ComboboxItem> FilteredItems => string.IsNullOrWhiteSpace(_searchText)
-        ? Items
-        : Items.Where(i => i.Label.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
-                           i.Value.Contains(_searchText, StringComparison.OrdinalIgnoreCase)).ToList();
+    private IReadOnlyList<ComboboxItem> FilteredItems
+    {
+        get
+        {
+            if (_filterCache is not null && ReferenceEquals(_filterCacheItems, Items) && _filterCacheText == _searchText) return _filterCache;
+            _filterCacheItems = Items;
+            _filterCacheText = _searchText;
+            _filterCache = string.IsNullOrWhiteSpace(_searchText)
+                ? Items
+                : Items.Where(i => i.Label.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ||
+                                   i.Value.Contains(_searchText, StringComparison.OrdinalIgnoreCase)).ToList();
+            return _filterCache;
+        }
+    }
+
+    private string OptionId(int index) => $"{_listId}-o{index}";
+
+    private List<IndexedItem> Indexed(IReadOnlyList<ComboboxItem> list)
+    {
+        if (!ReferenceEquals(_indexedFor, list) || _indexedCache is null)
+        {
+            _indexedFor = list;
+            _indexedCache = list.Select((x, i) => new IndexedItem(x, i)).ToList();
+        }
+        return _indexedCache;
+    }
+
+    private RenderFragment OptionFragment(ComboboxItem item, int i, int count) => __builder =>
+    {
+        var isSelected = item.Value == Value;
+        var isHighlighted = i == _highlightedIndex;
+        <div id="@OptionId(i)" role="option" aria-selected="@isSelected.ToString().ToLowerInvariant()" aria-setsize="@count" aria-posinset="@(i + 1)" data-testid="combobox-option"
+             @onclick="() => SelectItem(item)" @onmousedown:preventDefault="true"
+             class="w-full h-9 flex items-center justify-between px-3 rounded-xl text-left text-xs sm:text-sm cursor-pointer transition motion-reduce:transition-none @(isSelected ? "bg-brand-50 dark:bg-brand-500/15 text-brand-700 dark:text-brand-300 font-semibold" : isHighlighted ? "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white" : "text-slate-700 dark:text-slate-300 hover:bg-slate-100/70 dark:hover:bg-slate-800/60")">
+            <span class="flex items-center gap-2 truncate">
+                @if (!string.IsNullOrEmpty(item.Icon))
+                {
+                    <span aria-hidden="true">@item.Icon</span>
+                }
+                <span class="truncate">@item.Label</span>
+            </span>
+            @if (isSelected)
+            {
+                <svg aria-hidden="true" class="w-4 h-4 text-brand-600 dark:text-brand-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+            }
+        </div>
+    };
 
     private void OpenDropdown()
     {
@@ -163,30 +212,45 @@
             return;
         }
 
-        if (e.Key == "Escape")
+        var count = FilteredItems.Count;
+        const int page = 6;
+        switch (e.Key)
         {
-            IsOpen = false;
+            case "Escape": IsOpen = false; return;
+            case "ArrowDown": if (_highlightedIndex < count - 1) _highlightedIndex++; break;
+            case "ArrowUp": if (_highlightedIndex > 0) _highlightedIndex--; break;
+            case "PageDown": _highlightedIndex = Math.Max(0, Math.Min(count - 1, _highlightedIndex + page)); break;
+            case "PageUp": _highlightedIndex = Math.Max(0, _highlightedIndex - page); break;
+            case "Home" when IsOpen: _highlightedIndex = 0; break;
+            case "End" when IsOpen: _highlightedIndex = Math.Max(0, count - 1); break;
+            case "Enter":
+                if (count > 0 && _highlightedIndex >= 0 && _highlightedIndex < count) await SelectItem(FilteredItems[_highlightedIndex]);
+                return;
+            default: return;
         }
-        else if (e.Key == "ArrowDown")
+        await RevealHighlightedAsync();
+    }
+
+    // Keep the highlighted option on screen. With Virtualize it may not be rendered yet, so scroll by index (every option is
+    // OptionHeight tall) and Virtualize renders it.
+    private IJSObjectReference? _virtual;
+
+    // Load the scroll helper as soon as a long list opens, so the first End/PageDown already lands on its option.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!IsOpen || _virtual is not null || FilteredItems.Count <= VirtualizeThreshold) return;
+        try { _virtual = await JS.InvokeAsync<IJSObjectReference>("import", "./js/tw-virtual.js"); }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
+    }
+
+    private async Task RevealHighlightedAsync()
+    {
+        if (!IsOpen || _listRef.Context is null) return;
+        try
         {
-            if (_highlightedIndex < FilteredItems.Count - 1)
-            {
-                _highlightedIndex++;
-            }
+            _virtual ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/tw-virtual.js");
+            if (_virtual is not null) await _virtual.InvokeVoidAsync("scrollToIndex", _listRef, _highlightedIndex, OptionHeight, 2);
         }
-        else if (e.Key == "ArrowUp")
-        {
-            if (_highlightedIndex > 0)
-            {
-                _highlightedIndex--;
-            }
-        }
-        else if (e.Key == "Enter")
-        {
-            if (FilteredItems.Count > 0 && _highlightedIndex >= 0 && _highlightedIndex < FilteredItems.Count)
-            {
-                await SelectItem(FilteredItems[_highlightedIndex]);
-            }
-        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException) { }
     }
 }

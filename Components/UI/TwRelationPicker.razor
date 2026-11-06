@@ -69,6 +69,7 @@
     private string? _loadError;
     private string? _loadedFor;
     private JsonObject? _prefilledFrom;
+    private bool _prefilled; // a NEW record has Record == null: ReferenceEquals(null, null) alone never prefilled, so a create form had no options
 
     /// <summary>The ids chosen right now.</summary>
     public IReadOnlyList<string> SelectedIds => _selected;
@@ -92,10 +93,12 @@
                 return;
             }
             _prefilledFrom = null;
+            _prefilled = false;
         }
 
-        if (_options is not null && !ReferenceEquals(_prefilledFrom, Record))
+        if (_options is not null && (!_prefilled || !ReferenceEquals(_prefilledFrom, Record)))
         {
+            _prefilled = true;
             _prefilledFrom = Record;
             Prefill();
         }

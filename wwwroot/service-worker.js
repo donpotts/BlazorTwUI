@@ -1,5 +1,8 @@
-// BlazorTwUI PWA Service Worker (v0.8.1)
-const CACHE_NAME = 'btui-pwa-v0.8.1';
+// BlazorTwUI PWA Service Worker (v0.8.2)
+const CACHE_NAME = 'btui-pwa-v0.8.2';
+// On localhost (development) the worker caches nothing: a rebuild changes every _framework fingerprint, and a cached
+// boot manifest then fails Subresource Integrity ("Failed to find a valid digest").
+const IS_DEV = ['localhost', '127.0.0.1', '[::1]'].includes(self.location.hostname);
 
 const PRECACHE_ASSETS = [
     './',
@@ -19,6 +22,7 @@ const PRECACHE_ASSETS = [
 
 self.addEventListener('install', event => {
     self.skipWaiting();
+    if (IS_DEV) return;
     event.waitUntil(
         caches.open(CACHE_NAME).then(cache => {
             return cache.addAll(PRECACHE_ASSETS).catch(err => {
@@ -33,7 +37,7 @@ self.addEventListener('activate', event => {
         caches.keys().then(keys => {
             return Promise.all(
                 keys.map(key => {
-                    if (key !== CACHE_NAME) {
+                    if (IS_DEV || key !== CACHE_NAME) {
                         return caches.delete(key);
                     }
                 })
@@ -46,7 +50,12 @@ self.addEventListener('fetch', event => {
     // Only handle GET requests
     if (event.request.method !== 'GET') return;
 
+    if (IS_DEV) return; // development: straight to the network
+
     const url = new URL(event.request.url);
+
+    // Fingerprinted framework files are integrity-checked by Blazor and cached by the browser: never keep a copy here.
+    if (url.pathname.includes('/_framework/')) return;
 
     // Always bypass cache for Range requests, video/audio streams, and HyperFrames live stage
     if (
@@ -69,7 +78,7 @@ self.addEventListener('fetch', event => {
                         return networkResponse;
                     });
                 })
-                .catch(() => caches.match('./index.html'))
+                .catch(() => caches.match('./index.html').then(r => r || Response.error()))
         );
         return;
     }
@@ -86,6 +95,6 @@ self.addEventListener('fetch', event => {
                 }
                 return networkResponse;
             })
-            .catch(() => caches.match(event.request))
+            .catch(() => caches.match(event.request).then(r => r || Response.error()))
     );
 });
