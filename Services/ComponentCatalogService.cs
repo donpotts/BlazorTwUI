@@ -716,7 +716,7 @@ public class ComponentCatalogService
         {
             Name = "TwListBox",
             Category = "Advanced Forms & Inputs",
-            Description = "Searchable list with checkboxes or radios, Select all (applies to the filtered view) and a live selection count.",
+            Description = "Searchable list with checkboxes or radios, Select all (applies to the filtered view) and a live selection count. Over 100 items only the visible rows are drawn.",
             RazorSnippet = "<TwListBox TItem=\"string\" Items=\"_names\" @bind-Selected=\"_picked\" Label=\"Teams\" />",
             Parameters = new List<ComponentParameterDoc>
             {
@@ -1466,7 +1466,7 @@ public class ComponentCatalogService
         {
             Name = "TwCombobox",
             Category = "Advanced Forms & Inputs",
-            Description = "Searchable autocomplete dropdown with real-time filtering, keyboard arrow navigation, enter-to-select, clear button, and empty filter fallback.",
+            Description = "Searchable autocomplete dropdown with real-time filtering, keyboard navigation (arrows, Page Up/Down, Home/End), enter-to-select, clear button, and empty filter fallback. Over 100 options only the visible ones are drawn; search and the keyboard still reach all of them.",
             RazorSnippet = "<TwCombobox Value=\"\" Items=\"Array.Empty<ComboboxItem>()\" Label=\"\" />",
             Parameters = new List<ComponentParameterDoc>
             {
@@ -2070,7 +2070,7 @@ public class ComponentCatalogService
         {
             Name = "TwDataGrid",
             Category = "Enterprise Data & Tables",
-            Description = "Enterprise data grid: sortable headers (keyboard accessible, Shift adds a second sort), search and per-column filters, grouping with counts and summaries, footer totals, master-detail rows, inline editing with validation, column chooser, CSV export, saved layout, frozen column, conditional formatting, selection, paging and mobile cards.",
+            Description = "Enterprise data grid: sortable headers (keyboard accessible, Shift adds a second sort), search and per-column filters, grouping with counts and summaries, footer totals, master-detail rows, inline editing with validation, column chooser, CSV export, saved layout, frozen column, conditional formatting, selection, paging and mobile cards. Over 200 in-memory records it virtualizes (only the rows on screen are drawn, one scrolling body, no pages); search, sort, filters and select-all still cover every record.",
             RazorSnippet = "<TwDataGrid TItem=\"Order\" Items=\"_orders\" Label=\"Orders\" Selectable=\"true\" AllowGrouping=\"true\" AllowColumnChooser=\"true\" AllowExport=\"true\" StateKey=\"orders\">\n    <Columns>\n        <TwDataGridColumn TItem=\"Order\" Title=\"Customer\" Property=\"o => o.Customer\" Editable=\"true\" EditValue=\"SetCustomer\" />\n        <TwDataGridColumn TItem=\"Order\" Title=\"Amount\" Property=\"o => o.Amount\" Summary=\"GridSummary.Sum\" SummaryFormat=\"C0\" />\n    </Columns>\n</TwDataGrid>",
             Parameters = new List<ComponentParameterDoc>
             {
@@ -2078,6 +2078,9 @@ public class ComponentCatalogService
                 new ComponentParameterDoc("Columns", "RenderFragment?", "null", "TwDataGridColumn definitions."),
                 new ComponentParameterDoc("Label", "string", "\"Data grid\"", "Accessible table caption."),
                 new ComponentParameterDoc("Selectable", "bool", "false", "Row checkboxes and a select-all for the page."),
+                new ComponentParameterDoc("Virtualize", "bool?", "null", "Draw only the visible rows. null = on for more than VirtualizeThreshold in-memory records; always off with ServerData (it pages)."),
+                new ComponentParameterDoc("VirtualizeThreshold", "int", "200", "Record count above which Virtualize = null switches it on."),
+                new ComponentParameterDoc("RowHeight", "float?", "null", "Row height in px when virtualized (72 with an actions column, else 52). Keep rows to one line."),
                 new ComponentParameterDoc("ShowGlobalSearch", "bool", "true", "Search box over all columns."),
                 new ComponentParameterDoc("SearchPredicate", "Func<TItem,string,bool>?", "null", "Custom search logic."),
                 new ComponentParameterDoc("AllowColumnFiltering", "bool", "true", "Per-column filter row."),
@@ -2873,6 +2876,39 @@ public class ComponentCatalogService
         },
         new ComponentDocItem
         {
+            Name = "TwLottie",
+            Category = "Showcase & Micro-Interactions",
+            Description = "Plays a Lottie animation (.lottie or .json) with the bundled dotlottie-web player (no CDN; the script loads only on pages that use it). Under prefers-reduced-motion it holds the file's poster frame instead of playing.",
+            RazorSnippet = "<TwLottie Src=\"animations/success-check.lottie\" Width=\"96px\" AriaLabel=\"Saved\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Src", "string", "\"\"", "URL of a .lottie or Lottie .json file."),
+                new ComponentParameterDoc("Loop", "bool", "false", "Repeat the animation."),
+                new ComponentParameterDoc("Autoplay", "bool", "true", "Start playing when loaded (never under reduced motion)."),
+                new ComponentParameterDoc("Speed", "double", "1", "Playback speed."),
+                new ComponentParameterDoc("Width", "string", "\"120px\"", "CSS width; Height defaults to the same."),
+                new ComponentParameterDoc("ReducedMotion", "LottieReducedMotion", "Poster", "Poster (hold the poster frame), Hide (show nothing) or Play."),
+                new ComponentParameterDoc("PosterFrame", "int?", "null", "Frame to hold under reduced motion; default is the file's \"poster\" marker, else frame 0."),
+                new ComponentParameterDoc("AriaLabel", "string?", "null", "With a label it is role=\"img\"; without one it is hidden from screen readers."),
+                new ComponentParameterDoc("OnComplete", "EventCallback", "-", "Raised when a non-looping animation finishes."),
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwCelebration",
+            Category = "Showcase & Micro-Interactions",
+            Description = "One-shot celebration (success, level up, confetti, badge, streak) from the bundled samples, plus a polite live-region message so the moment is announced and readable without the animation. Confetti is skipped under reduced motion.",
+            RazorSnippet = "<TwCelebration Kind=\"CelebrationKind.LevelUp\" Message=\"Level 3 reached\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Kind", "CelebrationKind", "Success", "Success, LevelUp, Confetti, Badge or Streak."),
+                new ComponentParameterDoc("Message", "string?", "null", "Text announced and shown; defaults to a short phrase for the kind."),
+                new ComponentParameterDoc("ShowMessage", "bool", "true", "Show the message under the animation (always announced)."),
+                new ComponentParameterDoc("Size", "string", "\"120px\"", "Animation size."),
+            }
+        },
+        new ComponentDocItem
+        {
             Name = "TwConfetti",
             Category = "Showcase & Micro-Interactions",
             Description = "Canvas physics celebratory particle explosion system with gravity, air resistance, and 3D rotation.",
@@ -2882,6 +2918,7 @@ public class ComponentCatalogService
                 new ComponentParameterDoc("FullScreen", "bool", "false", "Configures component behavior or styling."),
                 new ComponentParameterDoc("AutoFire", "bool", "false", "Configures component behavior or styling."),
                 new ComponentParameterDoc("ParticleCount", "int", "85", "Configures component behavior or styling."),
+                new ComponentParameterDoc("RespectReducedMotion", "bool", "true", "Under prefers-reduced-motion draw one still frame instead of moving particles."),
                 new ComponentParameterDoc("Class", "string?", "null", "Additional custom Tailwind CSS utility classes."),
             }
         },
@@ -3522,7 +3559,7 @@ public class ComponentCatalogService
         {
             Name = "TwPickList",
             Category = "Buttons, Forms & Controls",
-            Description = "Dual-listbox item transfer picker with instant dual-list search filtering, move selected/all transfer actions, target list reordering, and item badges.",
+            Description = "Dual-listbox item transfer picker with instant dual-list search filtering, move selected/all transfer actions, target list reordering, and item badges. Over 100 items a panel draws only the visible rows; Space selects, Enter moves an item across.",
             RazorSnippet = "<TwPickList TItem=\"string\" Source=\"_available\" @bind-Target=\"_selected\" SourceTitle=\"Roles\" TargetTitle=\"Assigned\" />",
             Parameters = new List<ComponentParameterDoc>
             {

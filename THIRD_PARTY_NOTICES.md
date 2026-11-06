@@ -300,6 +300,33 @@ Vendored at `wwwroot/lib/tesseract` for 100% offline OCR, Apache License 2.0 (te
 - `tesseract-core-simd-lstm.wasm` and `tesseract-core-simd-lstm.wasm.js`: Tesseract.js-core, <https://github.com/naptha/tesseract.js-core>, a WebAssembly build of the Tesseract OCR engine (<https://github.com/tesseract-ocr/tesseract>).
 - `eng.traineddata.gz`: English language data from the Tesseract project (<https://github.com/tesseract-ocr/tessdata_fast>).
 
+## dotlottie-web
+
+Vendored at `wwwroot/lib/dotlottie` (version 0.81.0, `@lottiefiles/dotlottie-web`), MIT, <https://github.com/LottieFiles/dotlottie-web>. Files: `dotlottie-web.js` (the package's `dist/index.js`, unchanged), `dotlottie-player.wasm` (ThorVG renderer) and `LICENSE`. Used by `TwLottie` / `TwCelebration` through `wwwroot/js/tw-lottie.js`, loaded only on pages that render one.
+
+```
+MIT License
+
+Copyright (c) 2023 LottieFiles.com
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+persons to whom the Software is furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+```
+
+## Lottie animations (wwwroot/animations)
+
+The ten `.lottie` files in `wwwroot/animations` (success-check, confetti-burst, level-up-star, streak-flame, badge-unlock-shine, loading-spinner, empty-state, trophy-bounce, xp-bar-fill, notification-bell) were authored by Ask2App on 2026-11-06, written by script, with no downloaded artwork. MIT, same terms as this kit. Each carries a `poster` marker: the still frame shown under prefers-reduced-motion.
+
 ## Open Specifications Implemented
 - **AG-UI Protocol**: `SseAgentTransport` implements the open AG-UI event stream specification (<https://github.com/ag-ui-protocol/ag-ui>).
 - **A2UI v0.9**: `TwA2uiSurface` and `A2uiSurface` implement the A2UI v0.9 declarative message model in C#.

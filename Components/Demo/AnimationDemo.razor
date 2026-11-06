@@ -1,0 +1,55 @@
+@* Lottie animations: the ten bundled samples and the five celebrations. Under reduced motion they hold a still frame (confetti is skipped). *@
+<section class="space-y-6" data-testid="animation-demo" aria-labelledby="animation-title">
+    <header>
+        <h2 id="animation-title" class="text-xl font-black text-slate-900 dark:text-white">Animations</h2>
+        <p class="text-sm text-slate-700 dark:text-slate-300 mt-1 max-w-3xl">
+            Small Lottie animations for progress, empty states and rewards, played by a player bundled with the kit (nothing loads
+            from another site). If your device asks for less motion, each one shows a still picture instead.
+        </p>
+    </header>
+
+    <ul class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4" aria-label="Animation samples">
+        @foreach (var (file, label, loop) in Samples)
+        {
+            <li class="flex flex-col items-center gap-2 p-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900" data-testid="animation-sample" data-file="@file">
+                <TwLottie Src="@($"animations/{file}.lottie")" Loop="loop" Width="120px" AriaLabel="@label" />
+                <span class="text-sm font-medium text-slate-900 dark:text-slate-100">@label</span>
+            </li>
+        }
+    </ul>
+
+    <div class="space-y-3">
+        <h3 class="text-base font-bold text-slate-900 dark:text-white">Celebrations</h3>
+        <div class="flex flex-wrap gap-2">
+            @foreach (var kind in Enum.GetValues<CelebrationKind>())
+            {
+                var k = kind;
+                <button type="button" @onclick="() => Celebrate(k)" data-testid="celebrate" data-kind="@k.ToString().ToLowerInvariant()"
+                        class="px-3 min-h-[40px] rounded-xl border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                    @TwCelebration.DefaultMessage(k)
+                </button>
+            }
+        </div>
+        <div class="min-h-[190px]">
+            @if (_kind is { } current)
+            {
+                <TwCelebration @key="_shot" Kind="current" />
+            }
+        </div>
+    </div>
+</section>
+
+@code {
+    private static readonly (string File, string Label, bool Loop)[] Samples =
+    {
+        ("success-check", "Saved", false), ("confetti-burst", "Confetti", false), ("level-up-star", "Level up", false),
+        ("streak-flame", "Streak", true), ("badge-unlock-shine", "Badge unlocked", false), ("loading-spinner", "Loading", true),
+        ("empty-state", "Nothing here yet", true), ("trophy-bounce", "Trophy", false), ("xp-bar-fill", "Points filling", false),
+        ("notification-bell", "New notification", true)
+    };
+
+    private CelebrationKind? _kind;
+    private int _shot;
+
+    private void Celebrate(CelebrationKind kind) { _kind = kind; _shot++; }
+}

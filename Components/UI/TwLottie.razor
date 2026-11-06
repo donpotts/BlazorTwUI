@@ -1,0 +1,95 @@
+@namespace BlazorTwUI.Components.UI
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@* Plays a Lottie animation (.lottie or .json) with dotlottie-web, vendored under wwwroot/lib/dotlottie (MIT, no CDN).
+   The player script loads only when a TwLottie renders. Under prefers-reduced-motion it does not play: it shows the
+   file's "poster" marker frame (or the first frame). Motion must never be the only signal: put the words beside it. *@
+<span class="relative inline-block align-middle @Class" style="@SizeStyle" data-testid="lottie" data-src="@Src"
+      role="@(Decorative ? null : "img")" aria-label="@(Decorative ? null : AriaLabel)" aria-hidden="@(Decorative ? "true" : null)">
+    <canvas @ref="_canvas" class="block w-full h-full" data-testid="lottie-canvas" data-state="loading"></canvas>
+</span>
+
+@code {
+    /// <summary>URL of a .lottie or Lottie .json file, for example "animations/success-check.lottie".</summary>
+    [Parameter, EditorRequired] public string Src { get; set; } = "";
+    [Parameter] public bool Loop { get; set; }
+    [Parameter] public bool Autoplay { get; set; } = true;
+    [Parameter] public double Speed { get; set; } = 1;
+    /// <summary>CSS width, for example "120px" or "8rem". Default 120px.</summary>
+    [Parameter] public string Width { get; set; } = "120px";
+    /// <summary>CSS height. Default: same as <see cref="Width"/>.</summary>
+    [Parameter] public string? Height { get; set; }
+    /// <summary>What to show under prefers-reduced-motion: <see cref="LottieReducedMotion.Poster"/> (default) holds the "poster" marker frame, or frame 0 when the file has none.</summary>
+    [Parameter] public LottieReducedMotion ReducedMotion { get; set; } = LottieReducedMotion.Poster;
+    /// <summary>Name of the marker that holds the still frame. Ask2App samples all carry "poster".</summary>
+    [Parameter] public string PosterMarker { get; set; } = "poster";
+    /// <summary>Exact frame to hold under reduced motion; overrides <see cref="PosterMarker"/>.</summary>
+    [Parameter] public int? PosterFrame { get; set; }
+    /// <summary>What a screen reader announces (role="img"). Ignored when <see cref="Decorative"/>.</summary>
+    [Parameter] public string? AriaLabel { get; set; }
+    /// <summary>Purely decorative: hidden from assistive technology. Default true when no <see cref="AriaLabel"/> is given.</summary>
+    [Parameter] public bool? IsDecorative { get; set; }
+    [Parameter] public EventCallback OnComplete { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private bool Decorative => IsDecorative ?? string.IsNullOrWhiteSpace(AriaLabel);
+    private string SizeStyle => $"width:{Width};height:{Height ?? Width}";
+
+    private ElementReference _canvas;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _entry;
+    private DotNetObjectReference<TwLottie>? _self;
+    private string? _loadedSrc;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (string.IsNullOrWhiteSpace(Src) || Src == _loadedSrc) return;
+        _loadedSrc = Src;
+        try
+        {
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/tw-lottie.js");
+            if (_entry is not null) { await _module.InvokeVoidAsync("destroy", _entry); await _entry.DisposeAsync(); _entry = null; }
+            _self ??= DotNetObjectReference.Create(this);
+            _entry = await _module.InvokeAsync<IJSObjectReference>("create", _canvas, new
+            {
+                src = Src,
+                loop = Loop,
+                autoplay = Autoplay,
+                speed = Speed,
+                reducedMotion = ReducedMotion switch { LottieReducedMotion.Play => "play", LottieReducedMotion.Hide => "hide", _ => "poster" },
+                posterMarker = PosterMarker,
+                posterFrame = PosterFrame
+            }, _self);
+        }
+        catch (Exception ex) when (ex is JSException or InvalidOperationException or JSDisconnectedException or TaskCanceledException) { }
+    }
+
+    /// <summary>Play from the current frame (shows the poster instead under reduced motion).</summary>
+    public async Task PlayAsync()
+    {
+        if (_module is null || _entry is null) return;
+        try { await _module.InvokeVoidAsync("play", _entry); } catch (Exception ex) when (ex is JSException or JSDisconnectedException) { }
+    }
+
+    public async Task StopAsync()
+    {
+        if (_module is null || _entry is null) return;
+        try { await _module.InvokeVoidAsync("stop", _entry); } catch (Exception ex) when (ex is JSException or JSDisconnectedException) { }
+    }
+
+    [JSInvokable] public Task OnLottieComplete() => InvokeAsync(() => OnComplete.InvokeAsync());
+    [JSInvokable] public Task OnLottieError() => Task.CompletedTask;
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (_module is not null && _entry is not null) await _module.InvokeVoidAsync("destroy", _entry);
+            if (_entry is not null) await _entry.DisposeAsync();
+            if (_module is not null) await _module.DisposeAsync();
+        }
+        catch (Exception ex) when (ex is JSException or JSDisconnectedException or TaskCanceledException) { }
+        _self?.Dispose();
+    }
+}

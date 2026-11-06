@@ -2,6 +2,17 @@
 
 All notable changes to BlazorTwUI are documented here. Version 1.0 has not been released: earlier internal labels of the form 1.x were renumbered to 0.x (for example 1.5.0 is now 0.5.0), so the library is in its 0.n.n line. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- `TwLottie` (Lottie player on dotlottie-web 0.81.0, MIT, vendored in `wwwroot/lib/dotlottie`, loaded only where used) and `TwCelebration` (success, level up, confetti, badge, streak + polite announcement). Ten Ask2App-authored samples in `wwwroot/animations`. Under prefers-reduced-motion they hold the poster frame (confetti is skipped).
+- Virtualization: `TwDataGrid` draws only the visible rows over 200 in-memory records (`Virtualize`, `VirtualizeThreshold`, `RowHeight`, `aria-rowcount`/`aria-rowindex`); `TwCombobox`, `TwPickList` and `TwListBox` over 100 items (`aria-setsize`/`aria-posinset`). Demo: `/demo/long-lists` (20,000 rows, 5,000 options).
+
+### Fixed
+- `TwRelationPicker` offered no options on a NEW record (Record null).
+- `TwConfetti` ignored prefers-reduced-motion (now one still frame); `TwRewardsCenter` had 10-11px text and slate-400 labels on white.
+- Demo service worker cached `_framework` files and served them on localhost, so a rebuild failed Subresource Integrity; it now bypasses localhost and never caches `_framework`.
+
 ## [0.8.2] - 2026-11-03
 
 ### Added
