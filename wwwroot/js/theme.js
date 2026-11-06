@@ -943,6 +943,10 @@ window.blazorCelebration = {
         const originX = opts.x !== undefined ? opts.x : 0.5;
         const originY = opts.y !== undefined ? opts.y : 0.5;
         const speed = typeof opts.speed === 'number' && opts.speed > 0 ? opts.speed : 1.0;
+        // prefers-reduced-motion: draw one still frame (no movement), then clear it. Opt out with respectReducedMotion: false.
+        const still = opts.respectReducedMotion !== false && !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+        if (canvasEl._blazorStillTimer) { clearTimeout(canvasEl._blazorStillTimer); canvasEl._blazorStillTimer = null; }
+        canvasEl.dataset.motion = still ? 'still' : 'animated';
 
         // Play matched procedural Sound FX (freely distributable Web Audio synthesis)
         if (opts.sound !== false && window.blazorSoundFx) {
@@ -1351,6 +1355,10 @@ window.blazorCelebration = {
                 }
             }
 
+            if (still) {
+                canvasEl._blazorStillTimer = setTimeout(() => ctx.clearRect(0, 0, width, height), 1500);
+                return;
+            }
             if (active) {
                 animationFrameId = requestAnimationFrame(animate);
             } else {

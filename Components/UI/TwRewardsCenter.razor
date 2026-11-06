@@ -16,7 +16,7 @@
                     <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white">Employee Rewards Center</h3>
                     <TwBadge Variant="SemanticVariant.Success">Active Roster</TwBadge>
                 </div>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
                     Redeem peer recognition awards and spot bonuses for perks, gift cards, and experiences
                 </p>
             </div>
@@ -25,7 +25,7 @@
         <!-- Points Wallet Card -->
         <div class="flex items-center gap-3 p-3 px-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
             <div class="text-right">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Available Points</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 block">Available Points</span>
                 <span class="text-lg sm:text-xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
                     @_walletPoints.ToString("N0") PTS
                 </span>
@@ -70,21 +70,21 @@
                 <div class="space-y-2">
                     <div class="flex items-center justify-between">
                         <span class="text-2xl p-2 rounded-2xl bg-slate-100 dark:bg-slate-800">@item.Emoji</span>
-                        <span class="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase @(item.DeliveryKind == "Digital" ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400")">
+                        <span class="px-2 py-0.5 rounded-md text-xs font-mono font-bold uppercase @(item.DeliveryKind == "Digital" ? "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400" : "bg-amber-500/10 text-amber-600 dark:text-amber-400")">
                             @item.DeliveryKind
                         </span>
                     </div>
                     <div>
                         <h4 class="text-sm font-bold text-slate-900 dark:text-white">@item.Title</h4>
-                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">@item.Description</p>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 mt-0.5 leading-relaxed">@item.Description</p>
                     </div>
                 </div>
 
                 <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <div>
-                        <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block">Price</span>
+                        <span class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">Price</span>
                         <span class="text-sm font-black font-mono text-slate-900 dark:text-white">
-                            @item.CostPoints.ToString("N0") <span class="text-[10px] text-emerald-600 dark:text-emerald-400">PTS</span>
+                            @item.CostPoints.ToString("N0") <span class="text-xs text-emerald-600 dark:text-emerald-400">PTS</span>
                         </span>
                     </div>
                     <TwButton Variant="@(canAfford ? ButtonVariant.Primary : ButtonVariant.Outline)"
@@ -120,7 +120,7 @@
                         <div class="font-mono text-base font-black tracking-widest text-emerald-800 dark:text-emerald-200 bg-white dark:bg-slate-900 p-2 rounded-xl border border-emerald-300 select-all">
                             @_voucherCode
                         </div>
-                        <p class="text-[11px] text-emerald-600 dark:text-emerald-400">A confirmation email with instructions was dispatched.</p>
+                        <p class="text-xs text-emerald-600 dark:text-emerald-400">A confirmation email with instructions was dispatched.</p>
                     </div>
 
                     <TwButton Variant="ButtonVariant.Primary" ResponsiveFullWidth="true" OnClick="CloseRedemptionModal">
