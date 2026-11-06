@@ -71,11 +71,111 @@ public sealed partial class DataQuestionParser
 
     public AnswerPlan Parse(string? question)
     {
-        var raw = (question ?? "").Trim();
+        var raw = new string((question ?? "").Where(c => !char.IsControl(c)).ToArray()).Trim();
+        var q = " " + Norm(raw) + " ";
+        var words = q.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var (guessKey, guess, _) = MainEntity(q, q);
+        var guessPlural = guess?.Plural.ToLowerInvariant() ?? "records";
+
+        // It only reads. A question that asks it to change something gets a plain refusal and nothing is fetched.
+        if (WriteVerb(words) is not null)
+        {
+            return Unknown(raw, "I only read your data - I cannot change it. I can count, total, average, rank, group and find - for example:",
+                guess is null ? null : guessKey, appendExamples: false);
+        }
+
+        // "under 100", "between 50 and 100", "more than 200": there are no number conditions yet - never a text search of them.
+        if (ComparisonPhrase(words) is { } comparison) return CouldNotUse(raw, comparison, guess is null ? null : guessKey, guessPlural);
+
+        // "not in stock or tagged waterproof": conditions are only ever combined with AND, so "or" is refused, not ANDed.
+        var or = Array.IndexOf(words, "or");
+        if (or >= 0 && (or + 1 >= words.Length || words[or + 1] != "not"))
+            return Unknown(raw, "I cannot combine conditions with \u201cor\u201d yet. Ask about each one separately.", guess is null ? null : guessKey);
+
+        // "how many products and how many tags": two subjects joined by "and" are two questions; answering one would drop the other.
+        if (TwoSubjects(q) is { } pair)
+            return Unknown(raw, $"I answer one question at a time. Ask about {pair.First} first, then {pair.Second}.", guess is null ? null : guessKey);
+
+        // "highest rated cheapest": two directions in one question.
+        if (ExplicitDescending(words) && Ascending(q))
+            return Unknown(raw, "I cannot rank highest and lowest in one question. Ask for one of them.", guess is null ? null : guessKey);
+
         var plan = ParseCore(raw);
-        if (plan.IsUnknown || plan.Intent == AnswerIntent.Find) return plan;
-        return Leftovers(plan, " " + Norm(raw) + " ");
+        if (plan.IsUnknown) return plan;
+        // A search is checked too: every word must be the search text, a filter, or understood - nothing is dropped silently.
+        return Leftovers(plan, q);
     }
+
+    /// <summary>
+    /// Two different entities named as subjects before any "by" clause with "and" between them ("products and tags").
+    /// A name right after "tagged" / "with" / "named" is a filter or text, not a subject.
+    /// </summary>
+    private (string First, string Second)? TwoSubjects(string q)
+    {
+        var (groupAt, _) = FindGroupClause(q);
+        var head = groupAt >= 0 ? q[..groupAt] + " " : q;
+        var words = head.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var hits = new List<(int At, EntitySchema Schema)>();
+        for (var i = 0; i < words.Length; i++)
+        {
+            if (i > 0 && words[i - 1] is "tagged" or "with" or "named" or "called" or "containing" or "matching") continue;
+            var e = _entities.FirstOrDefault(x => Forms(x.Schema.Entity).Concat(Forms(x.Schema.Plural)).Contains(words[i]));
+            if (e.Schema is not null && !hits.Any(h => h.Schema == e.Schema)) hits.Add((i, e.Schema));
+        }
+
+        if (hits.Count < 2) return null;
+        var between = words[(hits[0].At + 1)..hits[1].At];
+        if (!between.Contains("and")) return null;
+        return (hits[0].Schema.Plural, hits[1].Schema.Plural);
+    }
+
+    private static readonly HashSet<string> WriteVerbs =
+        ["delete", "remove", "update", "add", "set", "make", "drop", "truncate", "change", "create", "insert", "edit", "rename", "erase", "clear", "modify", "replace"];
+
+    private static readonly HashSet<string> Politeness = ["please", "can", "could", "would", "will", "you", "i", "want", "to", "lets", "let", "us", "go", "ahead", "and", "now", "kindly"];
+
+    /// <summary>The write verb a question opens with ("delete all products", "please remove the cheapest product"), if any.</summary>
+    private static string? WriteVerb(string[] words)
+    {
+        foreach (var w in words)
+        {
+            if (Politeness.Contains(w)) continue;
+            return WriteVerbs.Contains(w) ? w : null;
+        }
+
+        return null;
+    }
+
+    private static readonly string[] ComparisonStarts = ["under", "over", "between", "above", "below", "costing", "less", "more", "fewer", "greater", "at", "within", "exceeding", "cheaper", "pricier"];
+
+    /// <summary>"under 100", "between 50 and 100", "more than 200", "at least 4": a comparison word followed by a number.</summary>
+    private static string? ComparisonPhrase(string[] words)
+    {
+        for (var i = 0; i < words.Length; i++)
+        {
+            if (!ComparisonStarts.Contains(words[i])) continue;
+            if (words[i] == "at" && (i + 1 >= words.Length || words[i + 1] is not ("least" or "most"))) continue;
+            if (words[i] is "less" or "more" or "fewer" or "greater" or "cheaper" or "pricier" && (i + 1 >= words.Length || words[i + 1] != "than")) continue;
+            // the number must follow within a few words ("between 50 and 100", "more than 200")
+            var last = -1;
+            for (var j = i + 1; j < Math.Min(words.Length, i + 5); j++)
+                if (words[j].Any(char.IsDigit)) last = j;
+            if (last < 0) continue;
+            if (words[i] == "between" && last + 2 < words.Length && words[last + 1] == "and" && words[last + 2].Any(char.IsDigit)) last += 2;
+            var from = i > 0 && words[i - 1] is "worth" or "valued" ? i - 1 : i;
+            return string.Join(' ', words[from..(last + 1)]);
+        }
+
+        return null;
+    }
+
+    private static readonly HashSet<string> ExplicitDescWords = ["highest", "most", "best", "largest", "biggest", "greatest", "priciest"];
+
+    /// <summary>An explicitly descending word. "top" is only a count marker, and "expensive" alone is a field word ("least expensive").</summary>
+    private static bool ExplicitDescending(string[] words) => words.Any(ExplicitDescWords.Contains);
+
+    private AnswerPlan CouldNotUse(string question, string phrase, string? entityKey, string plural) =>
+        Unknown(question, $"I could not use \u201c{phrase}\u201d. I can count, total, average, rank and group {plural}, filtered by a related name or a yes/no field.", entityKey);
 
     private AnswerPlan ParseCore(string raw)
     {
@@ -107,7 +207,8 @@ public sealed partial class DataQuestionParser
         var numeric = schema.Fields.Where(IsNumeric).ToList();
         var fieldsMentioned = FieldMentions(head, schema);
         var numericMentioned = fieldsMentioned.Where(IsNumeric).ToList();
-        var filters = Filters(head, schema);
+        var (filters, oneConflict, bothFlag) = Filters(head, schema);
+        if (oneConflict is not null) return Unknown(raw, oneConflict, entityKey);
 
         var plural = schema.Plural.ToLowerInvariant();
         var basePlan = new AnswerPlan { Question = raw, EntityKey = entityKey, Schema = schema, Filters = filters };
@@ -121,6 +222,10 @@ public sealed partial class DataQuestionParser
         var desc = DescWords.Any(w => Has(q, w)) && !Has(q, "most recent");
         var asc = Ascending(q);
         var ambiguity = AmbiguousNumbers(head, schema);
+
+        // ---- "how many in stock and not in stock": both sides of a yes/no field are a breakdown on it, never one half
+        if (groupAt < 0 && bothFlag is not null)
+            return basePlan with { Intent = AnswerIntent.Breakdown, GroupByField = bothFlag, Filters = filters.Where(x => x.Field != bothFlag).ToList() };
 
         // ---- yes/no breakdown written as "in stock vs out of stock"
         if (groupAt < 0 && HasAny(q, "vs", "versus", "or not", "compared"))
@@ -177,12 +282,7 @@ public sealed partial class DataQuestionParser
         {
             if (ambiguity is not null) return Unknown(raw, ambiguity, entityKey);
             var field = numericMentioned.FirstOrDefault();
-            if (field is null)
-            {
-                return Unknown(raw, numeric.Count == 0
-                    ? $"{schema.Plural} have no numbers to rank by."
-                    : $"I could not tell what to rank {plural} by. {NumbersSentence(schema, "rank them by")}", entityKey);
-            }
+            if (field is null) return Unknown(raw, CannotRank(head, q, schema), entityKey);
 
             return Rank(basePlan, field, topMatch, statedN, !asc, singularMention);
         }
@@ -191,9 +291,13 @@ public sealed partial class DataQuestionParser
         if (avg || min || max || (sum && numericMentioned.Count > 0) || ((desc || asc) && numericMentioned.Count > 0))
         {
             if (ambiguity is not null) return Unknown(raw, ambiguity, entityKey);
+            var numberHits = FieldHits(head, schema).Where(h => IsNumeric(h.Field)).ToList();
+            if (numberHits.Count > 1 && numberHits[1].Strength == numberHits[0].Strength)
+                return Unknown(raw, $"I work with one number at a time: {numberHits[0].Field.Label} or {numberHits[1].Field.Label}?", entityKey);
             var field = numericMentioned.FirstOrDefault();
             if (field is null)
             {
+                if (NumberElsewhere(head, schema) is { } missing) return Unknown(raw, missing, entityKey);
                 var other = fieldsMentioned.FirstOrDefault();
                 return Unknown(raw, other is not null
                     ? $"{other.Label} is not a number, so it cannot be {(avg ? "averaged" : "added up")}. {NumbersSentence(schema)}"
@@ -220,18 +324,139 @@ public sealed partial class DataQuestionParser
             return basePlan with { Intent = AnswerIntent.Count };
         }
 
-        // ---- a search ("show products tagged ultralight", "find tent")
-        var term = SearchTerm(q, schema);
-        if (term.Length > 0)
+        // ---- a listing or a search. Filters already matched are KEPT ("show Northpeak products tagged waterproof");
+        // "tagged A and B" needs every name to be a real tag; what is left must be a plain name or text, or it is not searched.
+        var (tagged, taggedError) = TaggedClause(raw, schema);
+        if (taggedError is not null) return Unknown(raw, taggedError, entityKey);
+        foreach (var t in tagged)
+            if (!filters.Any(f => f.Relation == t.Relation && f.RecordId == t.RecordId)) filters.Add(t);
+        basePlan = basePlan with { Filters = filters };
+
+        var residual = Residual(raw, schema, filters);
+        if (residual.Count > 0 && filters.Any(f => f.Relation?.Kind == RelationKind.Many && !tagged.Contains(f)))
         {
-            if (!findish && filters.Count == 0 && fieldsMentioned.Count == 0 && !MentionsEntity(head, schema))
-                return Unknown(raw, "I could not tell what you want to know.", entityKey);
-            return basePlan with { Intent = AnswerIntent.Find, Search = term, Filters = Array.Empty<PlanFilter>() };
+            // "find o'brien jacket": a tag name next to other text is part of the text, not a tag ("tagged o'brien" is the tag)
+            filters = filters.Where(f => f.Relation?.Kind != RelationKind.Many || tagged.Contains(f)).ToList();
+            basePlan = basePlan with { Filters = filters };
+            residual = Residual(raw, schema, filters);
         }
 
-        // "show products", "Northpeak products": list them, with the count
-        if (findish || MentionsEntity(head, schema)) return basePlan with { Intent = AnswerIntent.Count };
-        return Unknown(raw, "I could not tell what you want to know.", entityKey);
+        if (residual.Count == 0)
+        {
+            // "show products", "Northpeak products", "out of stock products": list them, with the count
+            if (findish || MentionsEntity(head, schema) || filters.Count > 0) return basePlan with { Intent = AnswerIntent.Count };
+            return Unknown(raw, "I could not tell what you want to know.", entityKey);
+        }
+
+        var normResidual = residual.SelectMany(r => Norm(r).Split(' ', StringSplitOptions.RemoveEmptyEntries)).ToList();
+        if (normResidual.Any(w => w.Any(char.IsDigit)))
+            return CouldNotUse(raw, string.Join(' ', residual), entityKey, plural);   // "with 5 stars": no number conditions yet
+
+        var askedField = schema.Fields.Where(IsNumeric).FirstOrDefault(f => FieldForms(f).Any(form => normResidual.Contains(form)));
+        if (askedField is not null)
+        {
+            // "price of tents", "how much do tents cost": which figure is wanted is not said - ask, never search the words
+            var label = askedField.Label.ToLowerInvariant();
+            return Unknown(raw, $"Do you want the average, total, lowest or highest {label}? For example \u201caverage {label} of {plural}\u201d.", entityKey);
+        }
+
+        if (!findish && !Markers.Any(m => Has(q, m)))
+            return CouldNotUse(raw, string.Join(' ', residual), entityKey, plural);
+
+        return basePlan with { Intent = AnswerIntent.Find, Search = string.Join(' ', residual) };
+    }
+
+    /// <summary>Words that introduce a name or text to look for.</summary>
+    private static readonly string[] Markers = ["named", "called", "containing", "matching", "tagged", "with", "like", "about"];
+
+    /// <summary>
+    /// "tagged A and B": each name must be a real record of the entity's tag-like link (compared on its real label, any case,
+    /// punctuation kept: "o'brien" finds "O'Brien"). A name that is not there is said plainly, never searched as text.
+    /// </summary>
+    private (List<PlanFilter> Filters, string? Error) TaggedClause(string raw, EntitySchema schema)
+    {
+        var result = new List<PlanFilter>();
+        var lower = raw.ToLowerInvariant();
+        var at = System.Text.RegularExpressions.Regex.Match(lower, @"\btagged\s+(?<rest>.+)$");
+        var tagRel = schema.Relations.FirstOrDefault(r => Forms(r.Label).Concat(Forms(r.Name)).Any(f => f is "tag" or "tags"));
+        if (!at.Success || tagRel is null) return (result, null);
+        var tags = _names.TryGetValue(tagRel.TargetEntity, out var n) ? n : Array.Empty<(string Id, string Name)>();
+        foreach (var part0 in System.Text.RegularExpressions.Regex.Split(at.Groups["rest"].Value, @"\s*(?:,|\band\b)\s*"))
+        {
+            var part = part0.Trim().Trim('?', '!', '.', '"', '\u201c', '\u201d', ' ');
+            if (part.Length == 0) continue;
+            var match = tags.Where(t => part.StartsWith(t.Name.ToLowerInvariant(), StringComparison.Ordinal)
+                                        && (part.Length == t.Name.Length || !char.IsLetterOrDigit(part[t.Name.Length])))
+                            .OrderByDescending(t => t.Name.Length).FirstOrDefault();
+            if (match.Name is null)
+                return (result, $"No {Singular(tagRel.Label.ToLowerInvariant())} matches \u201c{part}\u201d.");
+            result.Add(new PlanFilter { Relation = tagRel, RecordId = match.Id, RecordName = match.Name });
+        }
+
+        return (result, null);
+    }
+
+    /// <summary>
+    /// The words of the question nobody has claimed: not grammar or filler, not a marker, not the entity, not a matched name,
+    /// not a yes/no field, not a field. Taken from the RAW text so "t-shirt" and "o'brien" are searched as typed.
+    /// </summary>
+    private static List<string> Residual(string raw, EntitySchema schema, List<PlanFilter> filters)
+    {
+        var known = new HashSet<string>(Filler);
+        known.UnionWith(Grammar);
+        known.UnionWith(Markers);
+        known.UnionWith(FindWords);
+        void Add(IEnumerable<string> forms) { foreach (var f in forms) known.UnionWith(f.Split(' ', StringSplitOptions.RemoveEmptyEntries)); }
+        Add(Forms(schema.Entity).Concat(Forms(schema.Plural)));
+        foreach (var f in filters)
+        {
+            if (f.Relation is { } r) Add([Norm(f.RecordName)]);
+            if (f.Field is { } b) { Add(Forms(b.Label)); known.UnionWith(["not", "out", "of", "non"]); }
+        }
+
+        var result = new List<string>();
+        var operand = false;   // after "named" / "called" / "containing" / "matching" the rest is the text, as typed
+        foreach (var token in raw.ToLowerInvariant().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+        {
+            var t = token.Trim('?', '!', '.', ',', ';', ':', '"', '(', ')', '[', ']', '\u201c', '\u201d');
+            var parts = Norm(t).Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0) continue;
+            if (operand) { result.Add(t); continue; }
+            if (parts is ["named" or "called" or "containing" or "matching"]) { operand = true; continue; }
+            if (parts.All(known.Contains)) continue;
+            result.Add(t);
+        }
+
+        return result;
+    }
+
+    /// <summary>"Brands have no price. I can rank Products by price or rating." when the number named belongs to another entity.</summary>
+    private string? NumberElsewhere(string head, EntitySchema schema)
+    {
+        if (FieldHits(head, schema).Any(h => IsNumeric(h.Field))) return null;
+        var wanted = _entities.Where(e => e.Schema != schema).SelectMany(e => FieldHits(head, e.Schema)).Where(h => IsNumeric(h.Field)).Select(h => h.Field.Label.ToLowerInvariant()).FirstOrDefault();
+        return wanted is null ? null : $"{schema.Plural} have no {wanted}.{RankableElsewhere(schema)}";
+    }
+
+    private string RankableElsewhere(EntitySchema schema)
+    {
+        var others = _entities.Where(e => e.Schema != schema && e.Schema.Fields.Any(IsNumeric))
+            .Select(e => $"{e.Schema.Plural} by {string.Join(" or ", e.Schema.Fields.Where(IsNumeric).Select(f => f.Label.ToLowerInvariant()))}").ToList();
+        return others.Count == 0 ? "" : " I can rank " + string.Join("; ", others) + ".";
+    }
+
+    /// <summary>Why a ranking has no number, and what CAN be ranked.</summary>
+    private string CannotRank(string head, string q, EntitySchema schema)
+    {
+        // "which brand has the most products": that is a count per brand, not a number a brand has.
+        var counted = schema.Relations.FirstOrDefault(r => r.Kind == RelationKind.Many && RelationForms(r).Any(f => Has(q, f)));
+        if (counted is not null)
+            return $"I cannot rank {schema.Plural.ToLowerInvariant()} by how many {counted.Label.ToLowerInvariant()} they have yet. Try \u201c{counted.Label} by {schema.Entity.ToLowerInvariant()}\u201d.";
+
+        // "cheapest 2 brands": cheap means a price, and brands have none
+        if (NumberElsewhere(head, schema) is { } missing) return missing;
+        if (!schema.Fields.Any(IsNumeric)) return $"{schema.Plural} have no numbers to rank.{RankableElsewhere(schema)}";
+        return $"I could not tell what to rank {schema.Plural.ToLowerInvariant()} by. {NumbersSentence(schema, "rank them by")}";
     }
 
     /// <summary>
@@ -286,13 +511,13 @@ public sealed partial class DataQuestionParser
         return basePlan with { Intent = AnswerIntent.TopN, Field = field, Descending = descending, Take = take };
     }
 
-    private AnswerPlan Unknown(string question, string why, string? entityKey = null) => new()
+    private AnswerPlan Unknown(string question, string why, string? entityKey = null, bool appendExamples = true) => new()
     {
         Question = question,
         Intent = AnswerIntent.Unknown,
         EntityKey = entityKey ?? "",
         Schema = entityKey is null ? null : _entities.FirstOrDefault(e => e.Key == entityKey).Schema,
-        Message = why + " I can answer questions like these:",
+        Message = appendExamples ? why + " I can answer questions like these:" : why,
         Suggestions = Suggestions(),
     };
 
@@ -325,10 +550,22 @@ public sealed partial class DataQuestionParser
 
     private (string Key, EntitySchema? Schema) FieldOwner(string text)
     {
-        var byField = _entities.Where(e => FieldMentions(text, e.Schema).Count > 0).ToList();
+        var byField = _entities.Where(e => FieldMentions(text, e.Schema).Count > 0 || NegatedFlag(text, e.Schema)).ToList();
         if (byField.Count > 1) byField = byField.Where(e => FieldMentions(text, e.Schema).Any(IsNumeric)).ToList();
+        if (byField.Count > 1)
+        {
+            // "sum of price and rating": only products have both
+            var most = byField.Max(e => FieldMentions(text, e.Schema).Count);
+            byField = byField.Where(e => FieldMentions(text, e.Schema).Count == most).ToList();
+        }
+
         return byField.Count == 1 ? (byField[0].Key, byField[0].Schema) : ("", null);
     }
+
+    /// <summary>"out of stock", "not in stock": a yes/no field said the negative way still names the entity that has it.</summary>
+    private static bool NegatedFlag(string text, EntitySchema schema) =>
+        schema.Fields.Where(f => f.Kind == FieldKind.Boolean).Select(f => Norm(f.Label))
+            .Any(l => Has(text, "not " + l) || (l.StartsWith("in ", StringComparison.Ordinal) && Has(text, "out of " + l[3..])));
 
     private static bool MentionsEntity(string text, EntitySchema schema) =>
         Forms(schema.Entity).Concat(Forms(schema.Plural)).Any(f => Has(text, f));
@@ -399,6 +636,8 @@ public sealed partial class DataQuestionParser
         }
 
         if (plan.Intent == AnswerIntent.TopN) known.Add(plan.Take.ToString(CultureInfo.InvariantCulture));
+        if (plan.Search is { Length: > 0 } search) { Add([Norm(search)]); known.UnionWith(Markers); known.UnionWith(FindWords); }
+        foreach (var f in plan.Filters.Where(f => f.Field is not null)) { Add(Forms(f.Field!.Label)); known.UnionWith(["not", "out", "of", "non"]); }
 
         var words = q.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         var unknown = Enumerable.Range(0, words.Length).Where(i => !known.Contains(words[i])).ToList();
@@ -457,10 +696,12 @@ public sealed partial class DataQuestionParser
 
     private static IEnumerable<string> RelationForms(EntityRelation r) => Forms(r.Label).Concat(Forms(r.Name)).Concat(Forms(r.TargetEntity)).Distinct();
 
-    private List<PlanFilter> Filters(string text, EntitySchema schema)
+    private (List<PlanFilter> Filters, string? OneConflict, EntityField? BothFlag) Filters(string text, EntitySchema schema)
     {
         var filters = new List<PlanFilter>();
         var taken = new List<string>();
+        string? conflict = null;
+        EntityField? both = null;
 
         // Related records named in the question: "Northpeak products" -> brand is Northpeak (longest names first).
         var candidates = schema.Relations
@@ -472,8 +713,15 @@ public sealed partial class DataQuestionParser
         foreach (var c in candidates)
         {
             if (!Has(text, c.form) || taken.Any(t => t.Contains(c.form, StringComparison.Ordinal))) continue;
-            if (filters.Any(f => f.Relation == c.r)) continue;
-            filters.Add(new PlanFilter { Relation = c.r, RecordId = c.Id, RecordName = c.Name });
+            if (c.r.Kind == RelationKind.One && filters.FirstOrDefault(f => f.Relation == c.r) is { } other)
+            {
+                // A product has ONE category: "tents and packs" can never both hold, and picking one would be a guess.
+                conflict ??= $"A {schema.Entity.ToLowerInvariant()} has one {c.r.Label.ToLowerInvariant()}, so it cannot be both {other.RecordName} and {c.Name}. Ask about one at a time.";
+                continue;
+            }
+
+            if (filters.Any(f => f.Relation == c.r && f.RecordId == c.Id)) continue;
+            filters.Add(new PlanFilter { Relation = c.r, RecordId = c.Id, RecordName = c.Name });   // several tags: ALL of them
             taken.Add(c.form);
         }
 
@@ -484,11 +732,24 @@ public sealed partial class DataQuestionParser
             var negative = new List<string> { "not " + label, "non " + label };
             if (label.StartsWith("in ", StringComparison.Ordinal)) negative.Add("out of " + label[3..]);
             if (label.StartsWith("is ", StringComparison.Ordinal)) negative.Add("is not " + label[3..]);
-            if (negative.Any(n => Has(text, n))) filters.Add(new PlanFilter { Field = f, Flag = false });
-            else if (Forms(f.Label).Any(form => Has(text, form))) filters.Add(new PlanFilter { Field = f, Flag = true });
+            var negatives = negative.Sum(n => Occurrences(text, n));
+            var positives = Forms(f.Label).Max(form => Occurrences(text, form)) - negative.Where(n => n.EndsWith(label, StringComparison.Ordinal)).Sum(n => Occurrences(text, n));
+            if (negatives > 0 && positives > 0) both ??= f;
+            else if (negatives > 0) filters.Add(new PlanFilter { Field = f, Flag = false });
+            else if (positives > 0) filters.Add(new PlanFilter { Field = f, Flag = true });
         }
 
-        return filters;
+        filters = filters.OrderBy(f => f.Relation is null ? int.MaxValue : (" " + text.Trim() + " ").IndexOf(" " + Norm(f.RecordName) + " ", StringComparison.Ordinal)).ToList();
+        return (filters, conflict, both);
+    }
+
+    private static int Occurrences(string paddedText, string phrase)
+    {
+        var text = " " + paddedText.Trim() + " ";
+        var needle = " " + phrase + " ";
+        var n = 0;
+        for (var at = text.IndexOf(needle, StringComparison.Ordinal); at >= 0; at = text.IndexOf(needle, at + 1, StringComparison.Ordinal)) n++;
+        return n;
     }
 
     private static (int At, int Length) FindGroupClause(string q)
