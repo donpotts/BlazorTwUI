@@ -1,0 +1,46 @@
+@namespace BlazorTwUI.Components.UI
+
+@* A one-shot celebration: a bundled Lottie sample that plays once plus a polite live-region message, so the moment is
+   announced and readable without the animation. Under reduced motion the confetti is skipped and the others hold a still frame. *@
+<div class="inline-flex flex-col items-center gap-2 @Class" data-testid="celebration" data-kind="@KindSlug">
+    <TwLottie Src="@AnimationSrc" Width="@Size" Loop="false" Autoplay="true" IsDecorative="true"
+              ReducedMotion="@(Kind == CelebrationKind.Confetti ? LottieReducedMotion.Hide : LottieReducedMotion.Poster)"
+              OnComplete="OnComplete" />
+    <p role="status" aria-live="polite" class="text-sm font-semibold text-slate-900 dark:text-slate-100 text-center @(ShowMessage ? "" : "sr-only")" data-testid="celebration-message">@Text</p>
+</div>
+
+@code {
+    [Parameter] public CelebrationKind Kind { get; set; } = CelebrationKind.Success;
+    /// <summary>What is announced and shown. Default: a short phrase for the kind ("Done", "Level up", ...).</summary>
+    [Parameter] public string? Message { get; set; }
+    /// <summary>Show the message under the animation (it is always announced to screen readers).</summary>
+    [Parameter] public bool ShowMessage { get; set; } = true;
+    [Parameter] public string Size { get; set; } = "120px";
+    /// <summary>Folder that holds the bundled samples.</summary>
+    [Parameter] public string AnimationsPath { get; set; } = "animations";
+    [Parameter] public EventCallback OnComplete { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    /// <summary>The bundled sample for each kind (wwwroot/animations, authored by Ask2App, MIT).</summary>
+    public static string FileFor(CelebrationKind kind) => kind switch
+    {
+        CelebrationKind.LevelUp => "level-up-star.lottie",
+        CelebrationKind.Confetti => "confetti-burst.lottie",
+        CelebrationKind.Badge => "badge-unlock-shine.lottie",
+        CelebrationKind.Streak => "streak-flame.lottie",
+        _ => "success-check.lottie"
+    };
+
+    public static string DefaultMessage(CelebrationKind kind) => kind switch
+    {
+        CelebrationKind.LevelUp => "Level up!",
+        CelebrationKind.Confetti => "Well done!",
+        CelebrationKind.Badge => "Badge unlocked",
+        CelebrationKind.Streak => "Streak kept going",
+        _ => "Done"
+    };
+
+    private string AnimationSrc => $"{AnimationsPath.TrimEnd('/')}/{FileFor(Kind)}";
+    private string Text => string.IsNullOrWhiteSpace(Message) ? DefaultMessage(Kind) : Message!;
+    private string KindSlug => Kind.ToString().ToLowerInvariant();
+}

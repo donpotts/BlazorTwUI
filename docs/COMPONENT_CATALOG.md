@@ -1,6 +1,6 @@
 # BlazorTwUI — Component Catalog & Settings Reference
 
-Comprehensive guide to all **265 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
+Comprehensive guide to all **267 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
 
 > This file is generated from `Services/ComponentCatalogService.cs`. Do not edit it by hand; change the catalog and regenerate with `UPDATE_CATALOG_DOC=1 dotnet test --filter CatalogDocTests`. A test fails when this file is out of date.
 
@@ -46,7 +46,7 @@ Comprehensive guide to all **265 components** in **BlazorTwUI** (.NET 10+ WebAss
 - [Progress & Steppers](#progress--steppers) (1 component)
 - [Scheduling & Planning](#scheduling--planning) (2 components)
 - [Security & Compliance](#security--compliance) (1 component)
-- [Showcase & Micro-Interactions](#showcase--micro-interactions) (7 components)
+- [Showcase & Micro-Interactions](#showcase--micro-interactions) (9 components)
 - [Smart Components](#smart-components) (1 component)
 - [Styling Engine & Multi-Part Primitives](#styling-engine--multi-part-primitives) (10 components)
 - [Task-Purpose Enterprise Forms](#task-purpose-enterprise-forms) (8 components)
@@ -111,7 +111,7 @@ Accessible hour / minute / AM-PM picker built from native selects, 12 or 24 hour
 
 **Location:** [`Components/UI/TwListBox.razor`](../Components/UI/TwListBox.razor)
 
-Searchable list with checkboxes or radios, Select all (applies to the filtered view) and a live selection count.
+Searchable list with checkboxes or radios, Select all (applies to the filtered view) and a live selection count. Over 100 items only the visible rows are drawn.
 
 #### Parameters & Settings
 
@@ -314,7 +314,7 @@ Interactive password input with toggleable eye visibility, 4-stage color-coded e
 
 **Location:** [`Components/UI/TwCombobox.razor`](../Components/UI/TwCombobox.razor)
 
-Searchable autocomplete dropdown with real-time filtering, keyboard arrow navigation, enter-to-select, clear button, and empty filter fallback.
+Searchable autocomplete dropdown with real-time filtering, keyboard navigation (arrows, Page Up/Down, Home/End), enter-to-select, clear button, and empty filter fallback. Over 100 options only the visible ones are drawn; search and the keyboard still reach all of them.
 
 #### Parameters & Settings
 
@@ -1492,7 +1492,7 @@ Interactive star rating component supporting full and half-star ratings with hov
 
 **Location:** [`Components/UI/TwPickList.razor`](../Components/UI/TwPickList.razor)
 
-Dual-listbox item transfer picker with instant dual-list search filtering, move selected/all transfer actions, target list reordering, and item badges.
+Dual-listbox item transfer picker with instant dual-list search filtering, move selected/all transfer actions, target list reordering, and item badges. Over 100 items a panel draws only the visible rows; Space selects, Enter moves an item across.
 
 #### Parameters & Settings
 
@@ -2577,7 +2577,7 @@ Interactive workflow Kanban board with customizable columns, WIP limit threshold
 
 **Location:** [`Components/UI/TwDataGrid.razor`](../Components/UI/TwDataGrid.razor)
 
-Enterprise data grid: sortable headers (keyboard accessible, Shift adds a second sort), search and per-column filters, grouping with counts and summaries, footer totals, master-detail rows, inline editing with validation, column chooser, CSV export, saved layout, frozen column, conditional formatting, selection, paging and mobile cards.
+Enterprise data grid: sortable headers (keyboard accessible, Shift adds a second sort), search and per-column filters, grouping with counts and summaries, footer totals, master-detail rows, inline editing with validation, column chooser, CSV export, saved layout, frozen column, conditional formatting, selection, paging and mobile cards. Over 200 in-memory records it virtualizes (only the rows on screen are drawn, one scrolling body, no pages); search, sort, filters and select-all still cover every record.
 
 #### Parameters & Settings
 
@@ -2587,6 +2587,9 @@ Enterprise data grid: sortable headers (keyboard accessible, Shift adds a second
 | `Columns` | `RenderFragment?` | `null` | TwDataGridColumn definitions. |
 | `Label` | `string` | `"Data grid"` | Accessible table caption. |
 | `Selectable` | `bool` | `false` | Row checkboxes and a select-all for the page. |
+| `Virtualize` | `bool?` | `null` | Draw only the visible rows. null = on for more than VirtualizeThreshold in-memory records; always off with ServerData (it pages). |
+| `VirtualizeThreshold` | `int` | `200` | Record count above which Virtualize = null switches it on. |
+| `RowHeight` | `float?` | `null` | Row height in px when virtualized (72 with an actions column, else 52). Keep rows to one line. |
 | `ShowGlobalSearch` | `bool` | `true` | Search box over all columns. |
 | `SearchPredicate` | `Func<TItem,string,bool>?` | `null` | Custom search logic. |
 | `AllowColumnFiltering` | `bool` | `true` | Per-column filter row. |
@@ -5303,6 +5306,57 @@ Infinite continuous horizontal scrolling ticker with CSS keyframes, pause-on-hov
 
 ---
 
+### `TwLottie`
+
+**Location:** [`Components/UI/TwLottie.razor`](../Components/UI/TwLottie.razor)
+
+Plays a Lottie animation (.lottie or .json) with the bundled dotlottie-web player (no CDN; the script loads only on pages that use it). Under prefers-reduced-motion it holds the file's poster frame instead of playing.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Src` | `string` | `""` | URL of a .lottie or Lottie .json file. |
+| `Loop` | `bool` | `false` | Repeat the animation. |
+| `Autoplay` | `bool` | `true` | Start playing when loaded (never under reduced motion). |
+| `Speed` | `double` | `1` | Playback speed. |
+| `Width` | `string` | `"120px"` | CSS width; Height defaults to the same. |
+| `ReducedMotion` | `LottieReducedMotion` | `Poster` | Poster (hold the poster frame), Hide (show nothing) or Play. |
+| `PosterFrame` | `int?` | `null` | Frame to hold under reduced motion; default is the file's "poster" marker, else frame 0. |
+| `AriaLabel` | `string?` | `null` | With a label it is role="img"; without one it is hidden from screen readers. |
+| `OnComplete` | `EventCallback` | `-` | Raised when a non-looping animation finishes. |
+
+#### Razor Usage Example
+
+```razor
+<TwLottie Src="animations/success-check.lottie" Width="96px" AriaLabel="Saved" />
+```
+
+---
+
+### `TwCelebration`
+
+**Location:** [`Components/UI/TwCelebration.razor`](../Components/UI/TwCelebration.razor)
+
+One-shot celebration (success, level up, confetti, badge, streak) from the bundled samples, plus a polite live-region message so the moment is announced and readable without the animation. Confetti is skipped under reduced motion.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Kind` | `CelebrationKind` | `Success` | Success, LevelUp, Confetti, Badge or Streak. |
+| `Message` | `string?` | `null` | Text announced and shown; defaults to a short phrase for the kind. |
+| `ShowMessage` | `bool` | `true` | Show the message under the animation (always announced). |
+| `Size` | `string` | `"120px"` | Animation size. |
+
+#### Razor Usage Example
+
+```razor
+<TwCelebration Kind="CelebrationKind.LevelUp" Message="Level 3 reached" />
+```
+
+---
+
 ### `TwConfetti`
 
 **Location:** [`Components/UI/TwConfetti.razor`](../Components/UI/TwConfetti.razor)
@@ -5316,6 +5370,7 @@ Canvas physics celebratory particle explosion system with gravity, air resistanc
 | `FullScreen` | `bool` | `false` | Configures component behavior or styling. |
 | `AutoFire` | `bool` | `false` | Configures component behavior or styling. |
 | `ParticleCount` | `int` | `85` | Configures component behavior or styling. |
+| `RespectReducedMotion` | `bool` | `true` | Under prefers-reduced-motion draw one still frame instead of moving particles. |
 | `Class` | `string?` | `null` | Additional custom Tailwind CSS utility classes. |
 
 #### Razor Usage Example
