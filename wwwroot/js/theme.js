@@ -46,6 +46,9 @@ window.blazorTheme = {
         const s500 = `${rgb.r} ${rgb.g} ${rgb.b}`;
         const s600 = `${mixBlack(rgb.r, 0.85)} ${mixBlack(rgb.g, 0.85)} ${mixBlack(rgb.b, 0.85)}`;
         const s700 = `${mixBlack(rgb.r, 0.72)} ${mixBlack(rgb.g, 0.72)} ${mixBlack(rgb.b, 0.72)}`;
+        const s800 = `${mixBlack(rgb.r, 0.58)} ${mixBlack(rgb.g, 0.58)} ${mixBlack(rgb.b, 0.58)}`;
+        const s900 = `${mixBlack(rgb.r, 0.46)} ${mixBlack(rgb.g, 0.46)} ${mixBlack(rgb.b, 0.46)}`;
+        const s950 = `${mixBlack(rgb.r, 0.28)} ${mixBlack(rgb.g, 0.28)} ${mixBlack(rgb.b, 0.28)}`;
 
         root.style.setProperty('--color-brand-50', s50);
         root.style.setProperty('--color-brand-100', s100);
@@ -55,6 +58,9 @@ window.blazorTheme = {
         root.style.setProperty('--color-brand-500', s500);
         root.style.setProperty('--color-brand-600', s600);
         root.style.setProperty('--color-brand-700', s700);
+        root.style.setProperty('--color-brand-800', s800);
+        root.style.setProperty('--color-brand-900', s900);
+        root.style.setProperty('--color-brand-950', s950);
         root.setAttribute('data-accent', 'custom');
     },
 
@@ -68,6 +74,9 @@ window.blazorTheme = {
         root.style.removeProperty('--color-brand-500');
         root.style.removeProperty('--color-brand-600');
         root.style.removeProperty('--color-brand-700');
+        root.style.removeProperty('--color-brand-800');
+        root.style.removeProperty('--color-brand-900');
+        root.style.removeProperty('--color-brand-950');
     },
 
     init: function (dotNetRef) {

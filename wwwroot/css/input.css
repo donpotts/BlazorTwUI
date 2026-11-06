@@ -12,6 +12,9 @@
   --color-brand-500: 99 102 241;
   --color-brand-600: 79 70 229;
   --color-brand-700: 67 56 202;
+  --color-brand-800: 55 48 163;
+  --color-brand-900: 49 46 129;
+  --color-brand-950: 30 27 75;
 }
 
 [data-accent="emerald"] {
@@ -23,6 +26,9 @@
   --color-brand-500: 16 185 129;
   --color-brand-600: 5 150 105;
   --color-brand-700: 4 120 87;
+  --color-brand-800: 6 95 70;
+  --color-brand-900: 6 78 59;
+  --color-brand-950: 2 44 34;
 }
 
 [data-accent="rose"] {
@@ -34,6 +40,9 @@
   --color-brand-500: 244 63 94;
   --color-brand-600: 225 29 72;
   --color-brand-700: 190 18 60;
+  --color-brand-800: 159 18 57;
+  --color-brand-900: 136 19 55;
+  --color-brand-950: 76 5 25;
 }
 
 [data-accent="amber"] {
@@ -45,6 +54,9 @@
   --color-brand-500: 245 158 11;
   --color-brand-600: 217 119 6;
   --color-brand-700: 180 83 9;
+  --color-brand-800: 146 64 14;
+  --color-brand-900: 120 53 15;
+  --color-brand-950: 69 26 3;
 }
 
 [data-accent="violet"] {
@@ -56,6 +68,9 @@
   --color-brand-500: 139 92 246;
   --color-brand-600: 124 58 237;
   --color-brand-700: 109 40 217;
+  --color-brand-800: 91 33 182;
+  --color-brand-900: 76 29 149;
+  --color-brand-950: 46 16 101;
 }
 
 [data-accent="sky"] {
@@ -67,6 +82,9 @@
   --color-brand-500: 14 165 233;
   --color-brand-600: 2 132 199;
   --color-brand-700: 3 105 161;
+  --color-brand-800: 7 89 133;
+  --color-brand-900: 12 74 110;
+  --color-brand-950: 8 47 73;
 }
 
 [data-accent="cyan"] {
@@ -78,6 +96,9 @@
   --color-brand-500: 6 182 212;
   --color-brand-600: 8 145 178;
   --color-brand-700: 14 116 144;
+  --color-brand-800: 21 94 117;
+  --color-brand-900: 22 78 99;
+  --color-brand-950: 8 51 68;
 }
 
 [data-accent="teal"] {
@@ -89,6 +110,9 @@
   --color-brand-500: 20 184 166;
   --color-brand-600: 13 148 136;
   --color-brand-700: 15 118 110;
+  --color-brand-800: 17 94 89;
+  --color-brand-900: 19 78 74;
+  --color-brand-950: 4 47 46;
 }
 
 [data-accent="fuchsia"] {
@@ -100,6 +124,9 @@
   --color-brand-500: 217 70 239;
   --color-brand-600: 192 38 211;
   --color-brand-700: 162 28 175;
+  --color-brand-800: 134 25 143;
+  --color-brand-900: 112 26 117;
+  --color-brand-950: 74 4 78;
 }
 
 [data-accent="pink"] {
@@ -111,6 +138,9 @@
   --color-brand-500: 236 72 153;
   --color-brand-600: 219 39 119;
   --color-brand-700: 190 24 93;
+  --color-brand-800: 157 23 77;
+  --color-brand-900: 131 24 67;
+  --color-brand-950: 80 7 36;
 }
 
 [data-accent="orange"] {
@@ -122,6 +152,9 @@
   --color-brand-500: 249 115 22;
   --color-brand-600: 234 88 12;
   --color-brand-700: 194 65 12;
+  --color-brand-800: 154 52 18;
+  --color-brand-900: 124 45 18;
+  --color-brand-950: 67 20 7;
 }
 
 [data-accent="slate"] {
@@ -133,6 +166,9 @@
   --color-brand-500: 100 116 139;
   --color-brand-600: 71 85 105;
   --color-brand-700: 51 65 85;
+  --color-brand-800: 30 41 59;
+  --color-brand-900: 15 23 42;
+  --color-brand-950: 2 6 23;
 }
 
 :root {
@@ -353,4 +389,32 @@ html[data-contrast="high"].dark {
     color: GrayText;
     border-color: GrayText;
   }
+}
+
+/* Enter animations used by several components (toasts, dropdowns, chat): animate-in plus fade-in /
+   zoom-in-* / slide-in-from-*. Same names and behaviour as the tailwindcss-animate plugin, without
+   the dependency. Reduced-motion users get no movement. */
+@keyframes btui-enter {
+  from {
+    opacity: var(--tw-enter-opacity, 1);
+    transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), var(--tw-enter-scale, 1));
+  }
+}
+
+@layer utilities {
+  .animate-in { animation: btui-enter 150ms ease-out; }
+  .fade-in { --tw-enter-opacity: 0; }
+  .zoom-in-90 { --tw-enter-scale: .9; }
+  .zoom-in-95 { --tw-enter-scale: .95; }
+  .slide-in-from-top-2 { --tw-enter-translate-y: -0.5rem; }
+  .slide-in-from-top-4 { --tw-enter-translate-y: -1rem; }
+  .slide-in-from-bottom-2 { --tw-enter-translate-y: 0.5rem; }
+  .slide-in-from-bottom-4 { --tw-enter-translate-y: 1rem; }
+  .slide-in-from-bottom-6 { --tw-enter-translate-y: 1.5rem; }
+  .slide-in-from-left-4 { --tw-enter-translate-x: -1rem; }
+  .slide-in-from-right-4 { --tw-enter-translate-x: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in { animation: none; }
 }

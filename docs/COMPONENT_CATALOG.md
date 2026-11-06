@@ -1,6 +1,6 @@
 # BlazorTwUI — Component Catalog & Settings Reference
 
-Comprehensive guide to all **261 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
+Comprehensive guide to all **265 components** in **BlazorTwUI** (.NET 10+ WebAssembly, Tailwind CSS v3.4+, TwMerge conflict engine, and multi-part TwSlots).
 
 > This file is generated from `Services/ComponentCatalogService.cs`. Do not edit it by hand; change the catalog and regenerate with `UPDATE_CATALOG_DOC=1 dotnet test --filter CatalogDocTests`. A test fails when this file is out of date.
 
@@ -14,17 +14,17 @@ Comprehensive guide to all **261 components** in **BlazorTwUI** (.NET 10+ WebAss
 - [AI Chatbot & Reasoning](#ai-chatbot--reasoning) (3 components)
 - [Animation & Micro-Interactions](#animation--micro-interactions) (1 component)
 - [Architecture & State](#architecture--state) (2 components)
-- [Buttons, Forms & Controls](#buttons-forms--controls) (17 components)
+- [Buttons, Forms & Controls](#buttons-forms--controls) (19 components)
 - [Cards & Bento](#cards--bento) (1 component)
 - [Cards, Grids & Bento Systems](#cards-grids--bento-systems) (13 components)
-- [Chat & Generative UI](#chat--generative-ui) (9 components)
+- [Chat & Generative UI](#chat--generative-ui) (10 components)
 - [Code & Syntax Studio](#code--syntax-studio) (5 components)
 - [Dashboards & Layouts](#dashboards--layouts) (1 component)
 - [Data Visualization](#data-visualization) (1 component)
 - [Developer Studio & Content Creation](#developer-studio--content-creation) (7 components)
 - [Documents & Forms](#documents--forms) (1 component)
 - [Enterprise & Workplace Operations](#enterprise--workplace-operations) (1 component)
-- [Enterprise Data & Tables](#enterprise-data--tables) (12 components)
+- [Enterprise Data & Tables](#enterprise-data--tables) (13 components)
 - [Feedback & Alerts](#feedback--alerts) (1 component)
 - [Financial & Analytical Intelligence](#financial--analytical-intelligence) (5 components)
 - [Financial & OCR](#financial--ocr) (2 components)
@@ -1014,6 +1014,57 @@ Declarative async boundary container for handling loading skeletons, error state
 
 ## Buttons, Forms & Controls
 
+### `TwEntityForm`
+
+**Location:** [`Components/UI/TwEntityForm.razor`](../Components/UI/TwEntityForm.razor)
+
+Schema-driven create/edit form: one input per field (text, number, decimal, date, flag) and a picker per relation, prefilled from the record. Saving sends {relation}Id / {relation}Ids and strips the related objects; an unchanged date keeps its time.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Schema` | `EntitySchema` | `required` | Fields and relations of the entity. |
+| `Record` | `JsonObject?` | `null` | Record to edit, or null to create. Never modified; OnSave gets a copy. |
+| `LoadOptions` | `Func<string, Task<IReadOnlyList<(string Id, string Name)>>>` | `required` | Every record of a related entity, for the pickers. |
+| `OnSave` | `EventCallback<JsonObject>` | `-` | Receives the record to send. |
+| `OnCancel` | `EventCallback` | `-` | Cancel pressed. |
+| `SaveText` | `string` | `"Save"` | Save button text. |
+| `Class` | `string?` | `null` | Extra classes. |
+
+#### Razor Usage Example
+
+```razor
+<TwEntityForm Schema="_schema" Record="_editing" LoadOptions="Options.LoadAsync" OnSave="SaveAsync" OnCancel="Close" />
+```
+
+---
+
+### `TwRelationPicker`
+
+**Location:** [`Components/UI/TwRelationPicker.razor`](../Components/UI/TwRelationPicker.razor)
+
+Picker for one relation of a record: a single select for a to-one link, a searchable multi-select for a to-many link, prefilled from the record's related objects or ids and loading every option, not a first page.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Relation` | `EntityRelation` | `required` | The relation (target, to-one or to-many). |
+| `Record` | `JsonObject?` | `null` | Record being edited; prefills the choice. |
+| `LoadOptions` | `Func<string, Task<IReadOnlyList<(string Id, string Name)>>>` | `required` | Every record of the target entity. |
+| `SelectedIdsChanged` | `EventCallback<IReadOnlyList<string>>` | `-` | Chosen ids (0 or 1 for a to-one link). |
+| `Disabled` | `bool` | `false` | Read-only. |
+| `Class` | `string?` | `null` | Extra classes. |
+
+#### Razor Usage Example
+
+```razor
+<TwRelationPicker Relation="_schema.Relations[0]" Record="_editing" LoadOptions="Options.LoadAsync" SelectedIdsChanged="ids => _ids = ids" />
+```
+
+---
+
 ### `TwSpinner`
 
 **Location:** [`Components/UI/TwSpinner.razor`](../Components/UI/TwSpinner.razor)
@@ -1851,6 +1902,30 @@ Suggested follow-up prompts as buttons, with a loading skeleton.
 
 ---
 
+### `TwAskData`
+
+**Location:** [`Components/UI/TwAskData.razor`](../Components/UI/TwAskData.razor)
+
+"Ask your data": a floating, read-only panel that answers counts, totals, averages, lowest/highest, top N, breakdowns and searches from your own records with no model and no key. A typed question is mapped to one plan from a closed catalogue (DataQuestionParser); your executor fetches the rows; the answer shows the figure, the rows behind it and how it was worked out. Questions it cannot map get suggestions built from the schema.
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Schema` | `IReadOnlyList<KeyValuePair<string, EntitySchema>>` | `required` | Every entity, keyed the way relations name their target; the first is the main one. |
+| `Executor` | `Func<AnswerPlan, Task<AnswerResult>>` | `required` | Reads the rows for a plan (ODataAnswerQuery.RunAsync does it for an OData API). Never writes. |
+| `NamesLoader` | `Func<string, Task<IReadOnlyList<(string Id, string Name)>>>?` | `null` | Records of a related entity, so a named brand or tag becomes a filter. |
+| `Title` | `string` | `"Ask your data"` | Launcher and panel title. |
+| `LauncherClass` | `string?` | `null` | Extra classes for the launcher button. |
+
+#### Razor Usage Example
+
+```razor
+<TwAskData Schema="_schemas" Executor="plan => Api.RunAsync(plan)" NamesLoader="Options.LoadAsync" />
+```
+
+---
+
 ### `TwFeedbackButtons`
 
 **Location:** [`Components/UI/TwFeedbackButtons.razor`](../Components/UI/TwFeedbackButtons.razor)
@@ -2424,6 +2499,31 @@ Employee perks and recognition rewards catalog with category filtering (Gift Car
 
 ## Enterprise Data & Tables
 
+### `TwEntityGrid`
+
+**Location:** [`Components/UI/TwEntityGrid.razor`](../Components/UI/TwEntityGrid.razor)
+
+Schema-driven grid over JSON records: columns come from an EntitySchema, related names sit right after the first two columns, decimals print with two places, and paging, sorting and search go to the server (one request per page, stale answers ignored).
+
+#### Parameters & Settings
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `Schema` | `EntitySchema` | `required` | Fields and relations of the entity. |
+| `Load` | `Func<GridDataRequest, Task<GridDataResult<JsonObject>>>` | `required` | Reads one page (skip, take, sort, search) from the server. |
+| `PageSize` | `int` | `10` | Rows per page. |
+| `ActionsTemplate` | `RenderFragment<JsonObject>?` | `null` | Edit/Delete buttons; shown in a pinned, opaque column. |
+| `ActionsTitle` | `string` | `"Actions"` | Header of the actions column. |
+| `Class` | `string?` | `null` | Extra classes. |
+
+#### Razor Usage Example
+
+```razor
+<TwEntityGrid Schema="_schema" Load="Api.LoadAsync" PageSize="10" />
+```
+
+---
+
 ### `TwTreeList`
 
 **Location:** [`Components/UI/TwTreeList.razor`](../Components/UI/TwTreeList.razor)
@@ -2936,7 +3036,7 @@ Connected OLAP pivot chart visualizer bound directly to dynamic pivot matrix dim
 
 **Location:** [`Components/UI/TwMicrCheckReader.razor`](../Components/UI/TwMicrCheckReader.razor)
 
-Check 21 paper check & draft reader powered by 100% local Tesseract WebAssembly, ANSI X9.27 E-13B MICR decoding, 150+ NACHA Bank Routing Directory resolver, Mod-10 Fed routing validation, and ChoETL.NACHA 94-char fixed-width ACH file generation.
+Check 21 paper check & draft reader powered by 100% local Tesseract WebAssembly, ANSI X9.27 E-13B MICR decoding, 150+ NACHA Bank Routing Directory resolver, Mod-10 Fed routing validation, and NACHA 94-char fixed-width ACH file generation (our own implementation).
 
 #### Parameters & Settings
 

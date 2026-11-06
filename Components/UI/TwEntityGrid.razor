@@ -1,0 +1,94 @@
+@namespace BlazorTwUI.Components.UI
+@using System.Globalization
+@using System.Text.Json.Nodes
+
+@* A server-paged TwDataGrid over JsonObject rows, laid out from an EntitySchema: the first two fields,
+   then the related names (so they are on screen without scrolling sideways), then the remaining fields.
+   One Load call per page; nothing is fetched per row. *@
+<div data-testid="entity-grid" data-entity="@Schema.Entity">
+<TwDataGrid TItem="JsonObject" @ref="_grid"
+            ServerData="Load"
+            PageSize="PageSize"
+            Label="@Schema.Plural"
+            SearchPlaceholder="@($"Search {Schema.Plural.ToLowerInvariant()}…")"
+            EmptyText="@EmptyText"
+            ActionsTemplate="ActionsTemplate"
+            ActionsTitle="@ActionsTitle"
+            CellPadding="px-3 py-3"
+            AllowColumnChooser="@Schema.Fields.Any(f => f.Kind == FieldKind.LongText)"
+            Class="@Class">
+    <Columns>
+        @foreach (var item in Schema.DisplayOrder())
+        {
+            if (item is EntityField field)
+            {
+                @* Long text starts hidden (Columns menu shows it): a paragraph per row would push the related names and
+                   the actions off a 1366-1440px screen. *@
+                <TwDataGridColumn TItem="JsonObject" @key="field.Name" Title="@field.Label" SortKey="@field.Name"
+                                  Property="@(row => FieldText(row, field))" MinWidth="@MinWidth(field)"
+                                  InitiallyHidden="@(field.Kind == FieldKind.LongText)"
+                                  Align="@(field.Kind is FieldKind.Number or FieldKind.Decimal ? "right" : "left")" />
+            }
+            else if (item is EntityRelation relation)
+            {
+                @* Server sort keys for related names are not standard, so these columns are not sortable. *@
+                <TwDataGridColumn TItem="JsonObject" @key="relation.Name" Title="@relation.Label" Sortable="false"
+                                  Property="@(row => RelationText(row, relation))" MinWidth="8rem" />
+            }
+        }
+    </Columns>
+</TwDataGrid>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public EntitySchema Schema { get; set; } = default!;
+    /// <summary>Returns one page of rows. Search text is sent as typed; the server searches own text AND related names.</summary>
+    [Parameter, EditorRequired] public Func<GridDataRequest, Task<GridDataResult<JsonObject>>> Load { get; set; } = default!;
+    [Parameter] public int PageSize { get; set; } = 10;
+    [Parameter] public RenderFragment<JsonObject>? ActionsTemplate { get; set; }
+    [Parameter] public string ActionsTitle { get; set; } = "Actions";
+    [Parameter] public string? Class { get; set; }
+
+    private TwDataGrid<JsonObject>? _grid;
+
+    private string EmptyText => $"No {Schema.Plural.ToLowerInvariant()} to show.";
+
+    /// <summary>Reloads the current page (after a save or delete).</summary>
+    public Task RefreshAsync() => _grid?.RefreshAsync() ?? Task.CompletedTask;
+
+    /// <summary>
+    /// Only the identifying (first) field and the related names get a floor (8rem): they must stay readable and on screen.
+    /// Other columns size to their content and wrap at word boundaries, so the row fits a 1440px screen with a sidebar.
+    /// </summary>
+    private string? MinWidth(EntityField field) =>
+        Schema.Fields.Count > 0 && ReferenceEquals(Schema.Fields[0], field) ? "8rem" : null;
+
+    /// <summary>Cell text for a scalar field.</summary>
+    public static string FieldText(JsonObject row, EntityField field)
+    {
+        var node = EntityRecord.Get(row, field.Name);
+        if (node is null) return "";
+        switch (field.Kind)
+        {
+            case FieldKind.Boolean:
+                return node is JsonValue b && b.TryGetValue<bool>(out var flag) ? (flag ? "Yes" : "No") : EntityRecord.Text(node);
+            case FieldKind.Decimal when node is JsonValue dv && dv.TryGetValue<decimal>(out var amount):
+                // Money reads the same on every row: 15 -> 15.00, 15.5 -> 15.50 (no grouping, invariant).
+                return amount.ToString("0.00", CultureInfo.InvariantCulture);
+            case FieldKind.Number when node is JsonValue v && v.TryGetValue<decimal>(out var n):
+                // 389.0 reads as 389.00; whole numbers (counts, years) keep no decimals and no grouping.
+                var raw = v.ToJsonString();
+                return raw.Contains('.') || raw.Contains('e') || raw.Contains('E')
+                    ? n.ToString("0.00##", CultureInfo.InvariantCulture)
+                    : n.ToString("0", CultureInfo.InvariantCulture);
+            case FieldKind.Date when DateTime.TryParse(EntityRecord.Text(node), CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var d):
+                return d.TimeOfDay == TimeSpan.Zero ? d.ToString("d", CultureInfo.CurrentCulture) : d.ToString("g", CultureInfo.CurrentCulture);
+            default:
+                return EntityRecord.Text(node);
+        }
+    }
+
+    /// <summary>Cell text for a relation: the related names, comma-separated; never a bare id.</summary>
+    public static string RelationText(JsonObject row, EntityRelation relation)
+        => string.Join(", ", EntityRecord.Related(row, relation).Select(r => r.Name));
+}

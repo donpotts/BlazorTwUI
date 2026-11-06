@@ -1,0 +1,105 @@
+#!/usr/bin/env node
+// Collects every Tailwind class literal the Ask2App generators emit, so the kit's prebuilt
+// wwwroot/css/app.min.css (the fallback a generated client uses before `npm run build:css`)
+// contains them too. Writes tailwind-safelist.html at the kit root, which tailwind.config.js scans.
+//
+// Usage:
+//   node tools/extract-generator-classes.mjs <ask2app-generator-library> <abpgenerator-root> [more paths...]
+//   e.g. node tools/extract-generator-classes.mjs G:\ask2app\Ask2App.Generator.Library H:\repos\AbpGenerator
+//
+// For a generator-library folder it reads Templates/BlazorTailwind/** and Generators/DotNet/BlazorTailwindGenerator.cs;
+// for an AbpGenerator root it reads Resources/Clients/tailwind-client/** (minus Kit/, which is the kit itself,
+// and built css) plus Templates/Tailwind*.tt and Emitters/ClientCodegen.Tailwind.cs. Any other path (file or
+// folder) is read as given. Over-inclusion is harmless: Tailwind ignores a token that is not a utility.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const kitRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const args = process.argv.slice(2);
+if (args.length < 2) {
+  console.error('usage: node tools/extract-generator-classes.mjs <Ask2App.Generator.Library> <AbpGenerator root> [more paths]');
+  process.exit(2);
+}
+
+const exts = new Set(['.razor', '.cs', '.tt', '.html', '.cshtml']);
+function walk(dir, skip = () => false) {
+  const out = [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, e.name);
+    if (skip(full, e)) continue;
+    if (e.isDirectory()) out.push(...walk(full, skip));
+    else if (exts.has(path.extname(e.name).toLowerCase())) out.push(full);
+  }
+  return out;
+}
+const skipBuild = (full, e) => e.isDirectory() && ['bin', 'obj', 'node_modules'].includes(e.name);
+
+function sourcesFor(p) {
+  const abs = path.resolve(p);
+  if (!fs.existsSync(abs)) throw new Error(`path not found: ${abs}`);
+  if (fs.statSync(abs).isFile()) return [abs];
+  const lib = path.join(abs, 'Templates', 'BlazorTailwind');
+  const shell = path.join(abs, 'Resources', 'Clients', 'tailwind-client');
+  if (fs.existsSync(lib)) {
+    const files = walk(lib, skipBuild);
+    const gen = path.join(abs, 'Generators', 'DotNet', 'BlazorTailwindGenerator.cs');
+    if (fs.existsSync(gen)) files.push(gen);
+    return files;
+  }
+  if (fs.existsSync(shell)) {
+    const files = walk(shell, (full, e) => skipBuild(full, e) || (e.isDirectory() && full === path.join(shell, 'Kit')));
+    const tdir = path.join(abs, 'Templates');
+    if (fs.existsSync(tdir))
+      for (const f of fs.readdirSync(tdir)) if (/^Tailwind.*\.tt$/.test(f)) files.push(path.join(tdir, f));
+    const cg = path.join(abs, 'Emitters', 'ClientCodegen.Tailwind.cs');
+    if (fs.existsSync(cg)) files.push(cg);
+    return files;
+  }
+  return walk(abs, skipBuild);
+}
+
+// A token Tailwind could turn into a utility: lowercase, variants with ':', arbitrary values in [...].
+const tokenRe = /^!?(?:[a-z0-9-]+(?:\[[^\]\s]+\])?:)*-?[a-z][a-z0-9]*(?:-[a-z0-9.\/%]+|-\[[^\]\s]+\])*(?:\/[0-9]+)?$/;
+const standalone = new Set(['flex', 'grid', 'block', 'inline', 'hidden', 'contents', 'table', 'truncate', 'sticky', 'relative', 'absolute',
+  'fixed', 'static', 'underline', 'uppercase', 'lowercase', 'capitalize', 'italic', 'border', 'rounded', 'shadow', 'ring', 'outline', 'grow',
+  'shrink', 'container', 'invisible', 'visible', 'transition', 'transform', 'filter', 'isolate', 'antialiased', 'sr-only', 'prose']);
+const looksLikeUtility = t => tokenRe.test(t) && (t.includes('-') || t.includes(':') || standalone.has(t.replace(/^.*:/, '').replace(/^!/, '')));
+
+const classes = new Set();
+function addAll(value) {
+  for (const raw of value.split(/\s+/)) {
+    const t = raw.trim();
+    if (t && looksLikeUtility(t)) classes.add(t);
+  }
+}
+
+let fileCount = 0;
+for (const arg of args) {
+  for (const file of sourcesFor(arg)) {
+    fileCount++;
+    // Normalise C# escapes so class=\"...\" inside string literals reads like markup.
+    const text = fs.readFileSync(file, 'utf8').replace(/\\"/g, '"');
+    // 1) class / Class / ActiveClass / *Class attributes (literal parts and quoted strings inside @(...) expressions)
+    for (const m of text.matchAll(/\b[A-Za-z]*[Cc]lass\s*=\s*"([^"]*)"/g)) addAll(m[1].replace(/@\([^)]*\)|@[A-Za-z_][\w.]*|\{\{?[^}]*\}?\}/g, ' '));
+    // 2) any string literal whose every token looks like a utility (constants such as NavLinkClass, ternaries)
+    for (const m of text.matchAll(/"([^"\r\n]{2,400})"/g)) {
+      const toks = m[1].trim().split(/\s+/).filter(Boolean);
+      if (toks.length > 0 && toks.every(looksLikeUtility) && toks.some(t => t.includes('-'))) toks.forEach(t => classes.add(t));
+    }
+  }
+}
+
+const sorted = [...classes].sort();
+const esc = s => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+const html = [
+  '<!-- GENERATED by tools/extract-generator-classes.mjs - do not edit by hand.',
+  `     Every class literal emitted by the Ask2App Tailwind generators (${sorted.length} classes from ${fileCount} files),`,
+  '     listed so `npm run build:css` keeps them in the prebuilt wwwroot/css/app.min.css. -->',
+  '<div hidden>',
+  ...sorted.map(c => `  <i class="${esc(c)}"></i>`),
+  '</div>',
+  ''
+].join('\n');
+fs.writeFileSync(path.join(kitRoot, 'tailwind-safelist.html'), html);
+console.log(`tailwind-safelist.html: ${sorted.length} classes from ${fileCount} files`);
