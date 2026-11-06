@@ -50,7 +50,7 @@ public static class DataAnswerComposer
         if (plan.IsUnknown || plan.Schema is null) return Unknown(plan);
         var s = plan.Schema;
         var plural = s.Plural.ToLowerInvariant();
-        var filters = plan.Filters.Count == 0 ? "" : " " + string.Join(" and ", plan.Filters.Select(f => f.Describe()));
+        var filters = FiltersText(plan);
         var total = result.TotalMatched;
         var rows = result.Rows;
         var ident = s.Fields.FirstOrDefault();
@@ -77,7 +77,7 @@ public static class DataAnswerComposer
                 var cols = TableColumns(s, plan, null, rows);
                 return new DataAnswer
                 {
-                    Sentence = total == 0 ? $"No {plural} match “{plan.Search}”." : $"{Count(total)} {Noun(s, total)} {(total == 1 ? "matches" : "match")} “{plan.Search}”.",
+                    Sentence = total == 0 ? $"No {plural}{filters} match “{plan.Search}”." : $"{Count(total)} {Noun(s, total)}{filters} {(total == 1 ? "matches" : "match")} “{plan.Search}”.",
                     Figure = Count(total),
                     Columns = cols.Select(c => c.Title).ToList(),
                     Table = shown.Select(r => Cells(r, cols)).ToList(),
@@ -299,6 +299,28 @@ public static class DataAnswerComposer
     }
 
     // ------------------------------------------------------------------ helpers
+
+    /// <summary>
+    /// The conditions in words: " whose brand is Northpeak", " tagged Waterproof and Ultralight" (several records of one
+    /// to-many link are ALL required, so they are said together), " that are in stock".
+    /// </summary>
+    public static string FiltersText(AnswerPlan plan)
+    {
+        var parts = new List<string>();
+        foreach (var group in plan.Filters.Where(f => f.Relation is not null).GroupBy(f => f.Relation!))
+        {
+            var names = group.Select(f => f.RecordName).ToList();
+            var joined = names.Count == 1 ? names[0] : string.Join(", ", names.Take(names.Count - 1)) + " and " + names[^1];
+            var rel = group.Key;
+            var label = rel.Label.ToLowerInvariant();
+            parts.Add(rel.Kind == RelationKind.One ? $"whose {label} is {joined}"
+                : DataQuestionParser.Singular(label) == "tag" ? $"tagged {joined}"
+                : names.Count == 1 ? $"with {joined} among their {label}" : $"with {joined} all among their {label}");
+        }
+
+        parts.AddRange(plan.Filters.Where(f => f.Relation is null).Select(f => f.Describe()));
+        return parts.Count == 0 ? "" : " " + string.Join(" and ", parts);
+    }
 
     private static string Cap(int read, int total) =>
         read < total ? $"; based on the first {Count(read)} of {Count(total)} rows" : "";

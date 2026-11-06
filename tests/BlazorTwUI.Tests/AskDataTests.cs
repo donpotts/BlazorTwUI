@@ -128,11 +128,13 @@ public class DataQuestionParserTests
     }
 
     [Fact]
-    public void ShowProductsTaggedUltralight_IsTheListSearch()
+    public void ShowProductsTaggedUltralight_IsATagFilter()
     {
+        // Round 2: a real tag named after "tagged" is a filter (all of them required), never a text search.
         var p = Summit.Parser().Parse("show products tagged ultralight");
-        Assert.Equal(AnswerIntent.Find, p.Intent);
-        Assert.Equal("ultralight", p.Search);
+        Assert.Equal(AnswerIntent.Count, p.Intent);
+        Assert.Null(p.Search);
+        Assert.Equal("Ultralight", Assert.Single(p.Filters).RecordName);
         Assert.Equal("product", p.EntityKey);
     }
 
@@ -336,7 +338,8 @@ public class DataAnswerComposerTests
     [Fact]
     public void Find_ShowsTheLinkTheTextWasFoundIn()
     {
-        var plan = Summit.Parser().Parse("show products tagged ultralight");
+        // Without the tag names the word is a text search, and the answer shows the to-many link it was found in.
+        var plan = new DataQuestionParser(Summit.All).Parse("find ultralight");
         var hits = Five.Where(r => r["tag"]!.AsArray().Any(t => (string)t!["name"]! == "Ultralight")).ToList();
         var a = DataAnswerComposer.Compose(plan, new AnswerResult(hits, hits.Count));
         Assert.Contains("Tags", a.Columns);
@@ -416,7 +419,7 @@ public class ODataAnswerQueryTests
     [Fact]
     public void Find_UsesTheListSearch()
     {
-        var plan = Summit.Parser().Parse("show products tagged ultralight");
+        var plan = new DataQuestionParser(Summit.All).Parse("find ultralight");
         Assert.Equal("contains(tolower(Name),'ultralight') or Tag/any(x: contains(tolower(x/Name),'ultralight'))", ODataAnswerQuery.Filter(plan, Summit.ProductMap));
     }
 }
