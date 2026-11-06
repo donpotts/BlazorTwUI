@@ -88,7 +88,16 @@
         }
     }
 
-    /// <summary>Cell text for a relation: the related names, comma-separated; never a bare id.</summary>
+    /// <summary>
+    /// Cell text for a relation: the related names, comma-separated; never a bare id. A server that sends only the first
+    /// few related records also sends the total as <c>{relation name}Count</c> (for example <c>productsCount</c>); the cell
+    /// then ends with "+N more".
+    /// </summary>
     public static string RelationText(JsonObject row, EntityRelation relation)
-        => string.Join(", ", EntityRecord.Related(row, relation).Select(r => r.Name));
+    {
+        var related = EntityRecord.Related(row, relation);
+        var text = string.Join(", ", related.Select(r => r.Name));
+        var total = row[relation.Name + "Count"] is JsonValue v && v.TryGetValue<int>(out var n) ? n : related.Count;
+        return total > related.Count ? (text.Length == 0 ? "" : text + " ") + $"+{total - related.Count} more" : text;
+    }
 }
