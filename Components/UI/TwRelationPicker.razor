@@ -1,0 +1,137 @@
+@namespace BlazorTwUI.Components.UI
+@using System.Text.Json.Nodes
+
+@* Picks related records for one EntityRelation: a searchable single picker (TwCombobox) for a to-one link,
+   a two-panel multi picker (TwPickList) for a to-many link. Options are loaded ONCE and in full, never paged,
+   and the current links are read from the record so an edit form opens prefilled. *@
+<div class="space-y-1.5 @Class" data-testid="relation-picker" data-relation="@Relation.Name" data-kind="@Relation.Kind">
+    @if (_loadError is not null)
+    {
+        <p role="alert" class="text-sm font-medium text-rose-700 dark:text-rose-300" data-testid="relation-error">Could not load @Relation.Label.ToLowerInvariant(): @_loadError</p>
+    }
+    else if (_options is null)
+    {
+        <p role="status" class="text-sm text-slate-600 dark:text-slate-400" data-testid="relation-loading">Loading @Relation.Label.ToLowerInvariant()…</p>
+    }
+    else if (Relation.Kind == RelationKind.One)
+    {
+        <TwCombobox Label="@Relation.Label"
+                    Items="@_comboItems"
+                    Value="@(_selected.FirstOrDefault() ?? "")"
+                    ValueChanged="OnSingleChanged"
+                    Placeholder="@($"Choose {Relation.Label.ToLowerInvariant()}")"
+                    Disabled="@Disabled" />
+    }
+    else
+    {
+        <fieldset class="space-y-1.5">
+            <legend class="block text-xs font-semibold text-slate-700 dark:text-slate-300">@Relation.Label</legend>
+            <TwPickList TItem="RelationOption"
+                        Source="@_options"
+                        Target="@_target"
+                        TargetChanged="OnManyChanged"
+                        SourceTitle="Available"
+                        TargetTitle="@($"Chosen {Relation.Label.ToLowerInvariant()}")"
+                        ShowReorder="false"
+                        ItemText="@(o => o.Name)"
+                        Height="h-56"
+                        data-testid="relation-picklist">
+                <ItemTemplate Context="o">
+                    <span class="flex min-h-[28px] items-center truncate font-medium" data-testid="relation-option" data-id="@o.Id">@o.Name</span>
+                </ItemTemplate>
+            </TwPickList>
+        </fieldset>
+    }
+    @if (_options is not null && Relation.Kind == RelationKind.Many)
+    {
+        <p class="text-xs text-slate-600 dark:text-slate-400" aria-live="polite" data-testid="relation-selected">@(_target.Count == 0 ? $"No {Relation.Label.ToLowerInvariant()} chosen" : "Selected: " + string.Join(", ", _target.Select(t => t.Name)))</p>
+    }
+</div>
+
+@code {
+    /// <summary>One choosable related record. Name is never empty (falls back to "Untitled #id").</summary>
+    public sealed record RelationOption(string Id, string Name);
+
+    [Parameter, EditorRequired] public EntityRelation Relation { get; set; } = default!;
+    /// <summary>The record being edited; its related objects (or ids) prefill the picker.</summary>
+    [Parameter] public JsonObject? Record { get; set; }
+    /// <summary>Returns EVERY option for a target entity (no paging).</summary>
+    [Parameter, EditorRequired] public Func<string, Task<IReadOnlyList<(string Id, string Name)>>> LoadOptions { get; set; } = default!;
+    /// <summary>Raised with the chosen ids (0 or 1 for a to-one link).</summary>
+    [Parameter] public EventCallback<IReadOnlyList<string>> SelectedIdsChanged { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public string? Class { get; set; }
+
+    private List<RelationOption>? _options;
+    private List<RelationOption> _target = new();
+    private List<string> _selected = new();
+    private IReadOnlyList<TwCombobox.ComboboxItem> _comboItems = Array.Empty<TwCombobox.ComboboxItem>();
+    private string? _loadError;
+    private string? _loadedFor;
+    private JsonObject? _prefilledFrom;
+
+    /// <summary>The ids chosen right now.</summary>
+    public IReadOnlyList<string> SelectedIds => _selected;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_loadedFor != Relation.TargetEntity)
+        {
+            _loadedFor = Relation.TargetEntity;
+            _options = null;
+            _loadError = null;
+            try
+            {
+                var raw = await LoadOptions(Relation.TargetEntity);
+                _options = raw.Select(o => new RelationOption(o.Id,
+                    string.IsNullOrWhiteSpace(o.Name) ? EntityRecord.Fallback(o.Id) : o.Name.Trim())).ToList();
+            }
+            catch (Exception ex)
+            {
+                _loadError = ex.Message;
+                return;
+            }
+            _prefilledFrom = null;
+        }
+
+        if (_options is not null && !ReferenceEquals(_prefilledFrom, Record))
+        {
+            _prefilledFrom = Record;
+            Prefill();
+        }
+    }
+
+    private void Prefill()
+    {
+        var current = EntityRecord.Related(Record, Relation).Where(r => r.Id.Length > 0).ToList();
+        _target = new List<RelationOption>();
+        foreach (var (id, name) in current)
+        {
+            var option = _options!.FirstOrDefault(o => o.Id == id);
+            if (option is null)
+            {
+                // Linked on the record but absent from the options: keep it visible rather than dropping the link.
+                option = new RelationOption(id, name);
+                _options!.Add(option);
+            }
+            if (!_target.Contains(option)) _target.Add(option);
+        }
+        if (Relation.Kind == RelationKind.One && _target.Count > 1) _target = _target.Take(1).ToList();
+        _selected = _target.Select(t => t.Id).ToList();
+        _comboItems = _options!.Select(o => new TwCombobox.ComboboxItem(o.Id, o.Name)).ToList();
+    }
+
+    private async Task OnSingleChanged(string id)
+    {
+        _selected = string.IsNullOrEmpty(id) ? new List<string>() : new List<string> { id };
+        _target = _options!.Where(o => o.Id == id).ToList();
+        await SelectedIdsChanged.InvokeAsync(_selected);
+    }
+
+    private async Task OnManyChanged(IList<RelationOption> target)
+    {
+        _target = target.ToList();
+        _selected = _target.Select(t => t.Id).ToList();
+        await SelectedIdsChanged.InvokeAsync(_selected);
+    }
+}

@@ -432,4 +432,89 @@ public class DataGridTests : TestContext
         cut.Find("[data-testid=grid-empty] button").Click();
         Assert.Equal(6, Names(cut).Length);
     }
+
+    [Fact]
+    public void Actions_cell_is_sticky_right_and_inherits_row_background()
+    {
+        RenderFragment<Emp> actions = e => b =>
+        {
+            b.OpenElement(0, "button");
+            b.AddAttribute(1, "class", "min-w-[44px] min-h-[44px]");
+            b.AddContent(2, "Delete " + e.Name);
+            b.CloseElement();
+        };
+        var cut = Grid(p => p.Add(g => g.ActionsTemplate, actions), pageSize: 3);
+
+        static string[] Classes(AngleSharp.Dom.IElement el) => (el.GetAttribute("class") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var header = cut.Find("[data-testid=grid-actions-header]");
+        Assert.Contains("sticky", Classes(header));
+        Assert.Contains("end-0", Classes(header));
+        Assert.Contains("bg-inherit", Classes(header));
+        // the header row hands the thead colour down, so the pinned header is not transparent
+        Assert.Contains("bg-inherit", Classes(header.ParentElement!));
+
+        var cells = cut.FindAll("[data-testid=grid-actions-cell]");
+        Assert.Equal(3, cells.Count);
+        foreach (var cell in cells)
+        {
+            var cls = Classes(cell);
+            Assert.Contains("sticky", cls);
+            Assert.Contains("end-0", cls);
+            Assert.Contains("bg-inherit", cls);
+            // a leading shadow marks the edge, in light and dark mode
+            Assert.Contains(cls, c => c.StartsWith("shadow-[-", StringComparison.Ordinal));
+            Assert.Contains(cls, c => c.StartsWith("dark:shadow-[-", StringComparison.Ordinal));
+            // no hard-coded colour on the cell: hover, striping and selection come from the row
+            Assert.DoesNotContain(cls, c => c.StartsWith("bg-", StringComparison.Ordinal) && c != "bg-inherit");
+            Assert.DoesNotContain(cls, c => c.StartsWith("dark:bg-", StringComparison.Ordinal));
+            // the row itself still owns a background for the cell to inherit
+            Assert.Contains(Classes(cell.ParentElement!), c => c.StartsWith("bg-", StringComparison.Ordinal));
+            // 44px touch targets are not squeezed
+            Assert.Contains("min-h-[44px]", Classes(cell.QuerySelector("div")!));
+            Assert.Contains("min-w-[44px]", Classes(cell.QuerySelector("button")!));
+        }
+
+        // the card layout (phones) is unchanged: actions are not sticky there
+        var cardActions = cut.FindAll("[data-testid=grid-card-actions]");
+        Assert.Equal(3, cardActions.Count);
+        Assert.All(cardActions, card => Assert.DoesNotContain("sticky", Classes(card)));
+    }
+
+    [Fact]
+    public void Pinned_actions_cell_is_opaque_under_alpha_row_background()
+    {
+        RenderFragment<Emp> actions = e => b => b.AddContent(0, "Edit " + e.Name);
+        // A caller highlighting rows with a TRANSLUCENT colour: inherited alone, the pinned cell would let the columns
+        // scrolling under it show through.
+        var cut = Grid(p => p.Add(g => g.ActionsTemplate, actions).Add(g => g.RowClassSelector, (Func<Emp, string?>)(_ => "bg-rose-50/60 dark:bg-rose-950/40")), pageSize: 3);
+
+        var cells = cut.FindAll("[data-testid=grid-actions-cell]");
+        Assert.Equal(3, cells.Count);
+        foreach (var cell in cells)
+        {
+            var cls = (cell.GetAttribute("class") ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            // the row really carries the translucent colour the cell will show
+            Assert.Contains("bg-rose-50/60", (cell.ParentElement!.GetAttribute("class") ?? "").Split(' '));
+            // opaque base layer underneath, in light and dark mode
+            Assert.Contains("before:absolute", cls);
+            Assert.Contains("before:inset-0", cls);
+            Assert.Contains("before:bg-white", cls);
+            Assert.Contains("dark:before:bg-slate-900", cls);
+            // the row's own background repainted over the base, below the content
+            Assert.Contains("after:absolute", cls);
+            Assert.Contains("after:inset-0", cls);
+            Assert.Contains("after:bg-inherit", cls);
+            var beforeZ = Array.Find(cls, c => c.StartsWith("before:-z-", StringComparison.Ordinal));
+            var afterZ = Array.Find(cls, c => c.StartsWith("after:-z-", StringComparison.Ordinal));
+            Assert.NotNull(beforeZ);
+            Assert.NotNull(afterZ);
+            Assert.True(int.Parse(beforeZ!["before:-z-".Length..]) > int.Parse(afterZ!["after:-z-".Length..]), "the opaque base must sit BELOW the row colour");
+            // the cell is its own stacking context, so the negative layers stay inside it
+            Assert.Contains("sticky", cls);
+            Assert.Contains(cls, c => c.StartsWith("z-[", StringComparison.Ordinal));
+            // and no colour of its own that would override the row's state
+            Assert.DoesNotContain(cls, c => c.StartsWith("bg-", StringComparison.Ordinal) && c != "bg-inherit");
+        }
+    }
 }

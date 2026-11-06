@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 /// <summary>
 /// Enterprise OCR, Tesseract WebAssembly optical recognition, ANSI X9.27 MICR,
-/// and complete NACHA / FedACH Routing Directory & File Engine (inspired by ChoETL.NACHA).
+/// and complete NACHA / FedACH Routing Directory & File Engine.
 /// </summary>
 public class OcrEngineService
 {
@@ -850,12 +850,12 @@ public class OcrEngineService
 
     #endregion
 
-    #region 6. NACHA ACH File Generation & Parsing Engine (ChoETL.NACHA Compatible)
+    #region 6. NACHA ACH File Generation & Parsing Engine
 
     /// <summary>
     /// Generates a compliant 94-character fixed-width NACHA ACH electronic payment file
     /// containing File Header (1), Batch Header (5), Entry Detail (6 - PPD/CCD), Batch Control (8), and File Control (9).
-    /// Fully compatible with NACHA specifications and ChoETL.NACHA readers.
+    /// Fully compatible with NACHA specifications.
     /// </summary>
     public string GenerateNachaAchFile(
         string immediateDestinationRouting,

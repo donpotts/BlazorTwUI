@@ -42,7 +42,7 @@
                 </div>
             }
 
-            @if (AllowColumnFiltering)
+            @if (ColumnFilteringOn)
             {
                 <button type="button" @onclick="ToggleColumnFilters" aria-pressed="@_showColumnFilters.ToString().ToLowerInvariant()" title="Toggle per-column filters" data-testid="grid-filter-toggle"
                         class="px-3 min-h-[38px] rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 @(_showColumnFilters ? "bg-brand-50 dark:bg-brand-950/40 border-brand-500 text-brand-800 dark:text-brand-300" : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-800 dark:text-slate-300")">
@@ -144,7 +144,7 @@
             <table class="w-full text-left text-sm text-slate-700 dark:text-slate-300" data-testid="grid-table">
                 <caption class="sr-only">@(Title ?? Label)</caption>
                 <thead class="bg-slate-50 dark:bg-slate-950 text-xs uppercase font-bold text-slate-800 dark:text-slate-300 border-b border-slate-200 dark:border-slate-800 select-none @(StickyHeader || MaxHeight is not null ? "sticky top-0 z-10" : "")">
-                    <tr>
+                    <tr class="bg-inherit">
                         @if (DetailTemplate is not null)
                         {
                             <th scope="col" class="w-10 px-2 py-3.5"><span class="sr-only">Expand row</span></th>
@@ -162,7 +162,7 @@
                             var sortIdx = _sorts.FindIndex(s => s.Col == col);
                             var isSorted = sortIdx >= 0;
                             <th scope="col" aria-sort="@(isSorted ? (_sorts[sortIdx].Asc ? "ascending" : "descending") : (col.Sortable ? "none" : null))" data-col="@col.Title"
-                                class="px-5 py-3.5 bg-slate-50 dark:bg-slate-950 @(col.Frozen ? "sticky start-0 z-[1]" : "") @col.HeaderClass" style="@col.BuildWidthStyle()">
+                                class="@CellPadding bg-slate-50 dark:bg-slate-950 @(col.Frozen ? "sticky start-0 z-[1]" : "") @col.HeaderClass" style="@col.BuildWidthStyle()">
                                 <div class="flex items-center gap-1.5 @GetAlignClass(col.Align)">
                                     @if (col.Sortable)
                                     {
@@ -184,7 +184,7 @@
 
                         @if (ActionsTemplate is not null)
                         {
-                            <th scope="col" class="px-5 py-3.5 text-end w-44">@ActionsTitle</th>
+                            <th scope="col" class="@CellPadding text-end @ActionsStickyClass" data-testid="grid-actions-header">@ActionsTitle</th>
                         }
                         @if (HasEditable)
                         {
@@ -193,7 +193,7 @@
                     </tr>
 
                     <!-- Optional Per-Column Filter Row -->
-                    @if (AllowColumnFiltering && _showColumnFilters)
+                    @if (ColumnFilteringOn && _showColumnFilters)
                     {
                         <tr class="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 font-normal normal-case" data-testid="grid-filter-row">
                             @if (DetailTemplate is not null) { <th class="w-10"></th> }
@@ -222,7 +222,7 @@
 
                             @if (ActionsTemplate is not null)
                             {
-                                <th class="px-5 py-2 text-end">
+                                <th class="px-5 py-2 text-end @ActionsStickyClass">
                                     @if (ActiveFilterCount > 0)
                                     {
                                         <button type="button" @onclick="ResetColumnFilters" class="text-[11px] text-slate-700 dark:text-slate-300 hover:text-rose-700 font-medium underline">Clear Filters</button>
@@ -240,7 +240,7 @@
                         <tr>
                             <td colspan="@colCount" class="py-12 text-center text-slate-600 dark:text-slate-400" data-testid="grid-empty">
                                 <div class="flex flex-col items-center justify-center gap-2">
-                                    <p>@EmptyText</p>
+                                    <p>@EmptyMessage</p>
                                     @if (HasAnyActiveFilter)
                                     {
                                         <button type="button" @onclick="ResetAllFilters" class="text-xs text-brand-800 dark:text-brand-400 font-semibold underline mt-1">Reset search &amp; filters</button>
@@ -313,7 +313,7 @@
 
                                 @foreach (var col in visible)
                                 {
-                                    <td class="px-5 py-3.5 @GetAlignClass(col.Align) @(col.Frozen ? "sticky start-0 z-[1] bg-inherit" : "") @col.CellClass @col.CellClassSelector?.Invoke(item)" style="@col.BuildWidthStyle()" data-col="@col.Title">
+                                    <td class="@CellPadding @GetAlignClass(col.Align) @(col.Frozen ? "sticky start-0 z-[1] bg-inherit" : "") @col.CellClass @col.CellClassSelector?.Invoke(item)" style="@col.BuildWidthStyle()" data-col="@col.Title">
                                         @if (isEditing && col.Editable)
                                         {
                                             var eid = $"{_id}-e{_columns.IndexOf(col)}";
@@ -339,8 +339,8 @@
 
                                 @if (ActionsTemplate is not null)
                                 {
-                                    <td class="px-5 py-3.5 text-end whitespace-nowrap">
-                                        <div class="inline-flex items-center gap-1.5 justify-end">@ActionsTemplate(item)</div>
+                                    <td class="@CellPadding text-end whitespace-nowrap @ActionsStickyClass" data-testid="grid-actions-cell">
+                                        <div class="inline-flex items-center gap-1.5 justify-end min-h-[44px]">@ActionsTemplate(item)</div>
                                     </td>
                                 }
                                 @if (HasEditable)
@@ -372,7 +372,7 @@
                 @if (visible.Any(c => c.Summary != GridSummary.None) && view.Total > 0)
                 {
                     <tfoot class="bg-slate-50 dark:bg-slate-950 border-t-2 border-slate-200 dark:border-slate-700 font-bold text-slate-900 dark:text-slate-100" data-testid="grid-footer">
-                        <tr>
+                        <tr class="bg-inherit">
                             @if (lead > 0)
                             {
                                 <th scope="row" colspan="@lead" class="px-4 py-3 text-start text-xs uppercase">Totals</th>
@@ -383,7 +383,7 @@
                                 var text = col.Summary == GridSummary.None ? (i == 0 && lead == 0 ? "Totals" : "") : SummaryText(col, view.Filtered);
                                 <td class="px-5 py-3 @GetAlignClass(col.Align)" data-testid="grid-summary" data-col="@col.Title">@text</td>
                             }
-                            @if (ActionsTemplate is not null) { <td></td> }
+                            @if (ActionsTemplate is not null) { <td class="@ActionsStickyClass"></td> }
                             @if (HasEditable) { <td></td> }
                         </tr>
                     </tfoot>
@@ -397,7 +397,7 @@
         @if (view.Page.Count == 0)
         {
             <div class="p-8 text-center text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
-                <p>@EmptyText</p>
+                <p>@EmptyMessage</p>
                 @if (HasAnyActiveFilter)
                 {
                     <button type="button" @onclick="ResetAllFilters" class="text-xs text-brand-800 font-semibold underline mt-2">Reset filters</button>
@@ -450,7 +450,7 @@
                     }
                     @if (ActionsTemplate is not null)
                     {
-                        <div class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">@ActionsTemplate(item)</div>
+                        <div data-testid="grid-card-actions" class="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2">@ActionsTemplate(item)</div>
                     }
                 </div>
             }
@@ -489,6 +489,10 @@
     private const string EditBtn = "px-3 min-h-[32px] rounded-lg text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 ms-1";
 
     [Parameter] public IEnumerable<TItem> Items { get; set; } = Enumerable.Empty<TItem>();
+    /// <summary>Server-driven data. When set, <see cref="Items"/> is ignored: search, sort and paging call this provider and the footer shows its TotalCount.</summary>
+    [Parameter] public Func<GridDataRequest, Task<GridDataResult<TItem>>>? ServerData { get; set; }
+    /// <summary>Delay before a typed search is sent to <see cref="ServerData"/>.</summary>
+    [Parameter] public int SearchDebounceMs { get; set; } = 350;
     [Parameter] public RenderFragment? Columns { get; set; }
     [Parameter] public RenderFragment<TItem>? ActionsTemplate { get; set; }
     [Parameter] public RenderFragment<TItem>? MobileCardTemplate { get; set; }
@@ -503,6 +507,8 @@
     [Parameter] public bool ShowPagination { get; set; } = true;
     [Parameter] public int PageSize { get; set; } = 5;
     [Parameter] public int[] PageSizeOptions { get; set; } = new[] { 5, 10, 20, 50 };
+    /// <summary>Padding of header and body cells (Tailwind classes). Denser grids fit more columns on screen.</summary>
+    [Parameter] public string CellPadding { get; set; } = "px-5 py-3.5";
     [Parameter] public bool EnableLiveStreaming { get; set; } = false;
     [Parameter] public string LiveStreamingStatus { get; set; } = "Live Stream Connected";
     [Parameter] public EventCallback<GridDeltaUpdate<TItem>> OnDeltaUpdate { get; set; }
@@ -607,7 +613,9 @@
     }
 
     private int ActiveFilterCount => _columns.Count(c => !string.IsNullOrWhiteSpace(c.CurrentFilterValue));
-    private bool HasAnyActiveFilter => !string.IsNullOrWhiteSpace(_searchQuery) || ActiveFilterCount > 0;
+    // Per-column filters only work on in-memory Items; with ServerData they are hidden and never count.
+    private bool ColumnFilteringOn => AllowColumnFiltering && ServerData is null;
+    private bool HasAnyActiveFilter => !string.IsNullOrWhiteSpace(_searchQuery) || (ServerData is null && ActiveFilterCount > 0);
 
     private string GroupKeyOf(TItem item) => _groupBy!.ValueOf(item)?.ToString() is { Length: > 0 } s ? s : "(none)";
 
@@ -623,8 +631,56 @@
         }
     }
 
+    private string EmptyMessage => ServerData is not null && !string.IsNullOrWhiteSpace(_searchQuery)
+        ? $"No records match \"{_searchQuery.Trim()}\"."
+        : EmptyText;
+
+    // ---- server-driven data ----
+
+    private List<TItem> _serverItems = new();
+    private int _serverTotal;
+    private bool _serverLoaded;
+    private int _serverSeq;
+    private CancellationTokenSource? _debounce;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (ServerData is not null && !_serverLoaded) await LoadServerAsync();
+    }
+
+    private async Task LoadServerAsync()
+    {
+        if (ServerData is null) return;
+        var seq = ++_serverSeq;
+        var first = _sorts.Count > 0 ? _sorts[0] : default;
+        var request = new GridDataRequest(
+            Math.Max(0, (CurrentPage - 1) * PageSize), PageSize,
+            string.IsNullOrWhiteSpace(_searchQuery) ? null : _searchQuery,
+            first.Col is null ? null : (first.Col.SortKey ?? first.Col.Title), first.Col is not null && !first.Asc);
+        var result = await ServerData(request);
+        if (seq != _serverSeq) return; // a newer request superseded this one
+        _serverItems = result.Items.ToList();
+        _serverTotal = result.TotalCount;
+        _serverLoaded = true;
+        StateHasChanged();
+    }
+
+    /// <summary>Re-calls <see cref="ServerData"/> with the current search, sort and page. No-op when <see cref="Items"/> is used.</summary>
+    public Task RefreshAsync() => ReloadAsync();
+
+    private Task ReloadAsync() => ServerData is null ? Task.CompletedTask : LoadServerAsync();
+
+    private View ComputeServer()
+    {
+        var pages = Math.Max(1, (int)Math.Ceiling((double)_serverTotal / PageSize));
+        var pageNo = Math.Clamp(CurrentPage, 1, pages);
+        var groups = _groupBy is null ? null : _serverItems.GroupBy(GroupKeyOf).ToDictionary(g => g.Key, g => g.ToList());
+        return new View(_serverItems, _serverItems, _serverTotal, pages, pageNo, groups);
+    }
+
     private View Compute()
     {
+        if (ServerData is not null) return ComputeServer();
         IEnumerable<TItem> data = Items ?? Enumerable.Empty<TItem>();
 
         if (!string.IsNullOrWhiteSpace(_searchQuery))
@@ -666,6 +722,16 @@
         return new View(filtered, page, total, pages, pageNo, groups);
     }
 
+    /// <summary>
+    /// The actions column stays pinned to the inline end of the scrolling table, so Edit/Delete are on screen however
+    /// many columns there are. Columns scroll UNDER it, so it must be opaque even when a row colour is translucent
+    /// (RowClassSelector returning bg-rose-50/60): its ::before is an opaque surface (the grid's own white / slate-900),
+    /// its ::after repaints the row's background on top (after:bg-inherit, so hover, selection and custom row colours
+    /// still show), and the content sits above both. A soft shadow marks the edge the other columns slide under.
+    /// </summary>
+    private const string ActionsStickyClass =
+        "sticky end-0 z-[2] bg-inherit before:absolute before:inset-0 before:-z-20 before:bg-white dark:before:bg-slate-900 after:absolute after:inset-0 after:-z-10 after:bg-inherit shadow-[-8px_0_8px_-8px_rgba(15,23,42,0.25)] dark:shadow-[-8px_0_8px_-8px_rgba(0,0,0,0.7)] rtl:shadow-[8px_0_8px_-8px_rgba(15,23,42,0.25)] dark:rtl:shadow-[8px_0_8px_-8px_rgba(0,0,0,0.7)]";
+
     // A frozen cell must be opaque, so every row needs a background. The base is only added when nothing else sets one,
     // otherwise it would fight the caller's highlight in the generated CSS.
     private string RowBackground(TItem item, bool selected)
@@ -694,7 +760,7 @@
 
     // ---- sorting, filtering, paging ----
 
-    private void HandleSort(TwDataGridColumn<TItem> col, bool additive)
+    private async Task HandleSort(TwDataGridColumn<TItem> col, bool additive)
     {
         if (!col.Sortable) return;
         var idx = _sorts.FindIndex(s => s.Col == col);
@@ -716,13 +782,24 @@
             _sorts.Add((col, true));
         }
         Persist();
+        await ReloadAsync();
     }
 
-    private void HandleGlobalSearchInput(ChangeEventArgs e)
+    private async Task HandleGlobalSearchInput(ChangeEventArgs e)
     {
         _searchQuery = e.Value?.ToString() ?? "";
         CurrentPage = 1;
         Persist();
+        if (ServerData is null) return;
+        _debounce?.Cancel();
+        _debounce = new CancellationTokenSource();
+        var token = _debounce.Token;
+        if (SearchDebounceMs > 0)
+        {
+            try { await Task.Delay(SearchDebounceMs, token); }
+            catch (TaskCanceledException) { return; }
+        }
+        if (!token.IsCancellationRequested) await LoadServerAsync();
     }
 
     private void HandleColumnFilterInput(TwDataGridColumn<TItem> col, ChangeEventArgs e)
@@ -741,25 +818,28 @@
         Persist();
     }
 
-    private void ResetAllFilters()
+    private async Task ResetAllFilters()
     {
         _searchQuery = "";
         ResetColumnFilters();
+        await ReloadAsync();
     }
 
-    private void HandlePageSizeChange(ChangeEventArgs e)
+    private async Task HandlePageSizeChange(ChangeEventArgs e)
     {
         if (int.TryParse(e.Value?.ToString(), out var size))
         {
             PageSize = size;
             CurrentPage = 1;
             Persist();
+            await ReloadAsync();
         }
     }
 
     private async Task SetPage(int page)
     {
         CurrentPage = Math.Clamp(page, 1, Compute().Pages);
+        await ReloadAsync();
         await CurrentPageChanged.InvokeAsync(CurrentPage);
     }
 
@@ -905,6 +985,7 @@
                 c.Visible = !s.Hidden.Contains(c.Title) || !c.Hideable;
             }
             if (s.PageSize > 0) PageSize = s.PageSize;
+            await ReloadAsync();
             StateHasChanged();
         }
         catch (Exception ex) when (ex is JSException or InvalidOperationException or JsonException) { }

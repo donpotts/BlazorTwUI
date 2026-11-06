@@ -1,0 +1,260 @@
+@using System.Text.Json.Nodes
+@using BlazorTwUI.Models
+@using BlazorTwUI.Services
+@* "Ask your data": a read-only panel that answers counts, totals, averages, lowest/highest, top N, breakdowns and searches
+   from the app's own records. No model and no key - DataQuestionParser maps the question to one plan from a closed
+   catalogue, the Executor the app passes in fetches the rows, and DataAnswerComposer works the figure out from those rows
+   and says how. It never writes. *@
+
+@if (!_open)
+{
+    <button type="button" @ref="_launcher" @onclick="OpenAsync" data-testid="askdata-launcher" aria-label="@Title" aria-haspopup="dialog"
+            class="fixed bottom-4 right-4 z-40 inline-flex items-center justify-center gap-2 rounded-full bg-brand-600 text-white shadow-lg min-h-[48px] min-w-[48px] px-3 sm:px-4 hover:bg-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/40 @LauncherClass">
+        <svg class="w-6 h-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+        <span class="hidden sm:inline text-sm font-semibold">@Title</span>
+    </button>
+}
+else
+{
+    <div class="fixed inset-0 z-40 bg-slate-950/40 sm:hidden" @onclick="Close" aria-hidden="true"></div>
+    <section role="dialog" aria-modal="false" aria-labelledby="askdata-title" data-testid="askdata-panel" @onkeydown="OnKeyDown"
+             class="fixed z-50 inset-x-0 bottom-0 sm:inset-auto sm:bottom-4 sm:right-4 w-full sm:w-[440px] h-[85vh] sm:h-[620px] max-h-[85vh] flex flex-col rounded-t-2xl sm:rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-2xl">
+        <header class="flex items-start gap-3 border-b border-slate-200 dark:border-slate-700 px-4 py-3">
+            <div class="min-w-0 flex-1">
+                <h2 id="askdata-title" class="text-base font-bold">@Title</h2>
+                <p class="text-xs text-slate-600 dark:text-slate-300">Answers come from your records and say how they were worked out. Nothing is changed.</p>
+            </div>
+            <button type="button" @onclick="Close" data-testid="askdata-close" aria-label="Close"
+                    class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </header>
+
+        <TwMessageScroller Label="Questions and answers" Class="flex-1 min-h-0" BodyClass="h-full px-4 py-3 space-y-4">
+            @if (_exchanges.Count == 0)
+            {
+                <div data-testid="askdata-intro" class="space-y-3">
+                    <p class="text-sm text-slate-700 dark:text-slate-200">Ask about your @_mainPlural: how many, totals, averages, the top few by a number, a breakdown by a related record, or a search.</p>
+                    <TwChatSuggestions Items="_suggestions" OnPick="AskAsync" Label="Questions you can ask" />
+                </div>
+            }
+            @foreach (var x in _exchanges)
+            {
+                <div class="space-y-2" data-testid="askdata-exchange">
+                    <p class="ml-auto w-fit max-w-[90%] rounded-2xl rounded-br-sm bg-brand-600 px-3 py-2 text-sm text-white" data-testid="askdata-question">@x.Question</p>
+                    @if (x.Busy)
+                    {
+                        <p class="text-sm text-slate-600 dark:text-slate-300" role="status" data-testid="askdata-busy">Working it out from your records...</p>
+                    }
+                    else if (x.Superseded)
+                    {
+                        <p class="text-xs text-slate-600 dark:text-slate-300" data-testid="askdata-superseded">Skipped: you asked something newer.</p>
+                    }
+                    else if (x.Error is not null)
+                    {
+                        <p class="rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 px-3 py-2 text-sm text-rose-800 dark:text-rose-200" role="alert" data-testid="askdata-error">@x.Error</p>
+                    }
+                    else if (x.Answer is { } a)
+                    {
+                        <div class="rounded-2xl rounded-bl-sm border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2 space-y-2" data-testid="askdata-answer" data-unknown="@(a.IsUnknown ? "true" : "false")">
+                            <p class="text-sm font-semibold" data-testid="askdata-sentence">@a.Sentence</p>
+                            @if (a.Table.Count > 0)
+                            {
+                                <div class="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                                    <table class="min-w-full text-xs" data-testid="askdata-table">
+                                        <thead class="bg-slate-100 dark:bg-slate-800">
+                                            <tr>
+                                                @foreach (var c in a.Columns)
+                                                {
+                                                    <th scope="col" class="px-2 py-1.5 text-left font-semibold text-slate-700 dark:text-slate-200 whitespace-nowrap">@c</th>
+                                                }
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var row in a.Table)
+                                            {
+                                                <tr class="border-t border-slate-200 dark:border-slate-700" data-testid="askdata-row">
+                                                    @foreach (var cell in row)
+                                                    {
+                                                        <td class="px-2 py-1.5 text-slate-800 dark:text-slate-100 break-words">@cell</td>
+                                                    }
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(a.How))
+                            {
+                                <p class="text-xs text-slate-600 dark:text-slate-300" data-testid="askdata-how"><span class="font-semibold">How I got this:</span> @a.How.</p>
+                            }
+                            @if (a.Suggestions.Count > 0)
+                            {
+                                <TwChatSuggestions Items="a.Suggestions" OnPick="AskAsync" Label="Questions you can ask" />
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </TwMessageScroller>
+
+        <form class="flex items-center gap-2 border-t border-slate-200 dark:border-slate-700 p-3" @onsubmit="SubmitAsync" @onsubmit:preventDefault data-testid="askdata-form">
+            <label for="askdata-input" class="sr-only">Your question</label>
+            <input id="askdata-input" @ref="_input" @bind="_draft" @bind:event="oninput" type="text" autocomplete="off" maxlength="300" data-testid="askdata-input"
+                   placeholder="@_placeholder"
+                   class="min-w-0 flex-1 min-h-[44px] rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-950 px-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <button type="submit" disabled="@string.IsNullOrWhiteSpace(_draft)" data-testid="askdata-send"
+                    class="inline-flex items-center justify-center min-h-[44px] min-w-[44px] rounded-xl bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">
+                Ask
+            </button>
+        </form>
+    </section>
+}
+
+@code {
+    /// <summary>Every entity, keyed the way relations name their target; the first is the one suggestions are about.</summary>
+    [Parameter, EditorRequired] public IReadOnlyList<KeyValuePair<string, EntitySchema>> Schema { get; set; } = Array.Empty<KeyValuePair<string, EntitySchema>>();
+
+    /// <summary>Runs a plan against the app's API (READ only) and returns the rows and the matching count.</summary>
+    [Parameter, EditorRequired] public Func<AnswerPlan, Task<AnswerResult>> Executor { get; set; } = default!;
+
+    /// <summary>Optional: the records of a related entity (id, name), so "Northpeak products" becomes a filter. Called once per entity per opening.</summary>
+    [Parameter] public Func<string, Task<IReadOnlyList<(string Id, string Name)>>>? NamesLoader { get; set; }
+
+    [Parameter] public string Title { get; set; } = "Ask your data";
+    [Parameter] public string? LauncherClass { get; set; }
+
+    private sealed class Exchange(string question, int version)
+    {
+        public string Question { get; } = question;
+        public int Version { get; } = version;
+        public bool Busy { get; set; } = true;
+        public bool Superseded { get; set; }
+        public string? Error { get; set; }
+        public DataAnswer? Answer { get; set; }
+    }
+
+    private readonly List<Exchange> _exchanges = [];
+    private Dictionary<string, IReadOnlyList<(string Id, string Name)>>? _names;
+    private IReadOnlyList<string> _suggestions = Array.Empty<string>();
+    private string _mainPlural = "records";
+    private string _placeholder = "Ask a question";
+    private string _draft = "";
+    private bool _open;
+    private bool _focusPending;
+    private int _version;
+    private ElementReference _input;
+    private ElementReference _launcher;
+    private bool _focusLauncher;
+
+    protected override void OnParametersSet()
+    {
+        var parser = new DataQuestionParser(Schema, _names);
+        _suggestions = parser.Suggestions();
+        _mainPlural = Schema.Count > 0 ? Schema[0].Value.Plural.ToLowerInvariant() : "records";
+        _placeholder = _suggestions.Count > 0 ? $"e.g. {_suggestions[0]}" : "Ask a question";
+    }
+
+    private async Task OpenAsync()
+    {
+        _open = true;
+        _focusPending = true;
+        await LoadNamesAsync();
+    }
+
+    private void Close()
+    {
+        _open = false;
+        _focusLauncher = true;   // keyboard users land back where they were
+        _names = null;     // names are read again next time, so a record added meanwhile is known
+        _version++;        // an answer still on its way is not shown into a closed panel
+        foreach (var x in _exchanges.Where(e => e.Busy)) { x.Busy = false; x.Superseded = true; }
+    }
+
+    private void OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape") Close();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_focusPending && _open)
+        {
+            _focusPending = false;
+            try { await _input.FocusAsync(); } catch (Exception ex) when (ex is InvalidOperationException or JSException) { }
+        }
+        else if (_focusLauncher && !_open)
+        {
+            _focusLauncher = false;
+            try { await _launcher.FocusAsync(); } catch (Exception ex) when (ex is InvalidOperationException or JSException) { }
+        }
+    }
+
+    private async Task LoadNamesAsync()
+    {
+        if (_names is not null || NamesLoader is null) return;
+        var names = new Dictionary<string, IReadOnlyList<(string Id, string Name)>>();
+        foreach (var target in Schema.SelectMany(e => e.Value.Relations).Select(r => r.TargetEntity).Distinct())
+        {
+            try { names[target] = await NamesLoader(target); }
+            catch (Exception) { /* without names, "Northpeak products" is simply not understood; every other question still works */ }
+        }
+
+        _names = names;
+        _suggestions = new DataQuestionParser(Schema, _names).Suggestions();
+        _placeholder = _suggestions.Count > 0 ? $"e.g. {_suggestions[0]}" : "Ask a question";
+    }
+
+    private async Task SubmitAsync()
+    {
+        var q = _draft.Trim();
+        if (q.Length == 0) return;
+        _draft = "";
+        await AskAsync(q);
+    }
+
+    /// <summary>Asks a question. A newer question makes any answer still on its way stale: it is discarded, never shown.</summary>
+    public async Task AskAsync(string question)
+    {
+        var version = ++_version;
+        foreach (var old in _exchanges.Where(e => e.Busy)) { old.Busy = false; old.Superseded = true; }
+        var x = new Exchange(question, version);
+        _exchanges.Add(x);
+        StateHasChanged();
+
+        try
+        {
+            await LoadNamesAsync();
+            var plan = new DataQuestionParser(Schema, _names).Parse(question);
+            DataAnswer answer;
+            if (plan.IsUnknown)
+            {
+                answer = DataAnswerComposer.Unknown(plan);
+            }
+            else
+            {
+                var result = await Executor(plan);
+                if (version != _version || x.Superseded) return;
+                answer = DataAnswerComposer.Compose(plan, result);
+            }
+
+            if (version != _version || x.Superseded) return;
+            x.Answer = answer;
+        }
+        catch (Exception ex)
+        {
+            // The detail is for the developer console; a person sees a plain sentence, never exception text.
+            Console.Error.WriteLine($"[Ask your data] {question}: {ex}");
+            if (version != _version || x.Superseded) return;
+            x.Error = "I could not get an answer just now. Try again.";
+        }
+        finally
+        {
+            if (version == _version && !x.Superseded) x.Busy = false;
+        }
+
+        StateHasChanged();
+    }
+}

@@ -277,6 +277,70 @@ public class ComponentCatalogService
         },
         new ComponentDocItem
         {
+            Name = "TwEntityGrid",
+            Category = "Enterprise Data & Tables",
+            Description = "Schema-driven grid over JSON records: columns come from an EntitySchema, related names sit right after the first two columns, decimals print with two places, and paging, sorting and search go to the server (one request per page, stale answers ignored).",
+            RazorSnippet = "<TwEntityGrid Schema=\"_schema\" Load=\"Api.LoadAsync\" PageSize=\"10\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Schema", "EntitySchema", "required", "Fields and relations of the entity."),
+                new ComponentParameterDoc("Load", "Func<GridDataRequest, Task<GridDataResult<JsonObject>>>", "required", "Reads one page (skip, take, sort, search) from the server."),
+                new ComponentParameterDoc("PageSize", "int", "10", "Rows per page."),
+                new ComponentParameterDoc("ActionsTemplate", "RenderFragment<JsonObject>?", "null", "Edit/Delete buttons; shown in a pinned, opaque column."),
+                new ComponentParameterDoc("ActionsTitle", "string", "\"Actions\"", "Header of the actions column."),
+                new ComponentParameterDoc("Class", "string?", "null", "Extra classes.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwEntityForm",
+            Category = "Buttons, Forms & Controls",
+            Description = "Schema-driven create/edit form: one input per field (text, number, decimal, date, flag) and a picker per relation, prefilled from the record. Saving sends {relation}Id / {relation}Ids and strips the related objects; an unchanged date keeps its time.",
+            RazorSnippet = "<TwEntityForm Schema=\"_schema\" Record=\"_editing\" LoadOptions=\"Options.LoadAsync\" OnSave=\"SaveAsync\" OnCancel=\"Close\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Schema", "EntitySchema", "required", "Fields and relations of the entity."),
+                new ComponentParameterDoc("Record", "JsonObject?", "null", "Record to edit, or null to create. Never modified; OnSave gets a copy."),
+                new ComponentParameterDoc("LoadOptions", "Func<string, Task<IReadOnlyList<(string Id, string Name)>>>", "required", "Every record of a related entity, for the pickers."),
+                new ComponentParameterDoc("OnSave", "EventCallback<JsonObject>", "-", "Receives the record to send."),
+                new ComponentParameterDoc("OnCancel", "EventCallback", "-", "Cancel pressed."),
+                new ComponentParameterDoc("SaveText", "string", "\"Save\"", "Save button text."),
+                new ComponentParameterDoc("Class", "string?", "null", "Extra classes.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwRelationPicker",
+            Category = "Buttons, Forms & Controls",
+            Description = "Picker for one relation of a record: a single select for a to-one link, a searchable multi-select for a to-many link, prefilled from the record's related objects or ids and loading every option, not a first page.",
+            RazorSnippet = "<TwRelationPicker Relation=\"_schema.Relations[0]\" Record=\"_editing\" LoadOptions=\"Options.LoadAsync\" SelectedIdsChanged=\"ids => _ids = ids\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Relation", "EntityRelation", "required", "The relation (target, to-one or to-many)."),
+                new ComponentParameterDoc("Record", "JsonObject?", "null", "Record being edited; prefills the choice."),
+                new ComponentParameterDoc("LoadOptions", "Func<string, Task<IReadOnlyList<(string Id, string Name)>>>", "required", "Every record of the target entity."),
+                new ComponentParameterDoc("SelectedIdsChanged", "EventCallback<IReadOnlyList<string>>", "-", "Chosen ids (0 or 1 for a to-one link)."),
+                new ComponentParameterDoc("Disabled", "bool", "false", "Read-only."),
+                new ComponentParameterDoc("Class", "string?", "null", "Extra classes.")
+            }
+        },
+        new ComponentDocItem
+        {
+            Name = "TwAskData",
+            Category = "Chat & Generative UI",
+            Description = "\"Ask your data\": a floating, read-only panel that answers counts, totals, averages, lowest/highest, top N, breakdowns and searches from your own records with no model and no key. A typed question is mapped to one plan from a closed catalogue (DataQuestionParser); your executor fetches the rows; the answer shows the figure, the rows behind it and how it was worked out. Questions it cannot map get suggestions built from the schema.",
+            RazorSnippet = "<TwAskData Schema=\"_schemas\" Executor=\"plan => Api.RunAsync(plan)\" NamesLoader=\"Options.LoadAsync\" />",
+            Parameters = new List<ComponentParameterDoc>
+            {
+                new ComponentParameterDoc("Schema", "IReadOnlyList<KeyValuePair<string, EntitySchema>>", "required", "Every entity, keyed the way relations name their target; the first is the main one."),
+                new ComponentParameterDoc("Executor", "Func<AnswerPlan, Task<AnswerResult>>", "required", "Reads the rows for a plan (ODataAnswerQuery.RunAsync does it for an OData API). Never writes."),
+                new ComponentParameterDoc("NamesLoader", "Func<string, Task<IReadOnlyList<(string Id, string Name)>>>?", "null", "Records of a related entity, so a named brand or tag becomes a filter."),
+                new ComponentParameterDoc("Title", "string", "\"Ask your data\"", "Launcher and panel title."),
+                new ComponentParameterDoc("LauncherClass", "string?", "null", "Extra classes for the launcher button.")
+            }
+        },
+        new ComponentDocItem
+        {
             Name = "TwFeedbackButtons",
             Category = "Chat & Generative UI",
             Description = "Thumbs up / down on a response, toggling off on a second press, with an optional reason box after thumbs-down.",
@@ -3142,7 +3206,7 @@ public class ComponentCatalogService
         {
             Name = "TwMicrCheckReader",
             Category = "Financial & OCR",
-            Description = "Check 21 paper check & draft reader powered by 100% local Tesseract WebAssembly, ANSI X9.27 E-13B MICR decoding, 150+ NACHA Bank Routing Directory resolver, Mod-10 Fed routing validation, and ChoETL.NACHA 94-char fixed-width ACH file generation.",
+            Description = "Check 21 paper check & draft reader powered by 100% local Tesseract WebAssembly, ANSI X9.27 E-13B MICR decoding, 150+ NACHA Bank Routing Directory resolver, Mod-10 Fed routing validation, and NACHA 94-char fixed-width ACH file generation (our own implementation).",
             RazorSnippet = "<TwMicrCheckReader OnCheckScanned=\"HandleCheck\" OnDepositApproved=\"HandleApproved\" OnNachaExported=\"HandleNacha\" OnJsonExported=\"HandleJson\" />",
             Parameters = new List<ComponentParameterDoc>
             {

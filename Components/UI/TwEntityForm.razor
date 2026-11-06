@@ -1,0 +1,178 @@
+@namespace BlazorTwUI.Components.UI
+@using System.Globalization
+@using System.Text.Json.Nodes
+
+@* Create/edit form built from an EntitySchema. Field labels come from the schema only. Relations get a
+   TwRelationPicker each (none when the schema has no relations). On save the related ids are written into
+   the record (categoryId / tagIds): a PUT that carries only the read-side objects silently clears every link. *@
+<form @onsubmit="SubmitAsync" @onsubmit:preventDefault="true" novalidate class="space-y-4 @Class" data-testid="entity-form" aria-label="@Title">
+    @foreach (var item in Schema.DisplayOrder())
+    {
+        if (item is EntityField field)
+        {
+            <div data-testid="entity-field" data-field="@field.Name">
+                @switch (field.Kind)
+                {
+                    case FieldKind.Boolean:
+                        <TwSwitch Label="@field.Label" Checked="@(_values[field.Name] == "true")" CheckedChanged="@(v => _values[field.Name] = v ? "true" : "false")" Class="min-h-[44px]" />
+                        break;
+                    case FieldKind.LongText:
+                        <TwTextArea Label="@field.Label" Value="@_values[field.Name]" ValueChanged="@(v => SetValue(field, v))" Required="@field.Required" Error="@ErrorFor(field)" />
+                        break;
+                    default:
+                        <TwInput Label="@field.Label" Type="@InputType(field.Kind)" Value="@_values[field.Name]" ValueChanged="@(v => SetValue(field, v))"
+                                 Required="@field.Required" ErrorText="@ErrorFor(field)" />
+                        break;
+                }
+            </div>
+        }
+        else if (item is EntityRelation relation)
+        {
+            <TwRelationPicker @key="relation.Name" Relation="relation" Record="Record" LoadOptions="LoadOptions"
+                              SelectedIdsChanged="@(ids => _links[relation.Name] = ids.ToList())" />
+        }
+    }
+
+    @if (_errors.Count > 0)
+    {
+        <p role="alert" class="text-sm font-medium text-rose-700 dark:text-rose-300" data-testid="entity-form-errors">Please fill in: @string.Join(", ", _errors.Keys.Select(k => Schema.Fields.First(f => f.Name == k).Label))</p>
+    }
+
+    <div class="flex flex-wrap justify-end gap-2 pt-2">
+        @if (OnCancel.HasDelegate)
+        {
+            <button type="button" @onclick="() => OnCancel.InvokeAsync()" data-testid="entity-cancel"
+                    class="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-slate-300 dark:border-slate-600 text-sm font-semibold text-slate-900 dark:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">Cancel</button>
+        }
+        <button type="submit" disabled="@_saving" data-testid="entity-save"
+                class="min-h-[44px] min-w-[44px] px-5 rounded-xl bg-brand-700 text-sm font-semibold text-white hover:bg-brand-600 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500">@(_saving ? "Saving…" : SaveText)</button>
+    </div>
+</form>
+
+@code {
+    [Parameter, EditorRequired] public EntitySchema Schema { get; set; } = default!;
+    /// <summary>The record to edit, or null to create one. It is never modified; OnSave gets a copy.</summary>
+    [Parameter] public JsonObject? Record { get; set; }
+    /// <summary>Loads EVERY option for a target entity; called once per relation.</summary>
+    [Parameter, EditorRequired] public Func<string, Task<IReadOnlyList<(string Id, string Name)>>> LoadOptions { get; set; } = default!;
+    /// <summary>Receives the record to send: edited fields plus <c>{relation}Id</c> / <c>{relation}Ids</c>.</summary>
+    [Parameter] public EventCallback<JsonObject> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public string SaveText { get; set; } = "Save";
+    [Parameter] public string? Class { get; set; }
+
+    private string Title => Record is null ? $"New {Schema.Entity.ToLowerInvariant()}" : $"Edit {Schema.Entity.ToLowerInvariant()}";
+
+    private readonly Dictionary<string, string?> _values = new();
+    private readonly Dictionary<string, string?> _original = new();
+    private readonly Dictionary<string, List<string>> _links = new();
+    private readonly Dictionary<string, string> _errors = new();
+    private JsonObject? _loadedFrom;
+    private bool _loaded;
+    private bool _saving;
+
+    protected override void OnParametersSet()
+    {
+        if (_loaded && ReferenceEquals(_loadedFrom, Record)) return;
+        _loaded = true;
+        _loadedFrom = Record;
+        _values.Clear();
+        _links.Clear();
+        _errors.Clear();
+        _original.Clear();
+        foreach (var f in Schema.Fields) _original[f.Name] = _values[f.Name] = ReadValue(f);
+        // Links start as what the record holds, so saving without touching a picker keeps them.
+        foreach (var r in Schema.Relations) _links[r.Name] = EntityRecord.RelatedIds(Record, r).ToList();
+    }
+
+    private string? ReadValue(EntityField f)
+    {
+        var node = EntityRecord.Get(Record, f.Name);
+        if (node is null) return f.Kind == FieldKind.Boolean ? "false" : "";
+        if (f.Kind == FieldKind.Boolean) return node is JsonValue v && v.TryGetValue<bool>(out var b) && b ? "true" : "false";
+        var text = EntityRecord.Text(node);
+        if (f.Kind == FieldKind.Date && DateTime.TryParse(text, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var d))
+            return d.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return text;
+    }
+
+    private static string InputType(FieldKind kind) => kind switch
+    {
+        FieldKind.Number or FieldKind.Decimal => "number",
+        FieldKind.Date => "date",
+        _ => "text",
+    };
+
+    private void SetValue(EntityField f, string? value)
+    {
+        _values[f.Name] = value;
+        if (_errors.ContainsKey(f.Name) && !string.IsNullOrWhiteSpace(value)) _errors.Remove(f.Name);
+    }
+
+    private string? ErrorFor(EntityField f) => _errors.TryGetValue(f.Name, out var e) ? e : null;
+
+    private async Task SubmitAsync()
+    {
+        _errors.Clear();
+        foreach (var f in Schema.Fields)
+        {
+            var v = _values[f.Name];
+            if (f.Required && f.Kind != FieldKind.Boolean && string.IsNullOrWhiteSpace(v)) _errors[f.Name] = $"{f.Label} is required.";
+            else if (f.Kind is FieldKind.Number or FieldKind.Decimal && !string.IsNullOrWhiteSpace(v) && !decimal.TryParse(v, NumberStyles.Number, CultureInfo.InvariantCulture, out _))
+                _errors[f.Name] = $"{f.Label} must be a number.";
+        }
+        if (_errors.Count > 0) return;
+
+        _saving = true;
+        try { await OnSave.InvokeAsync(BuildRecord()); }
+        finally { _saving = false; }
+    }
+
+    /// <summary>The record OnSave receives: a copy of <see cref="Record"/> with every edited field and every relation's ids set.</summary>
+    public JsonObject BuildRecord()
+    {
+        var result = Record?.DeepClone().AsObject() ?? new JsonObject();
+        foreach (var f in Schema.Fields)
+            EntityRecord.Set(result, f.Name, f.Kind == FieldKind.Date ? DateJson(f) : ToJson(f, _values[f.Name]));
+        foreach (var r in Schema.Relations)
+        {
+            var ids = _links.TryGetValue(r.Name, out var l) ? l : new List<string>();
+            JsonNode? node = r.Kind == RelationKind.One
+                ? (ids.Count > 0 ? EntityRecord.IdNode(ids[0]) : null)
+                : new JsonArray(ids.Select(id => (JsonNode?)EntityRecord.IdNode(id)).ToArray());
+            EntityRecord.Set(result, r.IdField, node);
+            // Send ids only. An included navigation object can be attached/updated by an EF Core or OData PUT
+            // (writing related rows, or re-linking a parent the person just cleared).
+            if (!string.Equals(r.Name, r.IdField, StringComparison.OrdinalIgnoreCase)) EntityRecord.Remove(result, r.Name);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// A date field never loses its time: unchanged writes back the original value verbatim; changed keeps the
+    /// original time of day (and offset) and swaps only the date; a value that never had a time is written as yyyy-MM-dd.
+    /// </summary>
+    private JsonNode? DateJson(EntityField f)
+    {
+        var value = _values[f.Name];
+        var originalNode = EntityRecord.Get(Record, f.Name);
+        if (value == _original[f.Name]) return originalNode?.DeepClone() ?? ToJson(f, value);
+        if (string.IsNullOrWhiteSpace(value)) return null;
+
+        var originalText = originalNode is null ? "" : EntityRecord.Text(originalNode);
+        var hasTime = originalText.Length > 10 && (originalText[10] == 'T' || originalText[10] == ' ')
+                      && DateTime.TryParseExact(originalText[..10], "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _);
+        if (hasTime && DateTime.TryParseExact(value, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            return JsonValue.Create(value + originalText[10..]);
+        return JsonValue.Create(value);
+    }
+
+    private static JsonNode? ToJson(EntityField f, string? value)
+    {
+        if (f.Kind == FieldKind.Boolean) return JsonValue.Create(value == "true");
+        if (string.IsNullOrWhiteSpace(value)) return null;
+        return f.Kind is FieldKind.Number or FieldKind.Decimal && decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var n)
+            ? JsonValue.Create(n)
+            : JsonValue.Create(value);
+    }
+}

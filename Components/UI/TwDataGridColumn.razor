@@ -10,6 +10,8 @@
     [Parameter] public Func<TItem, object?>? Property { get; set; }
     [Parameter] public Func<TItem, object?>? SortBy { get; set; }
     [Parameter] public bool Sortable { get; set; } = true;
+    /// <summary>Name sent as <c>GridDataRequest.SortBy</c> in server mode; defaults to <see cref="Title"/>.</summary>
+    [Parameter] public string? SortKey { get; set; }
     [Parameter] public bool Filterable { get; set; } = true;
     [Parameter] public string? FilterPlaceholder { get; set; }
     [Parameter] public string? Width { get; set; }
@@ -30,6 +32,8 @@
     [Parameter] public bool Groupable { get; set; } = true;
     /// <summary>Whether the column chooser can hide this column.</summary>
     [Parameter] public bool Hideable { get; set; } = true;
+    /// <summary>Starts hidden; the person can show it from the Columns menu (Hideable must stay true).</summary>
+    [Parameter] public bool InitiallyHidden { get; set; }
     /// <summary>Keep this column pinned at the start edge while scrolling sideways (use on the first column).</summary>
     [Parameter] public bool Frozen { get; set; }
 
@@ -63,6 +67,7 @@
 
     protected override void OnInitialized()
     {
+        if (InitiallyHidden && Hideable) Visible = false;
         Grid?.AddColumn(this);
     }
 

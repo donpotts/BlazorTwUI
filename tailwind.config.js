@@ -9,7 +9,10 @@ module.exports = {
     './Models/**/*.{razor,html,cshtml,cs}',
     './App.razor',
     './_Imports.razor',
-    './wwwroot/index.html'
+    './wwwroot/index.html',
+    // Classes the Ask2App generators emit (tools/extract-generator-classes.mjs), so the prebuilt app.min.css
+    // that ships in a generated client has them before its own `npm run build:css`.
+    './tailwind-safelist.html'
   ],
   theme: {
     extend: {
@@ -27,6 +30,9 @@ module.exports = {
           500: 'rgb(var(--color-brand-500) / <alpha-value>)',
           600: 'rgb(var(--color-brand-600) / <alpha-value>)',
           700: 'rgb(var(--color-brand-700) / <alpha-value>)',
+          800: 'rgb(var(--color-brand-800) / <alpha-value>)',
+          900: 'rgb(var(--color-brand-900) / <alpha-value>)',
+          950: 'rgb(var(--color-brand-950) / <alpha-value>)',
         },
         surface: {
           DEFAULT: 'rgb(var(--color-surface) / <alpha-value>)',
@@ -36,6 +42,14 @@ module.exports = {
       },
       screens: {
         'xs': '475px',
+      },
+      // Tailwind v4 names some components use; defined here so they exist on v3 too.
+      boxShadow: {
+        '2xs': '0 1px rgb(0 0 0 / 0.05)',
+        'xs': '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+      },
+      backdropBlur: {
+        'xs': '2px',
       },
       keyframes: {
         fadeIn: {
