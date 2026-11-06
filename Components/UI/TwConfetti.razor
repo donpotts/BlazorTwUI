@@ -1,7 +1,7 @@
 @namespace BlazorTwUI.Components.UI
 @inject IJSRuntime JS
 
-<canvas @ref="_canvasRef"
+<canvas @ref="_canvasRef" aria-hidden="true" data-testid="confetti-canvas"
         class="@(FullScreen ? "fixed inset-0 pointer-events-none z-50 w-full h-full" : "absolute inset-0 pointer-events-none z-20 w-full h-full") @Class">
 </canvas>
 
@@ -26,6 +26,8 @@
     [Parameter] public bool EnableSound { get; set; } = true;
     [Parameter] public double SoundVolume { get; set; } = 1.0;
     [Parameter] public string? Class { get; set; }
+    /// <summary>Under prefers-reduced-motion, draw one still frame instead of moving particles (default). Set false only for a deliberate, user-started effect.</summary>
+    [Parameter] public bool RespectReducedMotion { get; set; } = true;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -63,7 +65,8 @@
                 speed = speed ?? Speed,
                 sound = sound ?? EnableSound,
                 soundVolume = soundVolume ?? SoundVolume,
-                fullscreen = FullScreen
+                fullscreen = FullScreen,
+                respectReducedMotion = RespectReducedMotion
             });
         }
         catch
@@ -83,7 +86,8 @@
                 speed = speed ?? Speed,
                 sound = sound ?? EnableSound,
                 soundVolume = soundVolume ?? SoundVolume,
-                fullscreen = FullScreen
+                fullscreen = FullScreen,
+                respectReducedMotion = RespectReducedMotion
             });
         }
         catch
