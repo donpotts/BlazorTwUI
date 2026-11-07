@@ -50,7 +50,7 @@ public class DataTransferWizardTests : TestContext
             .Add(p => p.OnImportCompleted, res => importedResult = res)
         );
 
-        // Step 1: Click next (auto-loads sample data)
+        // Step 1: Click next (auto-loads sample data). Each step's button has its own test id (bac7cda).
         cut.Find("[data-testid=wizard-next-step-1]").Click();
         Assert.NotNull(cut.Find("[data-testid=import-step-2]"));
 
