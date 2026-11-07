@@ -50,16 +50,16 @@ public class DataTransferWizardTests : TestContext
             .Add(p => p.OnImportCompleted, res => importedResult = res)
         );
 
-        // Step 1: Click next (auto-loads sample data)
-        cut.Find("[data-testid=wizard-next-btn]").Click();
+        // Step 1: Click next (auto-loads sample data). Each step's button has its own test id (bac7cda).
+        cut.Find("[data-testid=wizard-next-step-1]").Click();
         Assert.NotNull(cut.Find("[data-testid=import-step-2]"));
 
         // Step 2: Column mapping -> click next
-        cut.Find("[data-testid=wizard-next-btn]").Click();
+        cut.Find("[data-testid=wizard-next-step-2]").Click();
         Assert.NotNull(cut.Find("[data-testid=import-step-3]"));
 
         // Step 3: Review staged rows -> click execute
-        cut.Find("[data-testid=wizard-execute-import-btn]").Click();
+        cut.Find("[data-testid=wizard-execute-import]").Click();
         Assert.NotNull(cut.Find("[data-testid=import-step-4]"));
         Assert.NotNull(importedResult);
         Assert.True(importedResult.ImportedCount > 0);
@@ -80,11 +80,11 @@ public class DataTransferWizardTests : TestContext
         Assert.NotNull(cut.Find("[data-testid=export-step-1]"));
 
         // Step 1 -> Step 2
-        cut.Find("[data-testid=wizard-next-btn]").Click();
+        cut.Find("[data-testid=wizard-next-export]").Click();
         Assert.NotNull(cut.Find("[data-testid=export-step-2]"));
 
         // Step 2 -> Step 3
-        cut.Find("[data-testid=wizard-next-btn]").Click();
+        cut.Find("[data-testid=wizard-next-export]").Click();
         Assert.NotNull(cut.Find("[data-testid=export-step-3]"));
         Assert.Contains("Cloud Edge Gateway", cut.Markup);
         Assert.Contains("AI Inference Accelerator", cut.Markup);
