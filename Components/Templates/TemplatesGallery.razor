@@ -23,7 +23,7 @@
                 <div class="inline-flex items-center gap-1 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80">
                     <button type="button" @onclick='() => _activeCategory = "pages"'
                             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition @(_activeCategory == "pages" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
-                        Page Templates (3)
+                        Page Templates (4)
                     </button>
                     <button type="button" @onclick='() => _activeCategory = "blocks"'
                             class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition @(_activeCategory == "blocks" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
@@ -53,10 +53,16 @@
         <div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2">
             @if (_activeCategory == "pages")
             {
+                <button type="button" @onclick='() => _selectedTemplate = "dotnet11"'
+                        class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 @(_selectedTemplate == "dotnet11" ? "bg-indigo-600 text-white shadow-sm shadow-indigo-600/30" : "bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60")">
+                    <span>⚡</span>
+                    <span>.NET 11 Enterprise Command Center</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-black">GA</span>
+                </button>
                 <button type="button" @onclick='() => _selectedTemplate = "fintech"'
                         class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 @(_selectedTemplate == "fintech" ? "bg-brand-600 text-white shadow-sm shadow-brand-600/30" : "bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60")">
                     <span>💳</span>
-                    <span>Fintech & Payments Cockpit</span>
+                    <span>Fintech &amp; Payments Cockpit</span>
                 </button>
                 <button type="button" @onclick='() => _selectedTemplate = "aiops"'
                         class="px-3.5 py-2 rounded-2xl text-xs font-bold transition flex items-center gap-2 @(_selectedTemplate == "aiops" ? "bg-brand-600 text-white shadow-sm shadow-brand-600/30" : "bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60")">
@@ -102,6 +108,9 @@
             {
                 @switch (_selectedTemplate)
                 {
+                    case "dotnet11":
+                        <DotNet11ExecutiveCommandCenter />
+                        break;
                     case "fintech":
                         <FintechAnalyticsDashboard />
                         break;
@@ -161,7 +170,7 @@
 
 @code {
     private string _activeCategory = "pages";
-    private string _selectedTemplate = "fintech";
+    private string _selectedTemplate = "dotnet11";
     private string _selectedBlock = "hero";
     private string _viewport = "full";
 

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-10%2B_WASM-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt=".NET 10+" /></a>
+  <a href="https://dotnet.microsoft.com/"><img src="https://img.shields.io/badge/.NET-11_GA_WASM-512BD4?style=flat-square&logo=dotnet&logoColor=white" alt=".NET 11 GA" /></a>
   <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v3.4+-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
   <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Release-v0.8.2-10B981?style=flat-square" alt="Release v0.8.2" /></a>
   <a href="docs/COMPONENT_CATALOG.md"><img src="https://img.shields.io/badge/Components-261_Ready-3B82F6?style=flat-square" alt="261 Components" /></a>
@@ -30,7 +30,7 @@
 ## ⚡ Features
 
 - **Turnkey Page Templates & UI Building Blocks** — Modular, slot-composable full-page applications and 50+ section blocks, including the Fintech & Payments Cockpit, AI Agent Telemetry & Control Plane, and SaaS Marketing Suite. 100% native SVG math visualizations with zero heavy graphing dependencies.
-- **261 Components & Deterministic Styling Engine** — Built for .NET 10 Blazor WebAssembly and Tailwind CSS v3.4+, featuring `TwMerge` utility conflict resolution, `TwClassBuilder`, multi-part `TwSlots`, full-featured 4-Axis OLAP `TwPivotTable`, connected `TwPivotChart`, and complete Master-Detail nested grids & data transfer wizards, with self-hosted local assets for GridStack, Tesseract OCR, and ZXing barcode scanning (zero external CDN dependencies).
+- **261 Components & Deterministic Styling Engine** — Built for .NET 11 Blazor WebAssembly and Tailwind CSS v3.4+, featuring `TwMerge` utility conflict resolution, `TwClassBuilder`, multi-part `TwSlots`, full-featured 4-Axis OLAP `TwPivotTable`, connected `TwPivotChart`, and complete Master-Detail nested grids & data transfer wizards, with self-hosted local assets for GridStack, Tesseract OCR, and ZXing barcode scanning (zero external CDN dependencies).
 - **Mobile-First by Default** — 44px touch targets, bottom sheets, swipe gestures, and responsive DataGrid mobile cards.
 - **Adaptive Generative UI (AGUI)** — Runtime prompt-to-UI synthesis with dual-plane tool calling (Frontend WASM + Backend API).
 - **Agent Ops (human-in-the-loop)** — A transport-agnostic agent session with approval gates that genuinely block high-risk tool calls, takeover and hand-back, an editable shared-state inspector and an exportable audit trail. See [Agent Ops](#-agent-ops-approvals-takeover--audit).
