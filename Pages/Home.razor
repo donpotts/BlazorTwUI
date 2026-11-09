@@ -3899,6 +3899,9 @@
                                 <!-- Video Presentation Mode Tabs -->
                                 <div class="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-slate-200 dark:border-slate-800">
                                     <div class="inline-flex rounded-xl bg-slate-100 dark:bg-slate-850 p-1 border border-slate-200 dark:border-slate-800 text-xs font-semibold">
+                                        <button type="button" @onclick='() => _trainingVideoMode = "net11_4k"' class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 @(_trainingVideoMode == "net11_4k" ? "bg-white dark:bg-slate-900 text-rose-600 dark:text-rose-400 shadow-xs font-bold" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
+                                            <span>⚡</span> .NET 11 GA 4K Masterclass
+                                        </button>
                                         <button type="button" @onclick='() => _trainingVideoMode = "player"' class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 @(_trainingVideoMode == "player" ? "bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-xs font-bold" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white")">
                                             <span>🎬</span> 1080p MP4 Video
                                         </button>
@@ -3923,7 +3926,16 @@
                                     </div>
                                 </div>
 
-                                @if (_trainingVideoMode == "player")
+                                @if (_trainingVideoMode == "net11_4k")
+                                {
+                                    <div class="relative w-full aspect-video rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-black">
+                                        <video controls poster="videos/net11-showcase-4k-poster.png" class="w-full h-full object-contain">
+                                            <source src="videos/net11-showcase-4k-masterclass.mp4" type="video/mp4" />
+                                            Your browser does not support HTML5 video.
+                                        </video>
+                                    </div>
+                                }
+                                else if (_trainingVideoMode == "player")
                                 {
                                     <TwMediaPlayer @ref="_masterclassPlayer"
                                                    Src="videos/demo-video.mp4?v=0.8.2"
@@ -6335,7 +6347,7 @@
         new(63.2, "Slide 07 · CRM & 100 Forms")
     };
 
-    private string _trainingVideoMode = "player";
+    private string _trainingVideoMode = "net11_4k";
     private double _currentMasterclassSeconds = 0;
 
     private async Task SeekVideo(double seconds)
