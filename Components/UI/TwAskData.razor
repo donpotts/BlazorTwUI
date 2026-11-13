@@ -46,7 +46,10 @@ else
                     <p class="ml-auto w-fit max-w-[90%] rounded-2xl rounded-br-sm bg-brand-600 px-3 py-2 text-sm text-white" data-testid="askdata-question">@x.Question</p>
                     @if (x.Busy)
                     {
-                        <p class="text-sm text-slate-600 dark:text-slate-300" role="status" data-testid="askdata-busy">Working it out from your records...</p>
+                        <div class="flex items-center gap-2">
+                            @BusyArt
+                            <p class="text-sm text-slate-600 dark:text-slate-300" role="status" data-testid="askdata-busy">Working it out from your records...</p>
+                        </div>
                     }
                     else if (x.Superseded)
                     {
@@ -125,6 +128,8 @@ else
 
     [Parameter] public string Title { get; set; } = "Ask your data";
     [Parameter] public string? LauncherClass { get; set; }
+    /// <summary>Optional decoration beside "Working it out..." while an answer is on its way (the words stay the signal).</summary>
+    [Parameter] public RenderFragment? BusyArt { get; set; }
 
     private sealed class Exchange(string question, int version)
     {
