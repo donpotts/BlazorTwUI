@@ -12,6 +12,7 @@
             Label="@Schema.Plural"
             SearchPlaceholder="@($"Search {Schema.Plural.ToLowerInvariant()}…")"
             EmptyText="@EmptyText"
+            EmptyArt="EmptyArt"
             ActionsTemplate="ActionsTemplate"
             ActionsTitle="@ActionsTitle"
             CellPadding="px-3 py-3"
@@ -26,6 +27,7 @@
                    the actions off a 1366-1440px screen. *@
                 <TwDataGridColumn TItem="JsonObject" @key="field.Name" Title="@field.Label" SortKey="@field.Name"
                                   Property="@(row => FieldText(row, field))" MinWidth="@MinWidth(field)"
+                                  CellClassSelector="@(row => NoWrap(FieldText(row, field)))"
                                   InitiallyHidden="@(field.Kind == FieldKind.LongText)"
                                   Align="@(field.Kind is FieldKind.Number or FieldKind.Decimal ? "right" : "left")" />
             }
@@ -48,6 +50,8 @@
     [Parameter] public RenderFragment<JsonObject>? ActionsTemplate { get; set; }
     [Parameter] public string ActionsTitle { get; set; } = "Actions";
     [Parameter] public string? Class { get; set; }
+    /// <summary>Optional content above the empty message; its context is the trimmed search text ("" when none).</summary>
+    [Parameter] public RenderFragment<string>? EmptyArt { get; set; }
 
     private TwDataGrid<JsonObject>? _grid;
 
@@ -62,6 +66,11 @@
     /// </summary>
     private string? MinWidth(EntityField field) =>
         Schema.Fields.Count > 0 && ReferenceEquals(Schema.Fields[0], field) ? "8rem" : null;
+
+    /// <summary>A short single token (a code such as TN-001, a number) is kept on one line: a browser may break it at its
+    /// hyphen, which reads as "TN-" over "001". Longer text and anything with a space wraps at word boundaries as before.</summary>
+    public static string? NoWrap(string text) =>
+        text.Length is > 0 and <= 14 && !text.Any(char.IsWhiteSpace) ? "whitespace-nowrap" : null;
 
     /// <summary>Cell text for a scalar field.</summary>
     public static string FieldText(JsonObject row, EntityField field)

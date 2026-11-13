@@ -253,6 +253,7 @@
                         <tr>
                             <td colspan="@colCount" class="py-12 text-center text-slate-600 dark:text-slate-400" data-testid="grid-empty">
                                 <div class="flex flex-col items-center justify-center gap-2">
+                                    @if (EmptyArt is not null && (ServerData is null || _serverLoaded)) { @EmptyArt(EmptySearch) }
                                     <p>@EmptyMessage</p>
                                     @if (HasAnyActiveFilter)
                                     {
@@ -304,6 +305,7 @@
     @if (view.Page.Count == 0)
     {
         <div class="md:hidden p-8 text-center text-sm text-slate-600 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
+            @if (EmptyArt is not null && (ServerData is null || _serverLoaded)) { @EmptyArt(EmptySearch) }
             <p>@EmptyMessage</p>
             @if (HasAnyActiveFilter)
             {
@@ -591,6 +593,8 @@
     [Parameter] public RenderFragment<IReadOnlyList<TItem>>? BatchActionsTemplate { get; set; }
     [Parameter] public string ActionsTitle { get; set; } = "Actions";
     [Parameter] public string EmptyText { get; set; } = "No records found matching your criteria.";
+    /// <summary>Optional content above the empty message (an illustration, a call to action). Its context is the trimmed search text, "" when none.</summary>
+    [Parameter] public RenderFragment<string>? EmptyArt { get; set; }
     [Parameter] public bool Selectable { get; set; }
     [Parameter] public bool ShowGlobalSearch { get; set; } = true;
     [Parameter] public string SearchPlaceholder { get; set; } = "Search all records...";
@@ -722,6 +726,8 @@
             return string.Compare(a.ToString(), b.ToString(), StringComparison.OrdinalIgnoreCase);
         }
     }
+
+    private string EmptySearch => (_searchQuery ?? "").Trim();
 
     private string EmptyMessage => ServerData is not null && !string.IsNullOrWhiteSpace(_searchQuery)
         ? $"No records match \"{_searchQuery.Trim()}\"."

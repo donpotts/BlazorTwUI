@@ -96,6 +96,15 @@ export function stop(entry) { if (entry && entry.player) entry.player.stop(); }
 export function destroy(entry) {
     if (!entry) return;
     if (entry.mq && entry.onChange && entry.mq.removeEventListener) entry.mq.removeEventListener('change', entry.onChange);
-    try { entry.player && entry.player.destroy(); } catch { }
+    const player = entry.player;
     entry.player = null;
+    if (!player) return;
+    // Destroying while the file is still downloading aborts the fetch, and dotlottie-web reports that as a console error
+    // (a quick grid load removes its loading animation this way). Wait for the load to settle, then destroy.
+    if (entry.canvas && entry.canvas.dataset.state === 'loading') {
+        const done = () => { try { player.destroy(); } catch { } };
+        player.addEventListener('load', done); player.addEventListener('loadError', done);
+        return;
+    }
+    try { player.destroy(); } catch { }
 }
