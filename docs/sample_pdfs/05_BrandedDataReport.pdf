@@ -1,0 +1,144 @@
+%PDF-1.4
+%????
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 3 0 R  ] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [ 0 0 612.00 792.00 ] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R /F5 7 0 R >> /ExtGState << /GSWatermark 8 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 4031 >>
+stream
+0.020 0.588 0.412 rg 40 762 532 4 re f
+BT
+/F2 10 Tf
+0.020 0.588 0.412 rg
+40 744 Td (Enterprise Global Group) Tj
+ET
+BT
+/F2 16 Tf
+0.08 0.12 0.2 rg
+40 724 Td (Executive Revenue & Shipping Ledger) Tj
+ET
+BT
+/F1 8.5 Tf
+0.4 0.45 0.5 rg
+40 710 Td (Exported from live BlazorTwUI DataGrid   |   Generated: 2026-11-24 02:30:48 UTC   |   Doc ID: RPT-86920257) Tj
+ET
+0.98 0.98 0.99 rg 40 640 171 50 re f
+0.88 0.90 0.93 RG 0.75 w 40 640 171 50 re S
+BT /F2 6.5 Tf 0.45 0.5 0.55 rg 48 676 Td (Total Orders) Tj ET
+BT /F2 14 Tf 0.1 0.15 0.2 rg 48 658 Td ($35,001.50) Tj ET
+BT /F2 7 Tf 0.05 0.6 0.35 rg 48 647 Td (+18.2%) Tj ET
+0.98 0.98 0.99 rg 221 640 171 50 re f
+0.88 0.90 0.93 RG 0.75 w 221 640 171 50 re S
+BT /F2 6.5 Tf 0.45 0.5 0.55 rg 229 676 Td (Active Accounts) Tj ET
+BT /F2 14 Tf 0.1 0.15 0.2 rg 229 658 Td (5) Tj ET
+BT /F2 7 Tf 0.05 0.6 0.35 rg 229 647 Td (+2) Tj ET
+0.98 0.98 0.99 rg 401 640 171 50 re f
+0.88 0.90 0.93 RG 0.75 w 401 640 171 50 re S
+BT /F2 6.5 Tf 0.45 0.5 0.55 rg 409 676 Td (Fulfillment Rate) Tj ET
+BT /F2 14 Tf 0.1 0.15 0.2 rg 409 658 Td (60.0%) Tj ET
+BT /F2 7 Tf 0.05 0.6 0.35 rg 409 647 Td (+5.0%) Tj ET
+0.020 0.588 0.412 rg 40 600 532 22 re f
+BT /F2 8 Tf 1.0 1.0 1.0 rg 69 608 Td (Order Id) Tj ET
+BT /F2 8 Tf 1.0 1.0 1.0 rg 121 608 Td (Customer Name) Tj ET
+BT /F2 8 Tf 1.0 1.0 1.0 rg 286 608 Td (Order Date) Tj ET
+BT /F2 8 Tf 1.0 1.0 1.0 rg 418 608 Td (Total Amount) Tj ET
+BT /F2 8 Tf 1.0 1.0 1.0 rg 504 608 Td (Is Shipped) Tj ET
+0.9 0.92 0.95 RG 0.5 w 40 581 m 572 581 l S
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 91 587 Td (101) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 121 587 Td (Global Logistics) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 286 587 Td (2026-11-01) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 434 587 Td (4,500.50) Tj ET
+0.85 0.96 0.89 rg 507 585 38 12 re f
+BT /F2 6.5 Tf 0.02 0.48 0.28 rg 511 588 Td (Yes) Tj ET
+0.97 0.98 0.99 rg 40 562 532 19 re f
+0.9 0.92 0.95 RG 0.5 w 40 562 m 572 562 l S
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 91 568 Td (102) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 121 568 Td (Pacific Systems) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 286 568 Td (2026-11-02) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 434 568 Td (1,200.00) Tj ET
+0.85 0.96 0.89 rg 507 566 38 12 re f
+BT /F2 6.5 Tf 0.02 0.48 0.28 rg 511 569 Td (No) Tj ET
+0.9 0.92 0.95 RG 0.5 w 40 543 m 572 543 l S
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 91 549 Td (103) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 121 549 Td (Alpine Engineering) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 286 549 Td (2026-11-03) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 434 549 Td (8,350.75) Tj ET
+0.85 0.96 0.89 rg 507 547 38 12 re f
+BT /F2 6.5 Tf 0.02 0.48 0.28 rg 511 550 Td (Yes) Tj ET
+0.97 0.98 0.99 rg 40 524 532 19 re f
+0.9 0.92 0.95 RG 0.5 w 40 524 m 572 524 l S
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 91 530 Td (104) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 121 530 Td (Summit Interactive) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 286 530 Td (2026-11-04) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 429 530 Td (14,200.00) Tj ET
+0.85 0.96 0.89 rg 507 528 38 12 re f
+BT /F2 6.5 Tf 0.02 0.48 0.28 rg 511 531 Td (Yes) Tj ET
+0.9 0.92 0.95 RG 0.5 w 40 505 m 572 505 l S
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 91 511 Td (105) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 121 511 Td (Horizon Energy) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 286 511 Td (2026-11-05) Tj ET
+BT /F1 7.5 Tf 0.15 0.2 0.25 rg 434 511 Td (6,750.25) Tj ET
+0.85 0.96 0.89 rg 507 509 38 12 re f
+BT /F2 6.5 Tf 0.02 0.48 0.28 rg 511 512 Td (No) Tj ET
+0.94 0.96 0.98 rg 40 483 532 22 re f
+0.6 0.65 0.75 RG 1 w 40 505 m 572 505 l S
+0.6 0.65 0.75 RG 1.5 w 40 483 m 572 483 l S
+BT /F2 8 Tf 0.08 0.12 0.2 rg 55 490 Td (TOTALS \(5\)) Tj ET
+BT /F2 8 Tf 0.08 0.12 0.2 rg 427 490 Td (35,001.50) Tj ET
+0.85 0.88 0.9 RG 0.5 w 40 44 m 572 44 l S
+BT
+/F1 6.5 Tf
+0.45 0.5 0.55 rg
+40 32 Td (BlazorTwUI High-Performance Design System  |  Report: RPT-86920257) Tj
+ET
+BT
+/F2 6.5 Tf
+0.35 0.4 0.45 rg
+517 32 Td (Page 1 of 1) Tj
+ET
+BT
+/F5 6 Tf
+0.3 0.4 0.5 rg
+260 32 Td (SHA-256 SEAL: fe9e7c1fd4d2c2dd...) Tj
+ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+8 0 obj
+<< /Type /ExtGState /ca 0.12 /CA 0.12 /BM /Multiply >>
+endobj
+9 0 obj
+<< /Title (Executive Revenue & Shipping Ledger) /Author () /Subject (Exported from live BlazorTwUI DataGrid) /Creator (BlazorTwUI Branded Data Engine) /CreationDate (D:20261124023048Z) >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000124 00000 n 
+0000000314 00000 n 
+0000004397 00000 n 
+0000004494 00000 n 
+0000004596 00000 n 
+0000004691 00000 n 
+0000004761 00000 n 
+trailer
+<< /Size 10 /Root 1 0 R /Info 9 0 R >>
+startxref
+4964
+%%EOF

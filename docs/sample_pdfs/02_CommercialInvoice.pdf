@@ -1,0 +1,133 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 3 0 R ] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [ 0 0 612.00 792.00 ] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R /F4 8 0 R /F5 9 0 R >> /ExtGState << /GSWatermark 10 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 2693 >>
+stream
+BT
+/F2 15 Tf
+0.08 0.12 0.25 rg
+50 719 Td (Commercial Invoice #INV-2026-9401) Tj
+ET
+BT
+/F1 8.5 Tf
+0.4 0.45 0.5 rg
+50 703 Td (Doc ID: INV-2026-9401   |   Page 1 of 1   |   Effective: 2026-11-24) Tj
+ET
+BT
+/F2 9.2 Tf
+0.1 0.15 0.2 rg
+50 683 Td (1. INVOICE PARTICULARS & BILL-TO ENTITY) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 670 Td (Bill To: Acme Global Industries | Terms: Net 30 Days | Due Date: 2026-12-24) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 656 Td (Remit Payment to: Global Treasury Operations, 100 Financial Plaza, Suite 400. Wire) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 645 Td (Routing Transit: 121000358, Account: 9840192841.) Tj
+ET
+BT
+/F2 9.2 Tf
+0.1 0.15 0.2 rg
+50 626 Td (2. STATEMENT OF SERVICES & DELIVERABLES) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 613 Td (Professional Cloud Architecture Services: $24,500.00) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 599 Td (State and Municipal Sales/Excise Tax \(8.25%\): $2,021.25) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 585 Td (TOTAL REMITTANCE BALANCE DUE: $26,521.25 USD) Tj
+ET
+0.75 0.8 0.85 RG 1 w 50 380 m 562 380 l S
+BT /F2 8 Tf 0.25 0.35 0.45 rg 50 385 Td (ATTESTATION & FORM FIELDS) Tj ET
+0.98 0.98 0.99 rg 50 322 241 44 re f
+0.82 0.84 0.88 RG 0.5 w 50 322 241 44 re S
+BT /F2 6.5 Tf 0.4 0.45 0.5 rg 60 354 Td (AUTHORIZED ACCOUNTS PAYABLE APPROV) Tj ET
+BT /F1 9 Tf 0.1 0.12 0.15 rg 60 338 Td (Jane M. Doe) Tj ET
+0.97 0.98 1.0 rg 321 322 241 44 re f
+0.7 0.78 0.9 RG 0.75 w 321 322 241 44 re S
+BT /F2 7 Tf 0.3 0.38 0.5 rg 331 354 Td (REMITTANCE APPROVAL SIGNATURE) Tj ET
+BT /F4 14 Tf 0.05 0.12 0.35 rg 333 339 Td (Signer) Tj ET
+BT /F1 6.5 Tf 0.45 0.5 0.55 rg 331 328 Td (Signer: Signer | 2026-11-24 02:30 UTC) Tj ET
+0.98 0.98 0.99 rg 50 266 241 44 re f
+0.82 0.84 0.88 RG 0.5 w 50 266 241 44 re S
+BT /F2 6.5 Tf 0.4 0.45 0.5 rg 60 298 Td (APPROVAL DATE & TIMESTAMP) Tj ET
+BT /F1 9 Tf 0.1 0.12 0.15 rg 60 282 Td (2026-11-24 02:30:48 UTC) Tj ET
+0.98 0.99 0.98 rg 321 266 241 44 re f
+0.75 0.85 0.78 RG 0.5 w 321 266 241 44 re S
+BT /F2 6.5 Tf 0.3 0.45 0.35 rg 331 298 Td (PAYMENT AUTHORIZATION) Tj ET
+0.1 0.4 0.2 RG 0.8 w 331 278 11 11 re S
+BT /F2 8.5 Tf 0.05 0.45 0.2 rg 333 280 Td (X) Tj ET
+BT /F1 7.2 Tf 0.1 0.15 0.1 rg 347 282 Td (Approved for ACH electronic transfer.) Tj ET
+0.96 0.98 0.97 rg 50 26 512 44 re f
+0.25 0.6 0.4 RG 1 w 50 26 512 44 re S
+BT /F2 7.5 Tf 0.05 0.35 0.18 rg 62 56 Td (OFFICIALLY FLATTENED & CERTIFIED \(ISO 32000-1 STATIC STREAM\)) Tj ET
+BT /F5 6.5 Tf 0.25 0.35 0.25 rg 62 45 Td (SHA-256 Digest: 217aefa7cc30ca54f4aac5e04ca6504cdb18c1acaa5f804c6025abd479c5b7e7) Tj ET
+BT /F1 6.5 Tf 0.35 0.4 0.35 rg 62 34 Td (Effective: 2026-11-24) Tj ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>
+endobj
+8 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-BoldItalic /Encoding /WinAnsiEncoding >>
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+10 0 obj
+<< /Type /ExtGState /ca 0.12 /CA 0.12 /BM /Multiply >>
+endobj
+11 0 obj
+<< /Title (COMMERCIAL INVOICE  --  INV-2026-9401) /Author () /Subject () /Keywords () /Creator () /CreationDate (D:20261124023048Z) /ModDate (D:20261124023048Z) >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000123 00000 n 
+0000000334 00000 n 
+0000003079 00000 n 
+0000003176 00000 n 
+0000003278 00000 n 
+0000003377 00000 n 
+0000003481 00000 n 
+0000003576 00000 n 
+0000003647 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R /Info 11 0 R >>
+startxref
+3827
+%%EOF

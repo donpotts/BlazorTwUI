@@ -1,0 +1,271 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Enterprise PDF Engine Minimal API",
+    "version": "v1.0.0",
+    "description": "Zero-dependency, MIT-licensed, high-performance cross-platform PDF generation, vector flattening, watermarking, legal Bates numbering, and cryptographic ESIGN sealing for Blazor, React, Expo, MudBlazor, and .NET MAUI."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5128",
+      "description": "Local Development Server"
+    }
+  ],
+  "paths": {
+    "/api/pdf/generate": {
+      "post": {
+        "summary": "Generate PDF Binary Document",
+        "description": "Generates a complete, compliant PDF 1.4/1.7 document from scratch with indirect object trees, Type 1 fonts, and optional watermarks or Bates numbering.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PdfGenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "PDF generation successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfGenerateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf/flatten": {
+      "post": {
+        "summary": "Flatten & Burn Form Fields into Static Vector Stream",
+        "description": "Permanently purges interactive AcroForm widgets and burns form text, calligraphic signatures, and seals directly into ISO 32000-1 static vector content streams.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PdfFlattenRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Flattening completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfGenerateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf/combine": {
+      "post": {
+        "summary": "Combine Multiple PDF Documents into Unified Portfolio",
+        "description": "Merges multiple discrete PDF documents into a unified multi-page portfolio with continuous page indexing and sequential Bates numbering.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PdfCombineRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Combined PDF portfolio binary",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf/report": {
+      "post": {
+        "summary": "Generate Publication-Ready Branded Data Report",
+        "description": "Synthesizes multi-page PDF reports matching application theme accent colors (Indigo, Emerald, Rose, Amber, etc.), executive KPI bento boxes, zebra-striped data table rows, badge pills, and SHA-256 seal.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PdfBrandedReportDocument"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Branded PDF report binary stream",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf/templates/{type}": {
+      "get": {
+        "summary": "Retrieve Pre-Configured Enterprise Contract Template",
+        "description": "Returns pre-built enterprise document templates: Master Services Agreement ('msa'), Commercial Invoice ('invoice'), Mutual NDA ('nda'), or Certificate of Completion ('certificate').",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["msa", "invoice", "nda", "certificate"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Template contract document model",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfContractDocument"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/pdf/inspect": {
+      "post": {
+        "summary": "Inspect PDF Binary Metadata & Seal Verification",
+        "description": "Extracts page count, PDF version, Bates numbering, watermark headers, and SHA-256 cryptographic seal status.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "pdfBase64": { "type": "string" }
+                },
+                "required": ["pdfBase64"]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Document inspection metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PdfDocumentInfoResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PdfGenerateRequest": {
+        "type": "object",
+        "properties": {
+          "document": { "$ref": "#/components/schemas/PdfContractDocument" },
+          "flatten": { "type": "boolean" },
+          "applyWatermark": { "type": "boolean" },
+          "applyBates": { "type": "boolean" }
+        },
+        "required": ["document"]
+      },
+      "PdfGenerateResponse": {
+        "type": "object",
+        "properties": {
+          "documentId": { "type": "string" },
+          "pdfBase64": { "type": "string" },
+          "fileSizeBytes": { "type": "integer" },
+          "pageCount": { "type": "integer" },
+          "sha256Hash": { "type": "string" },
+          "isFlattened": { "type": "boolean" },
+          "generatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PdfFlattenRequest": {
+        "type": "object",
+        "properties": {
+          "document": { "$ref": "#/components/schemas/PdfContractDocument" },
+          "applyWatermark": { "type": "boolean" },
+          "applyBates": { "type": "boolean" }
+        },
+        "required": ["document"]
+      },
+      "PdfCombineRequest": {
+        "type": "object",
+        "properties": {
+          "documents": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/PdfContractDocument" }
+          },
+          "title": { "type": "string" },
+          "batesOptions": { "$ref": "#/components/schemas/PdfBatesOptions" }
+        },
+        "required": ["documents"]
+      },
+      "PdfDocumentInfoResponse": {
+        "type": "object",
+        "properties": {
+          "isValidPdf": { "type": "boolean" },
+          "pdfVersion": { "type": "string" },
+          "fileSizeBytes": { "type": "integer" },
+          "sha256Checksum": { "type": "string" },
+          "detectedPageCount": { "type": "integer" },
+          "hasFlattenedStream": { "type": "boolean" }
+        }
+      },
+      "PdfContractDocument": {
+        "type": "object",
+        "properties": {
+          "documentId": { "type": "string" },
+          "title": { "type": "string" },
+          "contractType": { "type": "string" },
+          "status": { "type": "string" },
+          "effectiveDate": { "type": "string", "format": "date-time" },
+          "isFlattened": { "type": "boolean" },
+          "isSealed": { "type": "boolean" },
+          "cryptographicSeal": { "type": "string" }
+        }
+      },
+      "PdfBatesOptions": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "prefix": { "type": "string" },
+          "startingNumber": { "type": "integer" },
+          "digitPadding": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

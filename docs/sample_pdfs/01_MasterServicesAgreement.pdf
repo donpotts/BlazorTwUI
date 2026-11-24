@@ -1,0 +1,220 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 3 0 R 5 0 R ] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [ 0 0 612.00 792.00 ] /Contents 4 0 R /Resources << /Font << /F1 7 0 R /F2 8 0 R /F3 9 0 R /F4 10 0 R /F5 11 0 R >> /ExtGState << /GSWatermark 12 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 2768 >>
+stream
+BT
+/F2 15 Tf
+0.08 0.12 0.25 rg
+50 719 Td (Master Services Agreement \(MSA\)) Tj
+ET
+BT
+/F1 8.5 Tf
+0.4 0.45 0.5 rg
+50 703 Td (Doc ID: DOC-MSA-2026-6125   |   Page 1 of 2   |   Effective: 2026-11-24) Tj
+ET
+BT
+/F2 9.2 Tf
+0.1 0.15 0.2 rg
+50 683 Td (1. SCOPE AND RECITALS) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 670 Td (This Master Services Agreement \("Agreement"\) is entered into effective as of the date) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 659 Td (indicated below by and between the Client Organization and Provider.) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 645 Td (WHEREAS, Client desires to procure high-availability cloud architecture engineering,) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 634 Td (WebAssembly frontend development, and Zero-Trust cryptographic infrastructure services;) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 623 Td (and WHEREAS, Provider agrees to deliver such professional software engineering services.) Tj
+ET
+BT
+/F2 9.2 Tf
+0.1 0.15 0.2 rg
+50 604 Td (2. PROPRIETARY RIGHTS & WORK PRODUCT ASSIGNMENT) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 591 Td (Provider hereby unconditionally assigns and transfers to Client all right, title, and) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 580 Td (interest in and to all deliverables, custom component libraries, architectures, and) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 569 Td (intellectual property developed exclusively pursuant to executed Statements of Work) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 558 Td (\(SOW\).) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 544 Td (Neither party shall disclose, disseminate, or publish confidential trade secrets or) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 533 Td (cryptographic private keys without express written bilateral authorization.) Tj
+ET
+0.75 0.8 0.85 RG 1 w 50 380 m 562 380 l S
+BT /F2 8 Tf 0.25 0.35 0.45 rg 50 385 Td (ATTESTATION & FORM FIELDS) Tj ET
+0.98 0.98 0.99 rg 50 322 241 44 re f
+0.82 0.84 0.88 RG 0.5 w 50 322 241 44 re S
+BT /F2 6.5 Tf 0.4 0.45 0.5 rg 60 354 Td (CLIENT ENTERPRISE ENTITY) Tj ET
+BT /F1 9 Tf 0.1 0.12 0.15 rg 60 338 Td (Acme Global Industries LLC) Tj ET
+0.96 0.99 0.99 rg 321 322 241 44 re f
+0.6 0.75 0.75 RG 0.75 w 321 322 241 44 re S
+BT /F2 7 Tf 0.25 0.45 0.45 rg 331 354 Td (PAGE 1 INITIALS) Tj ET
+BT /F4 14 Tf 0.05 0.25 0.25 rg 335 338 Td (S) Tj ET
+0.96 0.98 0.97 rg 50 26 512 44 re f
+0.25 0.6 0.4 RG 1 w 50 26 512 44 re S
+BT /F2 7.5 Tf 0.05 0.35 0.18 rg 62 56 Td (OFFICIALLY FLATTENED & CERTIFIED \(ISO 32000-1 STATIC STREAM\)) Tj ET
+BT /F5 6.5 Tf 0.25 0.35 0.25 rg 62 45 Td (SHA-256 Digest: 4ed00da76bce67d5505b0247be4efb4a4e94deacee109f2df7eef68f9d30a7db) Tj ET
+BT /F1 6.5 Tf 0.35 0.4 0.35 rg 62 34 Td (Effective: 2026-11-24) Tj ET
+
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [ 0 0 612.00 792.00 ] /Contents 6 0 R /Resources << /Font << /F1 7 0 R /F2 8 0 R /F3 9 0 R /F4 10 0 R /F5 11 0 R >> /ExtGState << /GSWatermark 12 0 R >> >> >>
+endobj
+6 0 obj
+<< /Length 2364 >>
+stream
+BT
+/F2 15 Tf
+0.08 0.12 0.25 rg
+50 719 Td (Execution & Binding Attestations) Tj
+ET
+BT
+/F1 8.5 Tf
+0.4 0.45 0.5 rg
+50 703 Td (Doc ID: DOC-MSA-2026-6125   |   Page 2 of 2   |   Effective: 2026-11-24) Tj
+ET
+BT
+/F2 9.2 Tf
+0.1 0.15 0.2 rg
+50 683 Td (3. TERM, JURISDICTION & GOVERNING LAW) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 670 Td (This Agreement shall remain in full force and effect for an initial term of twelve \(12\)) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 659 Td (months from the Effective Date and shall automatically renew for successive one-year) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 648 Td (periods unless terminated with thirty \(30\) days advance written notice.) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 634 Td (This Agreement shall be governed by, construed, and enforced in accordance with the laws) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 623 Td (of the State of Delaware, without regard to conflicts of law principles.) Tj
+ET
+0.75 0.8 0.85 RG 1 w 50 380 m 562 380 l S
+BT /F2 8 Tf 0.25 0.35 0.45 rg 50 385 Td (ATTESTATION & FORM FIELDS) Tj ET
+0.97 0.98 1.0 rg 50 322 241 44 re f
+0.7 0.78 0.9 RG 0.75 w 50 322 241 44 re S
+BT /F2 7 Tf 0.3 0.38 0.5 rg 60 354 Td (AUTHORIZED OFFICER SIGNATURE) Tj ET
+BT /F4 14 Tf 0.05 0.12 0.35 rg 62 339 Td (Signer) Tj ET
+BT /F1 6.5 Tf 0.45 0.5 0.55 rg 60 328 Td (Signer: Signer | 2026-11-24 02:30 UTC) Tj ET
+0.98 0.98 0.99 rg 321 322 241 44 re f
+0.82 0.84 0.88 RG 0.5 w 321 322 241 44 re S
+BT /F2 6.5 Tf 0.4 0.45 0.5 rg 331 354 Td (EXECUTION UTC TIMESTAMP) Tj ET
+BT /F1 9 Tf 0.1 0.12 0.15 rg 331 338 Td (2026-11-24 02:30:48 UTC) Tj ET
+0.98 0.99 0.98 rg 50 266 241 44 re f
+0.75 0.85 0.78 RG 0.5 w 50 266 241 44 re S
+BT /F2 6.5 Tf 0.3 0.45 0.35 rg 60 298 Td (AUTHORITY ACKNOWLEDGMENT) Tj ET
+0.1 0.4 0.2 RG 0.8 w 60 278 11 11 re S
+BT /F2 8.5 Tf 0.05 0.45 0.2 rg 62 280 Td (X) Tj ET
+BT /F1 7.2 Tf 0.1 0.15 0.1 rg 76 282 Td (I confirm executive signatory authority.) Tj ET
+0.96 0.98 0.97 rg 50 26 512 44 re f
+0.25 0.6 0.4 RG 1 w 50 26 512 44 re S
+BT /F2 7.5 Tf 0.05 0.35 0.18 rg 62 56 Td (OFFICIALLY FLATTENED & CERTIFIED \(ISO 32000-1 STATIC STREAM\)) Tj ET
+BT /F5 6.5 Tf 0.25 0.35 0.25 rg 62 45 Td (SHA-256 Digest: 4ed00da76bce67d5505b0247be4efb4a4e94deacee109f2df7eef68f9d30a7db) Tj ET
+BT /F1 6.5 Tf 0.35 0.4 0.35 rg 62 34 Td (Effective: 2026-11-24) Tj ET
+
+endstream
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+8 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>
+endobj
+10 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-BoldItalic /Encoding /WinAnsiEncoding >>
+endobj
+11 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+12 0 obj
+<< /Type /ExtGState /ca 0.12 /CA 0.12 /BM /Multiply >>
+endobj
+13 0 obj
+<< /Title (Master Services & Cloud Architecture Agreement) /Author () /Subject () /Keywords () /Creator () /CreationDate (D:20261124023048Z) /ModDate (D:20261124023048Z) >>
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000129 00000 n 
+0000000342 00000 n 
+0000003162 00000 n 
+0000003375 00000 n 
+0000005791 00000 n 
+0000005888 00000 n 
+0000005990 00000 n 
+0000006089 00000 n 
+0000006194 00000 n 
+0000006290 00000 n 
+0000006361 00000 n 
+trailer
+<< /Size 14 /Root 1 0 R /Info 13 0 R >>
+startxref
+6550
+%%EOF

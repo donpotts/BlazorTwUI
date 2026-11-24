@@ -1,0 +1,163 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [ 3 0 R ] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [ 0 0 612.00 792.00 ] /Contents 4 0 R /Resources << /Font << /F1 5 0 R /F2 6 0 R /F3 7 0 R /F4 8 0 R /F5 9 0 R >> /ExtGState << /GSWatermark 10 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 3123 >>
+stream
+BT
+/F2 15 Tf
+0.08 0.12 0.25 rg
+50 719 Td (Mutual Confidentiality Agreement) Tj
+ET
+BT
+/F1 8.5 Tf
+0.4 0.45 0.5 rg
+50 703 Td (Doc ID: NDA-2026-2611   |   Page 1 of 1   |   Effective: 2026-11-24) Tj
+ET
+BT
+/F2 9.2 Tf
+0.1 0.15 0.2 rg
+50 683 Td (1. CONFIDENTIAL INFORMATION DEFINITION) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 670 Td (This Mutual Non-Disclosure Agreement is executed between Apex Cloud Technologies) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 659 Td (\("Disclosing Party"\) and Frontier Data Corp \("Receiving Party"\).) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 645 Td (Confidential Information shall comprise all non-public technical data, source code,) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 634 Td (neural models, architectural schemas, and business strategies disclosed directly or) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 623 Td (indirectly.) Tj
+ET
+BT
+/F2 9.2 Tf
+0.1 0.15 0.2 rg
+50 604 Td (2. NON-DISCLOSURE OBLIGATIONS & TERM) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 591 Td (The Receiving Party agrees to protect the Confidential Information using the same degree) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 580 Td (of care, but not less than reasonable care, used to protect its own sensitive trade) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 569 Td (secrets.) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 555 Td (Obligations under this Agreement shall endure for a term of three \(3\) years from the) Tj
+ET
+BT
+/F3 8.3 Tf
+0.2 0.22 0.25 rg
+50 544 Td (Effective Date.) Tj
+ET
+0.75 0.8 0.85 RG 1 w 50 380 m 562 380 l S
+BT /F2 8 Tf 0.25 0.35 0.45 rg 50 385 Td (ATTESTATION & FORM FIELDS) Tj ET
+0.97 0.98 1.0 rg 50 322 241 44 re f
+0.7 0.78 0.9 RG 0.75 w 50 322 241 44 re S
+BT /F2 7 Tf 0.3 0.38 0.5 rg 60 354 Td (APEX CLOUD TECHNOLOGIES AUTHORIZED SIGNATURE) Tj ET
+BT /F4 14 Tf 0.05 0.12 0.35 rg 62 339 Td (Signer) Tj ET
+BT /F1 6.5 Tf 0.45 0.5 0.55 rg 60 328 Td (Signer: Signer | 2026-11-24 02:30 UTC) Tj ET
+0.97 0.98 1.0 rg 321 322 241 44 re f
+0.7 0.78 0.9 RG 0.75 w 321 322 241 44 re S
+BT /F2 7 Tf 0.3 0.38 0.5 rg 331 354 Td (FRONTIER DATA CORP AUTHORIZED SIGNATURE) Tj ET
+BT /F4 14 Tf 0.05 0.12 0.35 rg 333 339 Td (Signer) Tj ET
+BT /F1 6.5 Tf 0.45 0.5 0.55 rg 331 328 Td (Signer: Signer | 2026-11-24 02:30 UTC) Tj ET
+0.98 0.98 0.99 rg 50 266 241 44 re f
+0.82 0.84 0.88 RG 0.5 w 50 266 241 44 re S
+BT /F2 6.5 Tf 0.4 0.45 0.5 rg 60 298 Td (BILATERAL EXECUTION DATE) Tj ET
+BT /F1 9 Tf 0.1 0.12 0.15 rg 60 282 Td (2026-11-24 02:30:48 UTC) Tj ET
+0.96 0.98 0.97 rg 50 36 512 44 re f
+0.25 0.6 0.4 RG 1 w 50 36 512 44 re S
+BT /F2 7.5 Tf 0.05 0.35 0.18 rg 62 66 Td (OFFICIALLY FLATTENED & CERTIFIED \(ISO 32000-1 STATIC STREAM\)) Tj ET
+BT /F5 6.5 Tf 0.25 0.35 0.25 rg 62 55 Td (SHA-256 Digest: c54cad4601f7bb2d6f5f33c7dc19f98b60e0210c6953c74e7f6fb333902b66d7) Tj ET
+BT /F1 6.5 Tf 0.35 0.4 0.35 rg 62 44 Td (Effective: 2026-11-24) Tj ET
+BT
+/F5 8 Tf
+0.2 0.2 0.3 rg
+432 20 Td ([NDA-000001]) Tj
+ET
+q
+/GSWatermark gs
+0.75 0.20 0.20 rg
+0.7071 0.7071 -0.7071 0.7071 306.00 396.00 cm
+BT
+/F2 46.0 Tf
+-154.6 -10 Td
+(CONFIDENTIAL) Tj
+ET
+Q
+
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+6 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>
+endobj
+8 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-BoldItalic /Encoding /WinAnsiEncoding >>
+endobj
+9 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+10 0 obj
+<< /Type /ExtGState /ca 0.15 /CA 0.15 /BM /Multiply >>
+endobj
+11 0 obj
+<< /Title (Mutual Non-Disclosure & Proprietary Information Agreement) /Author () /Subject () /Keywords () /Creator () /CreationDate (D:20261124023048Z) /ModDate (D:20261124023048Z) >>
+endobj
+xref
+0 12
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000123 00000 n 
+0000000334 00000 n 
+0000003509 00000 n 
+0000003606 00000 n 
+0000003708 00000 n 
+0000003807 00000 n 
+0000003911 00000 n 
+0000004006 00000 n 
+0000004077 00000 n 
+trailer
+<< /Size 12 /Root 1 0 R /Info 11 0 R >>
+startxref
+4277
+%%EOF
